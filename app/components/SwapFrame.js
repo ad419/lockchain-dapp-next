@@ -22,7 +22,6 @@ import { zeroAddress } from "viem";
 import ReferralShare from "./ReferralShare";
 import { useSwapStats } from "../hooks/useAccount";
 import LoadingModal from "./LoadingModal";
-import { useSearchParams } from "next/navigation"; // Add this import
 import Image from "next/image";
 
 // Create a client component for the swap interface
@@ -502,8 +501,6 @@ function SwapInterface({ searchParams }) {
   );
 }
 
-export default function SwapFrame() {
-  const searchParams = useSearchParams();
-
+export default function SwapFrame({ searchParams }) {
   return <SwapInterface searchParams={searchParams} />;
 }
