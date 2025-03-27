@@ -38,41 +38,64 @@ function SwapInterface({ searchParams }) {
   const [updater, setUpdater] = useState(1);
   const accStats = useSwapStats(updater);
   const [loading, setLoading] = useState(false);
-  const [isClient, setIsClient] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [initialized, setInitialized] = useState(false);
 
+  // Handle component mounting
   useEffect(() => {
-    setIsClient(true);
+    setMounted(true);
+    return () => {
+      setMounted(false);
+      setInitialized(false);
+    };
   }, []);
 
+  // Initialize contracts and data
   useEffect(() => {
-    if (isClient) {
+    if (!mounted) return;
+
+    const initialize = async () => {
       try {
-        const contract = getWeb3Contract(
+        // Ensure contract is loaded
+        if (!contract || !contract[DEFAULT_CHAIN]) {
+          throw new Error("Contract configuration not loaded");
+        }
+
+        // Initialize router contract
+        const routerContractInstance = getWeb3Contract(
           routerABI,
           contract[DEFAULT_CHAIN].ROUTER_ADDRESS
         );
-        setRouterContract(contract);
-      } catch (error) {
-        console.error("Error initializing router contract:", error);
-      }
-    }
-  }, [isClient]);
 
-  useEffect(() => {
-    if (isClient) {
-      let refAddr = "";
-      const queryChainId = searchParams.get("ref");
-      if (queryChainId !== "") {
-        refAddr = queryChainId;
+        if (!routerContractInstance) {
+          throw new Error("Failed to initialize router contract");
+        }
+
+        setRouterContract(routerContractInstance);
+
+        // Handle referral address
+        let refAddr = "";
+        if (searchParams?.get("ref")) {
+          refAddr = searchParams.get("ref");
+        }
+        setRefAddress(refAddr);
+
+        setInitialized(true);
+      } catch (error) {
+        console.error("Error during initialization:", error);
+        setInitialized(false);
       }
-      setRefAddress(refAddr);
-    }
-  }, [searchParams, isClient]);
+    };
+
+    initialize();
+  }, [mounted, searchParams]);
 
   const handleFromAmountChange = async (amount) => {
+    if (!mounted || !initialized || !contract || !contract[DEFAULT_CHAIN])
+      return;
     setFromAmount(amount);
 
-    if (!isNaN(amount) && amount > 0 && routerContract && isClient) {
+    if (!isNaN(amount) && amount > 0 && routerContract) {
       try {
         const amountIn = ethers.utils.parseUnits(amount, 18);
 
@@ -115,7 +138,7 @@ function SwapInterface({ searchParams }) {
   };
 
   const handleSubmit = async () => {
-    if (!isClient) return;
+    if (!mounted) return;
 
     if (address) {
       if (chain && chain.id && SUPPORTED_CHAIN.includes(chain.id)) {
@@ -143,6 +166,11 @@ function SwapInterface({ searchParams }) {
 
           toast.loading("Waiting for confirmation...");
           var interval = setInterval(async function () {
+            if (!mounted) {
+              clearInterval(interval);
+              return;
+            }
+
             let web3 = getWeb3();
             var response = await web3.eth.getTransactionReceipt(tx.hash);
             if (response != null) {
@@ -151,15 +179,21 @@ function SwapInterface({ searchParams }) {
                 toast.dismiss();
                 toast.success("Your last transaction is success!!");
                 setLoading(false);
-                window.location.reload();
+                if (mounted) {
+                  window.location.reload();
+                }
               } else if (response.status === false) {
                 toast.error("error ! Your last transaction is failed.");
                 setLoading(false);
-                window.location.reload();
+                if (mounted) {
+                  window.location.reload();
+                }
               } else {
                 toast.error("error ! something went wrong.");
                 setLoading(false);
-                window.location.reload();
+                if (mounted) {
+                  window.location.reload();
+                }
               }
             }
           }, 5000);
@@ -176,7 +210,10 @@ function SwapInterface({ searchParams }) {
       setLoading(false);
     }
   };
+
   const handleApprove = async () => {
+    if (!mounted) return;
+
     if (address) {
       if (chain && chain.id && SUPPORTED_CHAIN.includes(chain.id)) {
         try {
@@ -195,6 +232,11 @@ function SwapInterface({ searchParams }) {
 
           toast.loading("Waiting for confirmation...");
           var interval = setInterval(async function () {
+            if (!mounted) {
+              clearInterval(interval);
+              return;
+            }
+
             let web3 = getWeb3();
             var response = await web3.eth.getTransactionReceipt(tx.hash);
             if (response != null) {
@@ -228,15 +270,25 @@ function SwapInterface({ searchParams }) {
   };
 
   const handleMaxButton = () => {
+    if (!mounted) return;
     if (fromCurrency === "ETH") {
-      handleFromAmountChange(accStats.eth_balance); // Set ETH balance
+      handleFromAmountChange(accStats.eth_balance);
     } else {
-      handleFromAmountChange(accStats.token_balance); // Set Token balance
+      handleFromAmountChange(accStats.token_balance);
     }
   };
 
-  if (!isClient) {
-    return <div>Loading...</div>;
+  if (!mounted || !initialized) {
+    return (
+      <div
+        className="d-flex justify-content-center align-items-center"
+        style={{ minHeight: "100vh" }}
+      >
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    );
   }
 
   const fromdollarValue =

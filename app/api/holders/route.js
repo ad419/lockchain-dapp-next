@@ -31,7 +31,7 @@ async function fetchHoldersData() {
     {
       EVM(dataset: archive, network: base) {
         TokenHolders(
-          date: "2025-03-23"
+          date: "2025-03-27"
           tokenSmartContract: "0x50e756Da72c902474CE43e36f05dD530580d5370"
           limit: { count: 500 }
           orderBy: { descending: Balance_Amount }
@@ -154,7 +154,7 @@ async function fetchTotalHolders() {
   const query = `{
     EVM(dataset: archive, network: base) {
       TokenHolders(
-        date: "2025-03-23"
+        date: "2025-03-27"
         tokenSmartContract: "0x50e756Da72c902474CE43e36f05dD530580d5370"
         where: { Balance: { Amount: { gt: "0" } } }
       ) {
