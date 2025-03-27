@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { ethers } from "ethers"; // Import ethers.js
-import { Context } from "../context/context";
 import ethImg from "../images/eth.png";
 import tokenImg from "../images/logo.png";
 import routerABI from "../json/router.json";
@@ -26,7 +25,8 @@ import LoadingModal from "./LoadingModal";
 import { useSearchParams } from "next/navigation"; // Add this import
 import Image from "next/image";
 
-export default function SwapFrame() {
+// Create a client component for the swap interface
+function SwapInterface({ searchParams }) {
   const { address } = useAccount();
   const { chain } = useNetwork();
   const [fromCurrency, setFromCurrency] = useState("ETH");
@@ -39,7 +39,6 @@ export default function SwapFrame() {
   );
   const signer = useEthersSigner();
   const [refAddress, setRefAddress] = useState("");
-  const searchParams = useSearchParams(); // Replace useLocation
   const [updater, setUpdater] = useState(1);
   const accStats = useSwapStats(updater);
   const [loading, setLoading] = useState(false);
@@ -60,13 +59,12 @@ export default function SwapFrame() {
 
   useEffect(() => {
     let refAddr = "";
-    const queryChainId = searchParams.get("ref"); // Updated to use searchParams
+    const queryChainId = searchParams.get("ref");
     if (queryChainId !== "") {
       refAddr = queryChainId;
     }
     setRefAddress(refAddr);
-    // eslint-disable-next-line
-  }, [searchParams]); // Add searchParams as dependency
+  }, [searchParams]);
 
   useEffect(() => {
     // fetchExchangeRate();
@@ -241,270 +239,276 @@ export default function SwapFrame() {
   };
 
   return (
-    <React.Fragment>
+    <div
+      className="default-height bg-primary-gradient"
+      style={{
+        minHeight: "100vh",
+        background:
+          "radial-gradient(at 53% 34%, rgba(19, 83, 255, 0.1) -84%, rgba(20, 20, 20, 0.6) 63%)",
+      }}
+    >
+      <div className="jumps-prevent" style={{ paddingTop: "104px" }}></div>
       <div
-        className="default-height bg-primary-gradient"
-        style={{
-          minHeight: "100vh",
-          background:
-            "radial-gradient(at 53% 34%, rgba(19, 83, 255, 0.1) -84%, rgba(20, 20, 20, 0.6) 63%)",
-        }}
+        className="main-content side-content pt-0"
+        style={{ minHeight: "calc(100vh - 64px)" }}
       >
-        <div className="jumps-prevent" style={{ paddingTop: "104px" }}></div>
-        <div
-          className="main-content side-content pt-0"
-          style={{ minHeight: "calc(100vh - 64px)" }}
-        >
-          <div className="main-container container-fluid">
-            <div className="inner-body">
-              <div className="page-header">
-                <div>
-                  <h2
-                    style={{
-                      color: "white",
-                      marginTop: "-60px",
-                    }}
-                    className="main-content-title tx-24 mg-b-5"
-                  >
-                    Welcome To Account
-                  </h2>
-                </div>
+        <div className="main-container container-fluid">
+          <div className="inner-body">
+            <div className="page-header">
+              <div>
+                <h2
+                  style={{
+                    color: "white",
+                    marginTop: "-60px",
+                  }}
+                  className="main-content-title tx-24 mg-b-5"
+                >
+                  Welcome To Account
+                </h2>
               </div>
-              <div className="row justify-content-center">
-                <div className="col-md-8 col-lg-6">
-                  {/* From Card */}
-                  <div
-                    style={{
-                      backgroundColor: "transparent",
-                    }}
-                    className="card mb-3 shadow-sm"
-                  >
-                    <div className="card-body swap-body">
-                      <div className="d-flex justify-content-between align-items-center">
-                        <div>
-                          <div
-                            style={{
-                              color: "white !important",
-                            }}
-                          >
-                            From
-                          </div>
-                          <input
-                            style={{
-                              color: "white",
-                            }}
-                            inputMode="decimal"
-                            className="form-control p-0 w-100 bg-transparent text-start fs-4 placeholder-opacity-50 border-0"
-                            placeholder="0.0"
-                            autoComplete="off"
-                            type="text"
-                            value={fromAmount}
-                            onChange={(e) =>
-                              handleFromAmountChange(e.target.value)
-                            }
-                          />
-                          <div
-                            style={{
-                              color: "white",
-                            }}
-                          >
-                            ${fromdollarValue}
-                          </div>
+            </div>
+            <div className="row justify-content-center">
+              <div className="col-md-8 col-lg-6">
+                {/* From Card */}
+                <div
+                  style={{
+                    backgroundColor: "transparent",
+                  }}
+                  className="card mb-3 shadow-sm"
+                >
+                  <div className="card-body swap-body">
+                    <div className="d-flex justify-content-between align-items-center">
+                      <div>
+                        <div
+                          style={{
+                            color: "white !important",
+                          }}
+                        >
+                          From
                         </div>
-                        <div className="text-end text-center">
-                          <div className="gap-2">
-                            <Image
-                              src={fromCurrency === "ETH" ? ethImg : tokenImg}
-                              alt={fromCurrency}
-                              width="24"
-                              className="mx-2"
-                            />
-                            <span
-                              style={{
-                                color: "white",
-                              }}
-                              className="fw-bold"
-                            >
-                              {fromCurrency}
-                            </span>
-                            <div className="text-muted mt-2">
-                              Balance:{" "}
-                              {address
-                                ? fromCurrency === "ETH"
-                                  ? formatPrice(accStats.eth_balance, 18)
-                                  : formatPrice(accStats.token_balance, 18)
-                                : 0}
-                              <span
-                                onClick={() => handleMaxButton()}
-                                className="badge bg-primary mx-2"
-                                style={{ cursor: "pointer" }}
-                              >
-                                Max
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="text-center my-3">
-                    <div className="swap-icon d-inline-block">
-                      <div
-                        onClick={toggleCurrency}
-                        className="css-175oi2r"
-                        style={{
-                          display: "flex",
-                          flexBasis: "auto",
-                          boxSizing: "border-box",
-                          position: "relative",
-                          minHeight: "0px",
-                          minWidth: "0px",
-                          flexShrink: "0",
-                          flexDirection: "column",
-                          cursor: "pointer",
-                          alignItems: "center",
-                          alignSelf: "center",
-                          backgroundColor: "#131814",
-                          borderColor: "#142a63",
-                          borderRadius: "16px",
-                          borderWidth: "4px",
-                          justifyContent: "center",
-                          padding: "8px",
-                          borderStyle: "solid",
-                          transform: "scale(1)",
-                          opacity: "1",
-                        }}
-                      >
+                        <input
+                          style={{
+                            color: "white",
+                          }}
+                          inputMode="decimal"
+                          className="form-control p-0 w-100 bg-transparent text-start fs-4 placeholder-opacity-50 border-0"
+                          placeholder="0.0"
+                          autoComplete="off"
+                          type="text"
+                          value={fromAmount}
+                          onChange={(e) =>
+                            handleFromAmountChange(e.target.value)
+                          }
+                        />
                         <div
                           style={{
                             color: "white",
                           }}
-                          className="_display-flex _alignItems-center _flexBasis-auto _boxSizing-border-box _position-relative _minHeight-0px _minWidth-0px _flexShrink-0 _flexDirection-column _justifyContent-center _pt-t-space-spa94665587 _pr-t-space-spa94665587 _pb-t-space-spa94665587 _pl-t-space-spa94665587"
                         >
-                          <svg
-                            viewBox="0 0 24 24"
+                          ${fromdollarValue}
+                        </div>
+                      </div>
+                      <div className="text-end text-center">
+                        <div className="gap-2">
+                          <Image
+                            src={fromCurrency === "ETH" ? ethImg : tokenImg}
+                            alt={fromCurrency}
                             width="24"
-                            height="24"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            fill="none"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            class="css-i6dzq1"
-                          >
-                            <polyline points="17 1 21 5 17 9"></polyline>
-                            <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
-                            <polyline points="7 23 3 19 7 15"></polyline>
-                            <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
-                          </svg>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* To Card */}
-                  <div
-                    style={{
-                      backgroundColor: "transparent",
-                    }}
-                    className="card mb-4 shadow-sm"
-                  >
-                    <div className="card-body">
-                      <div className="d-flex justify-content-between align-items-center">
-                        <div>
-                          <div
-                            style={{
-                              color: "white",
-                            }}
-                            className=""
-                          >
-                            To
-                          </div>
-                          <input
-                            inputMode="decimal"
-                            className="form-control p-0 w-100 bg-transparent text-start fs-4 text-white placeholder-opacity-50 border-0"
-                            placeholder="0.0"
-                            autoComplete="off"
-                            type="text"
-                            value={toAmount}
-                            readOnly
+                            className="mx-2"
                           />
-                          <div
+                          <span
                             style={{
                               color: "white",
                             }}
-                            className=""
+                            className="fw-bold"
                           >
-                            ${todollarValue}
-                          </div>
-                        </div>
-                        <div className="text-end">
-                          <div className="gap-2">
-                            <Image
-                              src={toCurrency === "ETH" ? ethImg : tokenImg}
-                              alt={toCurrency}
-                              width="24"
-                              className="mx-2"
-                            />
+                            {fromCurrency}
+                          </span>
+                          <div className="text-muted mt-2">
+                            Balance:{" "}
+                            {address
+                              ? fromCurrency === "ETH"
+                                ? formatPrice(accStats.eth_balance, 18)
+                                : formatPrice(accStats.token_balance, 18)
+                              : 0}
                             <span
-                              style={{ color: "white" }}
-                              className="fw-bold"
+                              onClick={() => handleMaxButton()}
+                              className="badge bg-primary mx-2"
+                              style={{ cursor: "pointer" }}
                             >
-                              {toCurrency}
+                              Max
                             </span>
-                            <div className="text-muted mt-2">
-                              Balance:{" "}
-                              {address
-                                ? toCurrency === "ETH"
-                                  ? formatPrice(accStats.eth_balance)
-                                  : formatPrice(accStats.token_balance)
-                                : 0}
-                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
+                </div>
 
-                  {/* <div className="d-flex justify-content-around mb-3">
+                <div className="text-center my-3">
+                  <div className="swap-icon d-inline-block">
+                    <div
+                      onClick={toggleCurrency}
+                      className="css-175oi2r"
+                      style={{
+                        display: "flex",
+                        flexBasis: "auto",
+                        boxSizing: "border-box",
+                        position: "relative",
+                        minHeight: "0px",
+                        minWidth: "0px",
+                        flexShrink: "0",
+                        flexDirection: "column",
+                        cursor: "pointer",
+                        alignItems: "center",
+                        alignSelf: "center",
+                        backgroundColor: "#131814",
+                        borderColor: "#142a63",
+                        borderRadius: "16px",
+                        borderWidth: "4px",
+                        justifyContent: "center",
+                        padding: "8px",
+                        borderStyle: "solid",
+                        transform: "scale(1)",
+                        opacity: "1",
+                      }}
+                    >
+                      <div
+                        style={{
+                          color: "white",
+                        }}
+                        className="_display-flex _alignItems-center _flexBasis-auto _boxSizing-border-box _position-relative _minHeight-0px _minWidth-0px _flexShrink-0 _flexDirection-column _justifyContent-center _pt-t-space-spa94665587 _pr-t-space-spa94665587 _pb-t-space-spa94665587 _pl-t-space-spa94665587"
+                      >
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="24"
+                          height="24"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          fill="none"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          class="css-i6dzq1"
+                        >
+                          <polyline points="17 1 21 5 17 9"></polyline>
+                          <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+                          <polyline points="7 23 3 19 7 15"></polyline>
+                          <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* To Card */}
+                <div
+                  style={{
+                    backgroundColor: "transparent",
+                  }}
+                  className="card mb-4 shadow-sm"
+                >
+                  <div className="card-body">
+                    <div className="d-flex justify-content-between align-items-center">
+                      <div>
+                        <div
+                          style={{
+                            color: "white",
+                          }}
+                          className=""
+                        >
+                          To
+                        </div>
+                        <input
+                          inputMode="decimal"
+                          className="form-control p-0 w-100 bg-transparent text-start fs-4 text-white placeholder-opacity-50 border-0"
+                          placeholder="0.0"
+                          autoComplete="off"
+                          type="text"
+                          value={toAmount}
+                          readOnly
+                        />
+                        <div
+                          style={{
+                            color: "white",
+                          }}
+                          className=""
+                        >
+                          ${todollarValue}
+                        </div>
+                      </div>
+                      <div className="text-end">
+                        <div className="gap-2">
+                          <Image
+                            src={toCurrency === "ETH" ? ethImg : tokenImg}
+                            alt={toCurrency}
+                            width="24"
+                            className="mx-2"
+                          />
+                          <span style={{ color: "white" }} className="fw-bold">
+                            {toCurrency}
+                          </span>
+                          <div className="text-muted mt-2">
+                            Balance:{" "}
+                            {address
+                              ? toCurrency === "ETH"
+                                ? formatPrice(accStats.eth_balance)
+                                : formatPrice(accStats.token_balance)
+                              : 0}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* <div className="d-flex justify-content-around mb-3">
                                         <span>1 {fromCurrency} = {exchangeRate} {toCurrency}</span>
                                     </div> */}
-                  {address ? (
-                    fromCurrency === "LOCKCHAIN" &&
-                    parseFloat(accStats.allowence) < parseFloat(fromAmount) ? (
-                      <button
-                        onClick={() => handleApprove()}
-                        disabled={loading}
-                        type="button"
-                        className="btn btn-primary btn-connect btn-icon-text w-100 radius"
-                      >
-                        {loading ? "Loading..." : "Approve"}
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleSubmit()}
-                        disabled={loading}
-                        type="button"
-                        className="btn btn-primary btn-connect btn-icon-text w-100 radius"
-                      >
-                        {loading ? "Loading..." : "Swap Now"}
-                      </button>
-                    )
+                {address ? (
+                  fromCurrency === "LOCKCHAIN" &&
+                  parseFloat(accStats.allowence) < parseFloat(fromAmount) ? (
+                    <button
+                      onClick={() => handleApprove()}
+                      disabled={loading}
+                      type="button"
+                      className="btn btn-primary btn-connect btn-icon-text w-100 radius"
+                    >
+                      {loading ? "Loading..." : "Approve"}
+                    </button>
                   ) : (
-                    <Connect className=" w-100 radius" />
-                  )}
-                </div>
+                    <button
+                      onClick={() => handleSubmit()}
+                      disabled={loading}
+                      type="button"
+                      className="btn btn-primary btn-connect btn-icon-text w-100 radius"
+                    >
+                      {loading ? "Loading..." : "Swap Now"}
+                    </button>
+                  )
+                ) : (
+                  <Connect className=" w-100 radius" />
+                )}
               </div>
-              <ReferralShare />
-              <LoadingModal
-                show={loading}
-                message="Please wait while we process your request..."
-              />
             </div>
+            <ReferralShare />
+            <LoadingModal
+              show={loading}
+              message="Please wait while we process your request..."
+            />
           </div>
         </div>
       </div>
-    </React.Fragment>
+    </div>
+  );
+}
+
+// Main component with Suspense boundary
+export default function SwapFrame() {
+  const searchParams = useSearchParams();
+
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SwapInterface searchParams={searchParams} />
+    </Suspense>
   );
 }
