@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect } from "react";
 import { ethers } from "ethers"; // Import ethers.js
 import ethImg from "../images/eth.png";
 import tokenImg from "../images/logo.png";
@@ -502,13 +502,8 @@ function SwapInterface({ searchParams }) {
   );
 }
 
-// Main component with Suspense boundary
 export default function SwapFrame() {
   const searchParams = useSearchParams();
 
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <SwapInterface searchParams={searchParams} />
-    </Suspense>
-  );
+  return <SwapInterface searchParams={searchParams} />;
 }
