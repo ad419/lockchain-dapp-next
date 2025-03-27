@@ -32,10 +32,7 @@ function SwapInterface({ searchParams }) {
   const [toCurrency, setToCurrency] = useState("LOCKCHAIN");
   const [fromAmount, setFromAmount] = useState("");
   const [toAmount, setToAmount] = useState("");
-  const routerContract = getWeb3Contract(
-    routerABI,
-    contract[DEFAULT_CHAIN].ROUTER_ADDRESS
-  );
+  const [routerContract, setRouterContract] = useState(null);
   const signer = useEthersSigner();
   const [refAddress, setRefAddress] = useState("");
   const [updater, setUpdater] = useState(1);
@@ -57,6 +54,17 @@ function SwapInterface({ searchParams }) {
   //token token_price - accStats.token_price
 
   useEffect(() => {
+    // Initialize router contract only on client side
+    if (typeof window !== "undefined") {
+      const contract = getWeb3Contract(
+        routerABI,
+        contract[DEFAULT_CHAIN].ROUTER_ADDRESS
+      );
+      setRouterContract(contract);
+    }
+  }, []);
+
+  useEffect(() => {
     let refAddr = "";
     const queryChainId = searchParams.get("ref");
     if (queryChainId !== "") {
@@ -65,16 +73,11 @@ function SwapInterface({ searchParams }) {
     setRefAddress(refAddr);
   }, [searchParams]);
 
-  useEffect(() => {
-    // fetchExchangeRate();
-  }, []);
-
   const handleFromAmountChange = async (amount) => {
     setFromAmount(amount);
 
-    if (!isNaN(amount) && amount > 0) {
+    if (!isNaN(amount) && amount > 0 && routerContract) {
       try {
-        // Convert entered amount to the correct decimals (e.g., 18 decimals for ETH)
         const amountIn = ethers.utils.parseUnits(amount, 18);
 
         const path = [
@@ -86,20 +89,18 @@ function SwapInterface({ searchParams }) {
             : contract[DEFAULT_CHAIN].TOKEN_ADDRESS,
         ];
 
-        // Fetch output amount from the router
         const amounts = await routerContract.methods
           .getAmountsOut(amountIn, path)
           .call();
-        const outputAmount = ethers.utils.formatUnits(amounts[1], 18); // Convert back to human-readable format
+        const outputAmount = ethers.utils.formatUnits(amounts[1], 18);
 
-        // Set calculated values in the state
-        setToAmount(outputAmount); // Update the "To" amount
+        setToAmount(outputAmount);
       } catch (error) {
         console.error("Error fetching output amount:", error);
         setToAmount("");
       }
     } else {
-      setToAmount(""); // Clear output if input is invalid
+      setToAmount("");
     }
   };
 
@@ -131,7 +132,6 @@ function SwapInterface({ searchParams }) {
           let tx;
           let referral = refAddress ? refAddress : zeroAddress;
           if (fromCurrency === "ETH") {
-            console.log(fromAmount);
             tx = await swapContract.createBuy(referral, {
               from: address,
               value: ethers.utils.parseEther(fromAmount.toString()),
@@ -153,15 +153,21 @@ function SwapInterface({ searchParams }) {
                 toast.dismiss();
                 toast.success("Your last transaction is success!!");
                 setLoading(false);
-                window.location.reload();
+                if (typeof window !== "undefined") {
+                  window.location.reload();
+                }
               } else if (response.status === false) {
                 toast.error("error ! Your last transaction is failed.");
                 setLoading(false);
-                window.location.reload();
+                if (typeof window !== "undefined") {
+                  window.location.reload();
+                }
               } else {
                 toast.error("error ! something went wrong.");
                 setLoading(false);
-                window.location.reload();
+                if (typeof window !== "undefined") {
+                  window.location.reload();
+                }
               }
             }
           }, 5000);
