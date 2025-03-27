@@ -1,0 +1,492 @@
+:root {
+  --primary-bg-color: #7da0ff;
+  --primary-bg-hover: #403fad;
+  --dark-color: #fff;
+  --dark-border: rgba(255, 255, 255, 0.15);
+  --gray-light: #f8f9fa;
+  --shadow-color: rgba(19, 83, 255, 0.1);
+}
+
+.tickets-container-bg {
+  background: radial-gradient(at 53% 34%, rgba(19, 83, 255, 0.8) -84%, #151515 63%);
+  min-height: 100vh;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+} 
+
+
+.tickets-container {
+  max-width: 400px;
+  margin: 0 auto;
+  margin-top: 9rem;
+  padding: 2.5rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px var(--shadow-color);
+  background: linear-gradient(
+    135deg,
+    rgba(148, 201, 255, 0.15) 0%,
+    rgba(14, 118, 255, 0.25) 100%
+  );
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.labbel_text {
+  color: rgb(209, 208, 208) !important;
+}
+
+.tickets-container h2 {
+  text-align: center;
+  margin-bottom: 2.5rem;
+  color: whitesmoke;
+  font-weight: 600;
+  font-size: 1.75rem;
+}
+
+.input-group {
+  margin-bottom: 1.75rem;
+  position: relative;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 0.75rem;
+  color: #343a40;
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: color 0.3s ease;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 1rem;
+  border: 2px solid var(--dark-border);
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background-color: rgba(255, 255, 255, 0.096);
+}
+
+.input-group input:focus {
+  outline: none;
+  border-color: var(--primary-bg-color);
+  box-shadow: 0 0 0 3px rgba(19, 83, 255, 0.15);
+  background-color: rgba(255, 255, 255, 0.074);
+  color: #d1d1d1 !important;
+}
+
+.input-group input::placeholder {
+  color: rgba(158, 158, 158, 0.5);
+  transition: color 0.3s ease;
+}
+
+.input-group input:focus::placeholder {
+  color: rgb(255, 255, 255);
+  transform: translateX(5px);
+}
+
+button {
+  width: 100%;
+  padding: 1rem;
+  background-color: var(--primary-bg-color);
+  color: var(--dark-color);
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  min-height: 44px; /* Add this to prevent button size change */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+button:hover {
+  background-color: var(--primary-bg-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(19, 83, 255, 0.2);
+}
+
+button:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+button.loading {
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+button:disabled {
+  background: #666;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Add responsive design */
+@media (max-width: 576px) {
+  .tickets-container {
+    margin-top: 6rem;
+    padding: 1.5rem;
+  }
+
+  .tickets-container h2 {
+    font-size: 1.5rem;
+  }
+}
+
+.input-group .error {
+  border-color: #ff4444 !important;
+}
+
+.error-message {
+  color: #ff4444;
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 4px;
+  background-color: rgba(255, 68, 68, 0.1);
+  animation: slideIn 0.3s ease-out, shake 0.5s ease-out;
+}
+
+.error-message::before {
+  content: "⚠️";
+  margin-right: 8px;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+.contact-section {
+  animation: fadeIn 0.3s ease-out;
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: all 0.3s ease-in-out;
+}
+
+.contact-section.visible {
+  opacity: 1;
+  max-height: 200px; /* Adjust based on your content */
+}
+
+.contact-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.contact-input {
+  width: 100%;
+  padding: 1rem;
+  padding-right: 3rem;
+  border: 2px solid var(--dark-border);
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.096);
+  color: #d1d1d1;
+  transition: all 0.3s ease;
+}
+
+.contact-type-indicator {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.2rem;
+  opacity: 0.7;
+}
+
+.contact-type-email {
+  border-color: #4caf50;
+}
+
+.contact-type-twitter {
+  border-color: #1da1f2;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.success-message {
+  color: #4caf50;
+  background-color: rgba(76, 175, 80, 0.1);
+  padding: 1rem;
+  border-radius: 8px;
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.success-message::before {
+  content: "✅";
+  margin-right: 8px;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000; /* Make sure modal appears above confetti */
+  animation: fadeIn 0.3s ease-out;
+}
+
+.modal-content {
+  background: linear-gradient(145deg, #1a1a1a, #2a2a1a);
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  max-width: 500px;
+  width: 90%;
+  animation: slideUp 0.3s ease-out;
+}
+
+.modal-content h2 {
+  color: #4caf50;
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+}
+
+.modal-content h3 {
+  color: #4caf50;
+  font-size: 2.5rem;
+  margin: 1.5rem 0;
+}
+
+.modal-content p {
+  color: #aaa;
+  margin: 1rem 0;
+  line-height: 1.5;
+}
+
+.close-button {
+  background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+  color: #fff;
+  border: none;
+  padding: 0.8rem 2rem;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.close-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.telegram-link {
+  margin-top: 1.5rem;
+  word-break: break-word;
+  color: #0088cc;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.telegram-link a {
+  color: #0088cc;
+  text-decoration: none;
+}
+
+.telegram-link a:hover {
+  text-decoration: underline;
+}
+
+.telegram-link:hover {
+  color: #00aaff;
+  text-decoration: underline;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Add these styles for confetti */
+canvas {
+  z-index: 9999 !important;
+}
+
+/* Button Loader Styles */
+.loader-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.loader {
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Toast Styles */
+.Toastify__toast {
+  border-radius: 10px !important;
+  background: rgba(123, 160, 255, 0.15) !important;
+  color: rgb(255, 255, 255) !important;
+  padding: 16px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;
+  min-height: 50px !important;
+  backdrop-filter: blur(10px) !important;
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 12px !important;
+}
+
+.Toastify__toast-body {
+  flex: 1 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  font-size: 0.95rem !important;
+  line-height: 1.4 !important;
+  word-break: break-word !important;
+}
+
+.Toastify__close-button {
+  padding: 4px !important;
+  margin: 0 !important;
+  position: absolute !important;
+  right: -147px !important;
+  transition: all 0.2s ease !important;
+  background: transparent !important;
+  flex-shrink: 0 !important;
+}
+
+.Toastify__close-button svg {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+.Toastify__toast-icon {
+  margin: 0 !important;
+  flex-shrink: 0 !important;
+}
+
+/* Toast Container */
+.Toastify__toast-container {
+  padding: 0 !important;
+  width: 400px !important;
+  max-width: 90vw !important;
+}
+
+.Toastify__toast-container--bottom-right {
+  bottom: 1em !important;
+  right: 1em !important;
+}
+
+/* Toast Theme Dark */
+.Toastify__toast-theme--dark {
+  background: #333 !important;
+  color: #fff !important;
+}
+
+/* Toast Types */
+.Toastify__toast--error {
+  border-left: 4px solid var(--toastify-color-error) !important;
+}
+
+.Toastify__toast--success {
+  border-left: 4px solid var(--toastify-color-success) !important;
+}
+
+/* Animation for progress bar */
+@keyframes Toastify__trackProgress {
+  0% {
+    transform: scaleX(1);
+  }
+  100% {
+    transform: scaleX(0);
+  }
+}
+
+.Toastify__progress-bar--animated {
+  animation: Toastify__trackProgress linear 1;
+}
+
+.message-content {
+  margin: 1rem 0;
+  line-height: 1.6;
+  text-align: center;
+}

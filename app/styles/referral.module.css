@@ -1,0 +1,17 @@
+.referralCard {
+  background: radial-gradient(at 53% 34%, rgba(19, 83, 255, 0.1) -84%, rgba(20, 20, 20, 0.6) 63%) !important;
+  backdrop-filter: blur(1px);
+  border: 1px solid rgba(255, 255, 255, 0.066);
+}
+
+.referralInput {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
+}
+
+.inputGroupText {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  cursor: pointer;
+}

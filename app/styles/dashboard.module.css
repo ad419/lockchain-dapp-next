@@ -1,0 +1,30 @@
+.cardGradient {
+  background: linear-gradient(91deg, #1353FF 0%, #6385e2 100%) !important;
+  backdrop-filter: blur(1px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.taxCard {
+  background: transparent !important;
+}
+
+
+.mainContent {
+  padding-top: 20px;
+  background: radial-gradient(at 53% 34%, rgba(19, 83, 255, 0.8) -84%, #151515 63%);
+  min-height: calc(100vh - 60px);
+}
+
+.cardContainer {
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .mainContent {
+    padding-top: 15px;
+  }
+  
+  .cardContainer {
+    margin-bottom: 1rem;
+  }
+}

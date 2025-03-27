@@ -1,0 +1,745 @@
+:root {
+  --primary-color: #7da0ff;
+  --secondary-color: #403fad;
+  --background-dark: rgba(19, 83, 255, 0.1);
+  --text-light: #d1d1d1;
+  --border-light: rgba(255, 255, 255, 0.15);
+  --card-bg: rgba(255, 255, 255, 0.05);
+  --shadow-color: rgba(19, 83, 255, 0.1);
+  --gradient-bg: radial-gradient(at 53% 34%, rgba(19, 83, 255, 0.8) -84%, #151515 63%);
+}
+
+
+.main-container-calculator {
+  min-height: 100vh;
+  padding: 2rem;
+  background: var(--gradient-bg);
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  width: 100%;
+  margin-left: 0;
+  transition: all 0.3s ease;
+}
+
+.profit-calculator {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: var(--card-bg);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  border: 1px solid var(--border-light);
+  box-shadow: 0 8px 32px var(--shadow-color);
+  position: relative;
+  z-index: 1;
+  transition: all 0.3s ease;
+}
+
+.calculator-wrapper {
+  display: flex;
+  gap: 3rem;
+  align-items: flex-start;
+}
+
+.input-section {
+  flex: 0 0 350px;
+  padding: 2rem;
+  background: rgba(64, 63, 173, 0.1);
+  border-radius: 16px;
+  border: 1px solid var(--border-light);
+}
+
+.input-section h2,
+.chart-title {
+  color: var(--text-light);
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.calculator-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.input-group label {
+  color: var(--text-light);
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.input-group input[type="number"] {
+  width: 100%;
+  padding: 0.875rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  color: var(--text-light);
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.input-group input[type="number"]:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(125, 160, 255, 0.2);
+}
+
+/* Range Input Styles */
+.input-group input[type="range"] {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  outline: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  will-change: contents;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+/* Webkit (Chrome, Safari, Edge) */
+.input-group input[type="range"]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 6px;
+  background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+  border-radius: 3px;
+  border: none;
+}
+
+.input-group input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  cursor: pointer;
+  margin-top: -7px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  transition: all 0.2s ease;
+}
+
+/* Firefox */
+.input-group input[type="range"]::-moz-range-track {
+  width: 100%;
+  height: 6px;
+  background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+  border-radius: 3px;
+  border: none;
+}
+
+.input-group input[type="range"]::-moz-range-thumb {
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  cursor: pointer;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+/* Microsoft Edge and IE */
+.input-group input[type="range"]::-ms-track {
+  width: 100%;
+  height: 6px;
+  background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+  border-radius: 3px;
+  border: none;
+}
+
+.input-group input[type="range"]::-ms-thumb {
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  cursor: pointer;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+/* Hover state */
+.input-group input[type="range"]:hover::-webkit-slider-thumb {
+  transform: scale(1.1);
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+}
+
+.input-group input[type="range"]:hover::-moz-range-thumb {
+  transform: scale(1.1);
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+}
+
+.input-group input[type="range"]:hover::-ms-thumb {
+  transform: scale(1.1);
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+}
+
+.calculate-btn {
+  width: 100%;
+  padding: 1rem;
+  background: var(--secondary-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.calculate-btn:hover {
+  background: var(--primary-color);
+  transform: translateY(-2px);
+}
+
+.chart-section {
+  flex: 1;
+  min-width: 0;
+  padding: 2rem;
+  background: rgba(64, 63, 173, 0.1);
+  border-radius: 16px;
+  border: 1px solid var(--border-light);
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeIn 0.5s ease forwards;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Tooltip Styles */
+.custom-tooltip {
+  background: linear-gradient(135deg, rgba(64, 63, 173, 0.95) 0%, rgba(125, 160, 255, 0.95) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transform: translateY(-5px);
+  transition: all 0.3s ease;
+  min-width: 200px;
+}
+
+.tooltip-label {
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.tooltip-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.tooltip-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.15rem 0;
+}
+
+.tooltip-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.3);
+}
+
+.tooltip-text {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.balance-title {
+  color: var(--text-light);
+  text-align: center;
+  font-size: 1.25rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: rgba(64, 63, 173, 0.1);
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+  transition: all 0.3s ease;
+}
+
+.balance-title span {
+  display: inline-block;
+  color: var(--primary-color);
+  font-weight: 600;
+  text-shadow: 0 0 10px rgba(125, 160, 255, 0.3);
+}
+
+/* Add these styles for chart hover effects */
+.recharts-tooltip-cursor {
+  fill: rgba(255, 255, 255, 0.1) !important;
+  filter: blur(2px);
+}
+
+.recharts-bar-rectangle:hover {
+  filter: brightness(1.2);
+  transition: filter 0.3s ease;
+}
+
+/* Responsive Design */
+@media (max-width: 1629px) {
+  .main-container-calculator {
+    padding: 1rem;
+    margin-left: 0;
+  }
+
+  .profit-calculator {
+    max-width: 1000px;
+    margin: 1rem auto;
+    padding: 1rem;
+    margin-left: 280px; /* Add space for sidebar */
+  }
+}
+
+@media (max-width: 1400px) {
+  .profit-calculator {
+    max-width: 900px;
+    margin-left: 280px; /* Maintain sidebar space */
+  }
+}
+
+@media (max-width: 1200px) {
+  .profit-calculator {
+    max-width: 800px;
+    margin-left: 280px; /* Maintain sidebar space */
+  }
+}
+
+@media (max-width: 1100px) {
+  .profit-calculator {
+    max-width: 700px;
+    margin-left: 250px; /* Reduced margin for smaller screens */
+  }
+
+  .calculator-wrapper {
+    gap: 2rem;
+  }
+
+  .input-section {
+    flex: 0 0 300px;
+    padding: 1.5rem;
+  }
+
+  .chart-section {
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 991px) {
+  .main-container-calculator {
+    margin-left: 0;
+    padding: 1rem;
+  }
+
+  .profit-calculator {
+    max-width: 100%;
+    margin: 1rem auto;
+    padding: 1rem;
+    margin-left: 0; /* Remove sidebar space when sidebar is closed */
+  }
+
+  .calculator-wrapper {
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .input-section {
+    flex: none;
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  .chart-section {
+    width: 100%;
+  }
+}
+
+@media (max-width: 900px) {
+  .main-container-calculator {
+    padding: 0.5rem;
+  }
+
+  .profit-calculator {
+    margin: 0.5rem auto;
+    padding: 0.75rem;
+  }
+
+  .input-section,
+  .chart-section {
+    padding: 1rem;
+  }
+
+  .input-section h2,
+  .chart-title {
+    font-size: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .main-container-calculator {
+    padding: 0.5rem;
+  }
+
+  .profit-calculator {
+    margin: 0.5rem auto;
+    padding: 0.5rem;
+  }
+
+  .input-section,
+  .chart-section {
+    padding: 0.75rem;
+  }
+
+  .input-section h2,
+  .chart-title {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+  }
+
+  .calculator-form {
+    gap: 1rem;
+  }
+
+  .input-group {
+    gap: 0.5rem;
+  }
+
+  .input-group input[type="number"] {
+    padding: 0.75rem;
+  }
+
+  .radio-group {
+    gap: 0.5rem;
+  }
+
+  .radio-label {
+    padding: 0.4rem;
+    font-size: 0.85rem;
+  }
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.contribution-frequency {
+  margin-top: 0.5rem;
+}
+
+.radio-group {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-light);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-light);
+  transition: all 0.3s ease;
+}
+
+.radio-label:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.radio-label input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary-color);
+}
+
+.radio-label span {
+  font-size: 0.9rem;
+}
+
+.radio-label input[type="radio"]:checked + span {
+  color: var(--primary-color);
+}
+
+.contribution-section {
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: all 0.5s ease;
+}
+
+.contribution-section.show {
+  opacity: 1;
+  max-height: 500px;
+  margin-top: 1.5rem;
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.radio-label {
+  opacity: 0;
+  animation: slideIn 0.5s ease forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Update existing radio-group styles */
+.radio-group {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.radio-label {
+  animation-fill-mode: both;
+  will-change: transform, opacity;
+}
+
+.chart-mode-toggle {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.chart-mode-toggle .radio-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-light);
+  transition: all 0.3s ease;
+}
+
+.chart-mode-toggle .radio-label:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.chart-mode-toggle input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary-color);
+}
+
+.chart-mode-toggle span {
+  color: var(--text-light);
+  font-size: 0.9rem;
+}
+
+.chart-mode-toggle input[type="radio"]:checked + span {
+  color: var(--primary-color);
+}
+
+.axis-text {
+  font-size: 12px;
+  transition: all 0.3s ease;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.axis-value-change {
+  animation: axisValueChange 0.6s ease;
+}
+
+@keyframes axisValueChange {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.9);
+  }
+  20% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.axis-value-change {
+  animation: valueChange 0.6s ease;
+}
+
+@keyframes valueChange {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  20% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.contribution-duration {
+  margin-top: 1.5rem;
+}
+
+.duration-display {
+  color: var(--primary-color);
+  font-weight: 600;
+  text-shadow: 0 0 10px rgba(125, 160, 255, 0.3);
+}
+
+.duration-slider-container {
+  position: relative;
+  padding: 1.5rem 0.5rem 0.5rem;
+  margin-top: 1rem;
+}
+
+.duration-markers {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 10px;
+  z-index: 1;
+}
+
+.duration-marker {
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: rgba(209, 209, 209, 0.5);
+  transition: all 0.3s ease;
+  position: relative;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-light);
+}
+
+.duration-marker.active {
+  color: var(--primary-color);
+  background: rgba(125, 160, 255, 0.1);
+  border-color: var(--primary-color);
+}
+
+.duration-marker::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 8px;
+  background: currentColor;
+}
+
+.duration-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  outline: none;
+  margin-top: 20px;
+}
+
+.duration-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: var(--primary-color);
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 10px rgba(125, 160, 255, 0.3);
+  transition: all 0.2s ease;
+}
+
+.duration-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: var(--primary-color);
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 10px rgba(125, 160, 255, 0.3);
+  transition: all 0.2s ease;
+}
+
+.duration-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+}
+
+.duration-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+}

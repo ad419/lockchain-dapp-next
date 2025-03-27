@@ -1,0 +1,34 @@
+.navbarGradient {
+  background: linear-gradient(91deg, #1353FF 0%, #6385e2 100%) !important;
+}
+
+.dropdownMenu {
+  background: radial-gradient(at 53% 34%, rgba(19, 83, 255, 0.8) -84%, #151515 63%);
+}
+
+.headerRight {
+  background: transparent !important;
+}
+
+.navbarContainer {
+  background: transparent !important;
+}
+
+.mainHeader {
+  background: radial-gradient(at 53% 34%, rgba(19, 83, 255, 0.8) -84%, #151515 63%);
+ 
+}
+.btn-outline-primary:hover {
+  background: #1253ff !important;
+  color: #fff !important;
+  transition: all 0.3s ease;
+}
+
+.twitter-login {
+  transition: all 0.3s ease;
+}
+
+.twitter-login:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(18, 83, 255, 0.2);
+}

@@ -1,0 +1,5 @@
+.mainContent {
+  padding-top: 20px;
+  background: radial-gradient(at 53% 34%, rgba(19, 83, 255, 0.8) -84%, #151515 63%);
+  min-height: calc(100vh - 60px);
+}
