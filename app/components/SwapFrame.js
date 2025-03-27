@@ -38,45 +38,41 @@ function SwapInterface({ searchParams }) {
   const [updater, setUpdater] = useState(1);
   const accStats = useSwapStats(updater);
   const [loading, setLoading] = useState(false);
-
-  const fromdollarValue =
-    fromCurrency === "ETH"
-      ? (fromAmount * accStats.eth_price).toFixed(2)
-      : (fromAmount * accStats.token_price).toFixed(2);
-
-  const todollarValue =
-    toCurrency === "ETH"
-      ? (toAmount * accStats.eth_price).toFixed(2)
-      : (toAmount * accStats.token_price).toFixed(2);
-  //eth balance - accStats.eth_balance
-  //token balance - accStats.token_balance
-  //eth price - accStats.eth_price
-  //token token_price - accStats.token_price
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    // Initialize router contract only on client side
-    if (typeof window !== "undefined") {
-      const contract = getWeb3Contract(
-        routerABI,
-        contract[DEFAULT_CHAIN].ROUTER_ADDRESS
-      );
-      setRouterContract(contract);
-    }
+    setIsClient(true);
   }, []);
 
   useEffect(() => {
-    let refAddr = "";
-    const queryChainId = searchParams.get("ref");
-    if (queryChainId !== "") {
-      refAddr = queryChainId;
+    if (isClient) {
+      try {
+        const contract = getWeb3Contract(
+          routerABI,
+          contract[DEFAULT_CHAIN].ROUTER_ADDRESS
+        );
+        setRouterContract(contract);
+      } catch (error) {
+        console.error("Error initializing router contract:", error);
+      }
     }
-    setRefAddress(refAddr);
-  }, [searchParams]);
+  }, [isClient]);
+
+  useEffect(() => {
+    if (isClient) {
+      let refAddr = "";
+      const queryChainId = searchParams.get("ref");
+      if (queryChainId !== "") {
+        refAddr = queryChainId;
+      }
+      setRefAddress(refAddr);
+    }
+  }, [searchParams, isClient]);
 
   const handleFromAmountChange = async (amount) => {
     setFromAmount(amount);
 
-    if (!isNaN(amount) && amount > 0 && routerContract) {
+    if (!isNaN(amount) && amount > 0 && routerContract && isClient) {
       try {
         const amountIn = ethers.utils.parseUnits(amount, 18);
 
@@ -119,6 +115,8 @@ function SwapInterface({ searchParams }) {
   };
 
   const handleSubmit = async () => {
+    if (!isClient) return;
+
     if (address) {
       if (chain && chain.id && SUPPORTED_CHAIN.includes(chain.id)) {
         try {
@@ -153,21 +151,15 @@ function SwapInterface({ searchParams }) {
                 toast.dismiss();
                 toast.success("Your last transaction is success!!");
                 setLoading(false);
-                if (typeof window !== "undefined") {
-                  window.location.reload();
-                }
+                window.location.reload();
               } else if (response.status === false) {
                 toast.error("error ! Your last transaction is failed.");
                 setLoading(false);
-                if (typeof window !== "undefined") {
-                  window.location.reload();
-                }
+                window.location.reload();
               } else {
                 toast.error("error ! something went wrong.");
                 setLoading(false);
-                if (typeof window !== "undefined") {
-                  window.location.reload();
-                }
+                window.location.reload();
               }
             }
           }, 5000);
@@ -242,6 +234,24 @@ function SwapInterface({ searchParams }) {
       handleFromAmountChange(accStats.token_balance); // Set Token balance
     }
   };
+
+  if (!isClient) {
+    return <div>Loading...</div>;
+  }
+
+  const fromdollarValue =
+    fromCurrency === "ETH"
+      ? (fromAmount * accStats.eth_price).toFixed(2)
+      : (fromAmount * accStats.token_price).toFixed(2);
+
+  const todollarValue =
+    toCurrency === "ETH"
+      ? (toAmount * accStats.eth_price).toFixed(2)
+      : (toAmount * accStats.token_price).toFixed(2);
+  //eth balance - accStats.eth_balance
+  //token balance - accStats.token_balance
+  //eth price - accStats.eth_price
+  //token token_price - accStats.token_price
 
   return (
     <div

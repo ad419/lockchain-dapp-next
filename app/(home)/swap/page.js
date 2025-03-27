@@ -1,8 +1,13 @@
 "use client";
 
 import React, { Suspense } from "react";
-import SwapFrame from "../../components/SwapFrame";
+import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
+
+// Dynamically import SwapFrame with no SSR
+const SwapFrame = dynamic(() => import("../../components/SwapFrame"), {
+  ssr: false,
+});
 
 function SwapPage() {
   const searchParams = useSearchParams();
