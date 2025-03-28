@@ -119,10 +119,11 @@ export default function Header() {
 
   const handleSignIn = async () => {
     try {
-      await signIn("twitter", {
+      const result = await signIn("twitter", {
         callbackUrl: "/",
         redirect: true,
       });
+      console.log("Sign in result:", result);
     } catch (error) {
       console.error("Sign in error:", error);
     }
