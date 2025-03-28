@@ -56,6 +56,9 @@ export const authOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
     updateAge: 24 * 60 * 60, // 24 hours
   },
+  pages: {
+    signIn: "/", // Redirect to home page for sign in
+  },
   callbacks: {
     async jwt({ token, account, profile }) {
       try {
