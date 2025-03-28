@@ -23,24 +23,22 @@ export const authOptions = {
       profile(profile) {
         try {
           console.log("Twitter profile data:", profile);
-          // Handle both v1 and v2 API responses
-          const userData = profile.data || profile;
+          // Twitter API v2 returns data in a different structure
           return {
-            id: userData.id,
-            name: userData.username || userData.name,
+            id: profile.id,
+            name: profile.username,
             email: null,
-            image:
-              userData.profile_image_url || userData.profile_image_url_https,
-            username: userData.username || userData.name,
+            image: profile.profile_image_url,
+            username: profile.username,
           };
         } catch (error) {
           console.error("Error processing profile:", error);
           return {
             id: profile.id,
-            name: profile.username || profile.name,
+            name: profile.username,
             email: null,
-            image: profile.profile_image_url || profile.profile_image_url_https,
-            username: profile.username || profile.name,
+            image: profile.profile_image_url,
+            username: profile.username,
           };
         }
       },
