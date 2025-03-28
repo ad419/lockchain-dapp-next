@@ -23,21 +23,23 @@ export const authOptions = {
       profile(profile) {
         try {
           console.log("Twitter profile data:", profile);
+          // Handle both v1 and v2 API responses
+          const userData = profile.data || profile;
           return {
-            id: profile.data?.id || profile.id,
-            name: profile.data?.username || profile.username,
+            id: userData.id,
+            name: userData.username || userData.name,
             email: null,
-            image: profile.data?.profile_image_url || profile.profile_image_url,
-            username: profile.data?.username || profile.username,
+            image: userData.profile_image_url,
+            username: userData.username || userData.name,
           };
         } catch (error) {
           console.error("Error processing profile:", error);
           return {
             id: profile.id,
-            name: profile.username,
+            name: profile.username || profile.name,
             email: null,
             image: profile.profile_image_url,
-            username: profile.username,
+            username: profile.username || profile.name,
           };
         }
       },
@@ -66,6 +68,7 @@ export const authOptions = {
           token.id = profile.id;
           token.refreshToken = account.refresh_token;
           token.username = profile.username || profile.name;
+          token.image = profile.image;
         }
         return token;
       } catch (error) {
@@ -78,11 +81,12 @@ export const authOptions = {
         console.log("Session Callback - Session:", session);
         console.log("Session Callback - Token:", token);
 
-        session.accessToken = token.accessToken;
         if (session.user) {
           session.user.id = token.id;
           session.user.username = token.username;
+          session.user.image = token.image;
         }
+        session.accessToken = token.accessToken;
         return session;
       } catch (error) {
         console.error("Error in session callback:", error);
@@ -103,6 +107,10 @@ export const authOptions = {
         return false;
       }
     },
+  },
+  pages: {
+    signIn: "/auth/signin",
+    error: "/auth/error",
   },
   events: {
     async signIn(message) {

@@ -119,6 +119,7 @@ export default function Header() {
 
   const handleSignIn = async () => {
     try {
+      console.log("Starting sign in process...");
       const result = await signIn("twitter", {
         callbackUrl: "/",
         redirect: true,
@@ -126,14 +127,20 @@ export default function Header() {
       console.log("Sign in result:", result);
     } catch (error) {
       console.error("Sign in error:", error);
+      // Show error to user
+      alert("Failed to sign in with Twitter. Please try again.");
     }
   };
 
   const handleSignOut = async () => {
     try {
+      console.log("Starting sign out process...");
       await signOut({ callbackUrl: "/" });
+      console.log("Sign out successful");
     } catch (error) {
       console.error("Sign out error:", error);
+      // Show error to user
+      alert("Failed to sign out. Please try again.");
     }
   };
 
