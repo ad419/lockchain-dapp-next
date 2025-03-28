@@ -121,7 +121,6 @@ export default function Header() {
     try {
       console.log("Starting sign in process...");
       const result = await signIn("twitter", {
-        callbackUrl: "/",
         redirect: true,
         state: Math.random().toString(36).substring(7),
       });
