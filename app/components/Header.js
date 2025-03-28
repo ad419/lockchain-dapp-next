@@ -135,11 +135,12 @@ export default function Header() {
   const handleSignOut = async () => {
     try {
       console.log("Starting sign out process...");
-      await signOut({ callbackUrl: "/" });
-      console.log("Sign out successful");
+      document.cookie =
+        "next-auth.session-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      await signOut({ redirect: false });
+      window.location.href = "/";
     } catch (error) {
       console.error("Sign out error:", error);
-      // Show error to user
       alert("Failed to sign out. Please try again.");
     }
   };
