@@ -123,7 +123,6 @@ export default function Header() {
       const result = await signIn("twitter", {
         callbackUrl: "/",
         redirect: true,
-        state: Math.random().toString(36).substring(7), // Add a random state
       });
       console.log("Sign in result:", result);
     } catch (error) {
