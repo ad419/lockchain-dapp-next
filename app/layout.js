@@ -88,7 +88,11 @@ export default function RootLayout({ children }) {
       </head>
       <body suppressHydrationWarning={true} className="ltr main-body leftmenu">
         <div className="horizontalMenucontainer">
-          <SessionProvider refetchInterval={0} refetchOnWindowFocus={false}>
+          <SessionProvider
+            refetchInterval={5 * 60}
+            refetchOnWindowFocus={true}
+            session={null}
+          >
             <WagmiConfig config={wagmiConfig}>
               <ContextProvider>
                 <Header />

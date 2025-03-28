@@ -57,6 +57,11 @@ export default function Header() {
     };
   }, []);
 
+  useEffect(() => {
+    console.log("Session status:", status);
+    console.log("Session data:", session);
+  }, [session, status]);
+
   const handleClickOutside = (event) => {
     if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
       setDropdownOpen(false);
@@ -333,7 +338,7 @@ export default function Header() {
                           />
                         </Link>
                         <button
-                          onClick={() => signOut()}
+                          onClick={() => signOut({ callbackUrl: "/" })}
                           className="btn btn-outline-primary btn-rounded d-flex align-items-center"
                           style={{
                             background: "transparent",
@@ -355,7 +360,12 @@ export default function Header() {
                       </div>
                     ) : (
                       <button
-                        onClick={() => signIn("twitter", { callbackUrl: "/" })}
+                        onClick={() =>
+                          signIn("twitter", {
+                            callbackUrl: "/",
+                            redirect: true,
+                          })
+                        }
                         className="btn btn-primary btn-rounded d-flex align-items-center"
                         style={{
                           background: "#1253ff",

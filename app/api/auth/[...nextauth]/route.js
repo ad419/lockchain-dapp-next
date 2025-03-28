@@ -22,6 +22,7 @@ export const authOptions = {
       },
       profile(profile) {
         try {
+          console.log("Twitter profile data:", profile);
           return {
             id: profile.data?.id || profile.id,
             name: profile.data?.username || profile.username,
@@ -47,15 +48,20 @@ export const authOptions = {
   ],
   adapter: FirestoreAdapter(db),
   secret: process.env.NEXTAUTH_SECRET,
-  debug: process.env.NODE_ENV === "development",
+  debug: true, // Enable debug logs
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
+    updateAge: 24 * 60 * 60, // 24 hours
   },
   callbacks: {
     async jwt({ token, account, profile }) {
       try {
-        if (account) {
+        console.log("JWT Callback - Token:", token);
+        console.log("JWT Callback - Account:", account);
+        console.log("JWT Callback - Profile:", profile);
+
+        if (account && profile) {
           token.accessToken = account.access_token;
           token.id = profile.id;
           token.refreshToken = account.refresh_token;
@@ -69,6 +75,9 @@ export const authOptions = {
     },
     async session({ session, token }) {
       try {
+        console.log("Session Callback - Session:", session);
+        console.log("Session Callback - Token:", token);
+
         session.accessToken = token.accessToken;
         if (session.user) {
           session.user.id = token.id;
@@ -82,6 +91,9 @@ export const authOptions = {
     },
     async signIn({ account, profile }) {
       try {
+        console.log("SignIn Callback - Account:", account);
+        console.log("SignIn Callback - Profile:", profile);
+
         if (account?.provider === "twitter") {
           return true;
         }
