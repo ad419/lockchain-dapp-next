@@ -6,19 +6,28 @@ import { db } from "../../../lib/firebase-admin";
 export const authOptions = {
   providers: [
     TwitterProvider({
-      clientId: process.env.TWITTER_CLIENT_ID,
-      clientSecret: process.env.TWITTER_CLIENT_SECRET,
+      clientId: process.env.TWITTER_ID,
+      clientSecret: process.env.TWITTER_SECRET,
       version: "2.0",
       authorization: {
         url: "https://twitter.com/i/oauth2/authorize",
         params: {
           scope: "users.read tweet.read offline.access",
+          code_challenge_method: "S256",
         },
+      },
+      profile(profile) {
+        return {
+          id: profile.id,
+          name: profile.username,
+          email: null,
+          image: profile.profile_image_url,
+        };
       },
     }),
   ],
   adapter: FirestoreAdapter(db),
-  secret: process.env.NEXT_AUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === "development",
   session: {
     strategy: "jwt",
@@ -28,7 +37,7 @@ export const authOptions = {
     async jwt({ token, account, profile }) {
       if (account) {
         token.accessToken = account.access_token;
-        token.id = profile.id_str || profile.id; // Handle both v1 and v2 API IDs
+        token.id = profile.id;
         token.refreshToken = account.refresh_token;
       }
       return token;
@@ -37,11 +46,15 @@ export const authOptions = {
       session.accessToken = token.accessToken;
       if (session.user) {
         session.user.id = token.id;
-        session.user.username = session.user.name
-          ?.toLowerCase()
-          .replace(/\s+/g, "");
+        session.user.username = session.user.name;
       }
       return session;
+    },
+    async signIn({ account, profile }) {
+      if (account?.provider === "twitter") {
+        return true;
+      }
+      return false;
     },
   },
   pages: {
