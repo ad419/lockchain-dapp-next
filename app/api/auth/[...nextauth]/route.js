@@ -22,25 +22,38 @@ export const authOptions = {
       },
       profile(profile) {
         try {
-          console.log("Twitter profile data:", profile);
+          console.log(
+            "Raw Twitter profile data:",
+            JSON.stringify(profile, null, 2)
+          );
+          console.log("Profile data type:", typeof profile);
+          console.log("Profile data keys:", Object.keys(profile));
+
           // Twitter API v2 returns data nested under a data property
           const userData = profile.data;
-          return {
+          console.log("User data:", JSON.stringify(userData, null, 2));
+
+          if (!userData || !userData.id) {
+            console.error("Invalid profile structure:", {
+              hasData: !!userData,
+              hasId: userData?.id,
+              userData,
+            });
+            throw new Error("Invalid profile data structure");
+          }
+
+          const result = {
             id: userData.id,
             name: userData.name,
             email: null,
             image: userData.profile_image_url,
             username: userData.username,
           };
+          console.log("Processed profile result:", result);
+          return result;
         } catch (error) {
           console.error("Error processing profile:", error);
-          return {
-            id: profile.data.id,
-            name: profile.data.name,
-            email: null,
-            image: profile.data.profile_image_url,
-            username: profile.data.username,
-          };
+          throw error;
         }
       },
       httpOptions: {
