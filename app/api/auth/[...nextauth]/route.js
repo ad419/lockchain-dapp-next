@@ -22,10 +22,6 @@ export const authOptions = {
   ],
   adapter: FirestoreAdapter(db),
   secret: process.env.NEXTAUTH_SECRET,
-  pages: {
-    signIn: "/",
-    error: "/",
-  },
   callbacks: {
     async session({ session, token }) {
       if (token) {
