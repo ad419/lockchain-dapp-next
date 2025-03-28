@@ -19,8 +19,10 @@ export const authOptions = {
   ],
   adapter: FirestoreAdapter(db),
   secret: process.env.NEXTAUTH_SECRET,
-
-  // Enhanced error handling and logging
+  pages: {
+    signIn: "/",
+    error: "/",
+  },
   callbacks: {
     async signIn({ user, account, profile }) {
       console.log("Twitter Sign-In Attempt:", {

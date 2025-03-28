@@ -117,8 +117,6 @@ export default function Header() {
     }
   };
 
-  console.log(session);
-
   return (
     <React.Fragment>
       <div className={`main-header side-header sticky ${styles.mainHeader}`}>
