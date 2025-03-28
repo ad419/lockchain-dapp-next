@@ -3,9 +3,9 @@ import TwitterProvider from "next-auth/providers/twitter";
 import { FirestoreAdapter } from "@auth/firebase-adapter";
 import { db } from "../../../lib/firebase-admin";
 
-if (!process.env.NEXTAUTH_SECRET) {
-  throw new Error("Please provide NEXTAUTH_SECRET environment variable");
-}
+// if (!process.env.NEXTAUTH_SECRET) {
+//   throw new Error("Please provide NEXTAUTH_SECRET environment variable");
+// }
 
 export const authOptions = {
   providers: [
