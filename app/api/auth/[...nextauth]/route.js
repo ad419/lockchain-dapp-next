@@ -8,6 +8,7 @@ export const authOptions = {
     TwitterProvider({
       clientId: process.env.TWITTER_ID,
       clientSecret: process.env.TWITTER_SECRET,
+      version: "1.0A",
       profile(profile) {
         return {
           id: profile.id_str,
@@ -21,6 +22,10 @@ export const authOptions = {
   ],
   adapter: FirestoreAdapter(db),
   secret: process.env.NEXTAUTH_SECRET,
+  pages: {
+    signIn: "/",
+    error: "/",
+  },
   callbacks: {
     async session({ session, token }) {
       if (token) {
@@ -30,7 +35,15 @@ export const authOptions = {
       }
       return session;
     },
+    async jwt({ token, account, profile }) {
+      if (account && profile) {
+        token.username = profile.screen_name;
+        token.picture = profile.profile_image_url_https;
+      }
+      return token;
+    },
   },
+  debug: process.env.NODE_ENV === "development",
 };
 
 const handler = NextAuth(authOptions);

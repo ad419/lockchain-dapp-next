@@ -123,11 +123,11 @@ export default function Header() {
       const result = await signIn("twitter", {
         callbackUrl: "/",
         redirect: true,
+        state: Math.random().toString(36).substring(7),
       });
       console.log("Sign in result:", result);
     } catch (error) {
       console.error("Sign in error:", error);
-      // Show error to user
       alert("Failed to sign in with Twitter. Please try again.");
     }
   };
