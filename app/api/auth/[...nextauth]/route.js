@@ -3,6 +3,10 @@ import TwitterProvider from "next-auth/providers/twitter";
 import { FirestoreAdapter } from "@auth/firebase-adapter";
 import { db } from "../../../lib/firebase-admin";
 
+if (!process.env.NEXTAUTH_SECRET) {
+  throw new Error("Please provide NEXTAUTH_SECRET environment variable");
+}
+
 export const authOptions = {
   providers: [
     TwitterProvider({
@@ -17,12 +21,27 @@ export const authOptions = {
         },
       },
       profile(profile) {
-        return {
-          id: profile.id,
-          name: profile.username,
-          email: null,
-          image: profile.profile_image_url,
-        };
+        try {
+          return {
+            id: profile.data?.id || profile.id,
+            name: profile.data?.username || profile.username,
+            email: null,
+            image: profile.data?.profile_image_url || profile.profile_image_url,
+            username: profile.data?.username || profile.username,
+          };
+        } catch (error) {
+          console.error("Error processing profile:", error);
+          return {
+            id: profile.id,
+            name: profile.username,
+            email: null,
+            image: profile.profile_image_url,
+            username: profile.username,
+          };
+        }
+      },
+      httpOptions: {
+        timeout: 10000,
       },
     }),
   ],
@@ -35,26 +54,42 @@ export const authOptions = {
   },
   callbacks: {
     async jwt({ token, account, profile }) {
-      if (account) {
-        token.accessToken = account.access_token;
-        token.id = profile.id;
-        token.refreshToken = account.refresh_token;
+      try {
+        if (account) {
+          token.accessToken = account.access_token;
+          token.id = profile.id;
+          token.refreshToken = account.refresh_token;
+          token.username = profile.username || profile.name;
+        }
+        return token;
+      } catch (error) {
+        console.error("Error in jwt callback:", error);
+        return token;
       }
-      return token;
     },
     async session({ session, token }) {
-      session.accessToken = token.accessToken;
-      if (session.user) {
-        session.user.id = token.id;
-        session.user.username = session.user.name;
+      try {
+        session.accessToken = token.accessToken;
+        if (session.user) {
+          session.user.id = token.id;
+          session.user.username = token.username;
+        }
+        return session;
+      } catch (error) {
+        console.error("Error in session callback:", error);
+        return session;
       }
-      return session;
     },
     async signIn({ account, profile }) {
-      if (account?.provider === "twitter") {
-        return true;
+      try {
+        if (account?.provider === "twitter") {
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error("Error in signIn callback:", error);
+        return false;
       }
-      return false;
     },
   },
   pages: {

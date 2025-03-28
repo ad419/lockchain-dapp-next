@@ -355,7 +355,7 @@ export default function Header() {
                       </div>
                     ) : (
                       <button
-                        onClick={() => signIn("twitter")}
+                        onClick={() => signIn("twitter", { callbackUrl: "/" })}
                         className="btn btn-primary btn-rounded d-flex align-items-center"
                         style={{
                           background: "#1253ff",
