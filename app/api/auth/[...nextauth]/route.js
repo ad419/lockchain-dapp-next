@@ -29,7 +29,8 @@ export const authOptions = {
             id: userData.id,
             name: userData.username || userData.name,
             email: null,
-            image: userData.profile_image_url,
+            image:
+              userData.profile_image_url || userData.profile_image_url_https,
             username: userData.username || userData.name,
           };
         } catch (error) {
@@ -38,7 +39,7 @@ export const authOptions = {
             id: profile.id,
             name: profile.username || profile.name,
             email: null,
-            image: profile.profile_image_url,
+            image: profile.profile_image_url || profile.profile_image_url_https,
             username: profile.username || profile.name,
           };
         }
