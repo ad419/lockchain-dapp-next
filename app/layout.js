@@ -10,7 +10,7 @@ import Header from "./components/Header";
 import { useState, useEffect } from "react";
 import { SessionProvider } from "next-auth/react";
 
-export default function RootLayout({ children }) {
+export default function RootLayout({ children, session }) {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -88,7 +88,7 @@ export default function RootLayout({ children }) {
       </head>
       <body suppressHydrationWarning={true} className="ltr main-body leftmenu">
         <div className="horizontalMenucontainer">
-          <SessionProvider refetchOnWindowFocus={true}>
+          <SessionProvider session={session} refetchOnWindowFocus={true}>
             <WagmiConfig config={wagmiConfig}>
               <ContextProvider>
                 <Header />

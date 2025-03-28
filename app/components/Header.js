@@ -117,34 +117,6 @@ export default function Header() {
     }
   };
 
-  const handleSignIn = async () => {
-    try {
-      console.log("Starting sign in process...");
-      const result = await signIn("twitter", {
-        callbackUrl: "/",
-        redirect: true,
-        state: Math.random().toString(36).substring(7),
-      });
-      console.log("Sign in result:", result);
-    } catch (error) {
-      console.error("Sign in error:", error);
-      alert("Failed to sign in with Twitter. Please try again.");
-    }
-  };
-
-  const handleSignOut = async () => {
-    try {
-      console.log("Starting sign out process...");
-      document.cookie =
-        "next-auth.session-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-      await signOut({ redirect: false });
-      window.location.href = "/";
-    } catch (error) {
-      console.error("Sign out error:", error);
-      alert("Failed to sign out. Please try again.");
-    }
-  };
-
   console.log(session);
 
   return (
@@ -366,7 +338,7 @@ export default function Header() {
                           />
                         </Link>
                         <button
-                          onClick={handleSignOut}
+                          onClick={() => signOut()}
                           className="btn btn-outline-primary btn-rounded d-flex align-items-center"
                           style={{
                             background: "transparent",
@@ -388,7 +360,7 @@ export default function Header() {
                       </div>
                     ) : (
                       <button
-                        onClick={handleSignIn}
+                        onClick={() => signIn("twitter")}
                         className="btn btn-primary btn-rounded d-flex align-items-center"
                         style={{
                           background: "#1253ff",

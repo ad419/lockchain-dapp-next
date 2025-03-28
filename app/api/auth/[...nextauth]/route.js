@@ -8,42 +8,42 @@ export const authOptions = {
     TwitterProvider({
       clientId: process.env.TWITTER_ID,
       clientSecret: process.env.TWITTER_SECRET,
-      version: "1.0A",
-      profile(profile) {
-        return {
-          id: profile.id_str,
-          name: profile.name,
-          email: null,
-          image: profile.profile_image_url_https,
-          username: profile.screen_name,
-        };
+      version: "2.0", // Explicitly specify OAuth 2.0
+      authorization: {
+        url: "https://twitter.com/i/oauth2/authorize",
+        params: {
+          scope: "users.read tweet.read offline.access",
+        },
       },
     }),
   ],
   adapter: FirestoreAdapter(db),
   secret: process.env.NEXTAUTH_SECRET,
-  pages: {
-    signIn: "/",
-    error: "/",
-  },
+
+  // Enhanced error handling and logging
   callbacks: {
-    async session({ session, token }) {
-      if (token) {
-        session.user.id = token.sub;
-        session.user.username = token.username;
-        session.user.image = token.picture;
-      }
-      return session;
-    },
-    async jwt({ token, account, profile }) {
-      if (account && profile) {
-        token.username = profile.screen_name;
-        token.picture = profile.profile_image_url_https;
-      }
-      return token;
+    async signIn({ user, account, profile }) {
+      console.log("Twitter Sign-In Attempt:", {
+        user,
+        account,
+        profile,
+      });
+      return true;
     },
   },
-  debug: process.env.NODE_ENV === "development",
+
+  // Detailed error handling
+  events: {
+    async signIn(message) {
+      console.log("SignIn Event:", message);
+    },
+    async signOut(message) {
+      console.log("SignOut Event:", message);
+    },
+    async createUser(message) {
+      console.log("User Created:", message);
+    },
+  },
 };
 
 const handler = NextAuth(authOptions);
