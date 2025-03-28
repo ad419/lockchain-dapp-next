@@ -117,6 +117,10 @@ export default function Header() {
     }
   };
 
+  const username = session?.user?.name
+    ? session.user.name.replace(/\s+/g, "").toLowerCase()
+    : "user";
+
   return (
     <React.Fragment>
       <div className={`main-header side-header sticky ${styles.mainHeader}`}>
@@ -326,7 +330,7 @@ export default function Header() {
                       </div>
                     ) : session ? (
                       <div className="d-flex align-items-center">
-                        <Link href={`/profile/${session.user.username}`}>
+                        <Link href={`/profile/${username}`}>
                           <Image
                             src={session.user.image}
                             alt={session.user.name}

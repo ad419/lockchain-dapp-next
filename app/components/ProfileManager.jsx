@@ -7,6 +7,8 @@ import Link from "next/link";
 import { useAccount } from "wagmi";
 import { ethers } from "ethers";
 import "../styles/Profile.css";
+import { LuClipboard } from "react-icons/lu";
+import { LuClipboardCheck } from "react-icons/lu";
 
 export default function Profile() {
   const { data: session } = useSession();
@@ -56,6 +58,10 @@ export default function Profile() {
     );
   }
 
+  const username = session?.user?.name
+    ? session.user.name.replace(/\s+/g, "").toLowerCase()
+    : "user";
+
   return (
     <div style={{ paddingTop: "100px" }} className="profile-container">
       <div className="profile-card">
@@ -79,7 +85,7 @@ export default function Profile() {
           </div>
           <div className="profile-info">
             <h1 className="profile-name">{session.user.name}</h1>
-            <p className="profile-username">@{session.user.username}</p>
+            <p className="profile-username">@{username}</p>
           </div>
         </div>
 
@@ -102,8 +108,26 @@ export default function Profile() {
                   onClick={copyToClipboard}
                   className="copy-button"
                   title="Copy to clipboard"
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    padding: '4px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    color: copied ? '#00ff00' : '#1253ff'
+                  }}
                 >
-                  {copied ? "Copied!" : "Copy"}
+                  {copied ? (
+                    <>
+                      <LuClipboardCheck size={16} />
+                    </>
+                  ) : (
+                    <>
+                      <LuClipboard size={16} />
+                    </>
+                  )}
                 </button>
               </div>
             </div>
