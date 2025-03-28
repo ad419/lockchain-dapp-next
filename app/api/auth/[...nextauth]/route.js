@@ -107,10 +107,6 @@ export const authOptions = {
       }
     },
   },
-  pages: {
-    signIn: "/auth/signin",
-    error: "/auth/error",
-  },
   events: {
     async signIn(message) {
       console.log("User signed in:", message);
