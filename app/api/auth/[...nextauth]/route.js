@@ -19,6 +19,9 @@ export const authOptions = {
   ],
   adapter: FirestoreAdapter(db),
   secret: process.env.NEXTAUTH_SECRET,
+  pages: {
+    signIn: "/", // Redirect to home page for sign in
+  },
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
@@ -42,8 +45,14 @@ export const authOptions = {
       return session;
     },
     async redirect({ url, baseUrl }) {
-      if (url.startsWith(baseUrl)) return url;
-      return baseUrl;
+      // Handle redirect after sign in
+      if (url.startsWith("/api/auth/signin")) {
+        const callbackUrl = new URL(url, baseUrl).searchParams.get(
+          "callbackUrl"
+        );
+        return callbackUrl || baseUrl;
+      }
+      return url.startsWith(baseUrl) ? url : baseUrl;
     },
   },
   debug: process.env.NODE_ENV === "development",
