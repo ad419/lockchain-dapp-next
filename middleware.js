@@ -22,5 +22,5 @@ export default withAuth(
 );
 
 export const config = {
-  matcher: ["/leaderboard", "/api/auth/:path*"],
+  matcher: ["/api/auth/:path*"], // Removed /leaderboard from protected routes
 };
