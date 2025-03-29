@@ -210,24 +210,29 @@ export default function Header() {
   };
 
   const handleLogout = async () => {
-    await signOut({
-      callbackUrl: window.location.origin,
-      redirect: true,
-    });
+    try {
+      await signOut({
+        callbackUrl: window.location.origin,
+        redirect: true,
+      });
+    } catch (error) {
+      console.error("Logout error:", error);
+      showToast("Error logging out", "error");
+    }
   };
 
   const renderAuthButton = () => {
     if (status === "loading") {
-      return <button disabled>Loading...</button>;
+      return <div>Loading...</div>;
     }
 
-    if (session) {
+    if (session?.user) {
       return (
-        <button onClick={() => signOut({ callbackUrl: "/" })}>Logout</button>
+        <button onClick={handleLogout}>Logout ({session.user.name})</button>
       );
     }
 
-    return <button onClick={handleLogin}>Login with Twitter</button>;
+    return <button onClick={handleLogin}>Login with X</button>;
   };
 
   return (

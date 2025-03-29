@@ -14,11 +14,11 @@ import { ToastProvider } from "./context/ToastContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
-export default function RootLayout({ children, session }) {
-  const [isClient, setIsClient] = useState(false);
+export default function RootLayout({ children }) {
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setIsClient(true);
+    setMounted(true);
   }, []);
 
   return (
@@ -92,11 +92,11 @@ export default function RootLayout({ children, session }) {
       </head>
       <body suppressHydrationWarning={true} className="ltr main-body leftmenu">
         <div className="horizontalMenucontainer">
-          <SessionProvider session={session} refetchOnWindowFocus={true}>
+          <SessionProvider refetchInterval={0}>
             <WagmiConfig config={wagmiConfig}>
               <ContextProvider>
                 <ToastProvider>
-                  <Header />
+                  {mounted && <Header />}
                   {children}
                 </ToastProvider>
               </ContextProvider>

@@ -19,27 +19,31 @@ export const authOptions = {
   ],
   adapter: FirestoreAdapter(db),
   secret: process.env.NEXTAUTH_SECRET,
-  pages: {
-    signIn: "/",
-    error: "/",
+  session: {
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async redirect({ url, baseUrl }) {
-      // Always redirect to homepage after auth
-      return baseUrl;
+    async jwt({ token, user, account }) {
+      if (account && user) {
+        return {
+          ...token,
+          accessToken: account.access_token,
+          userId: user.id,
+        };
+      }
+      return token;
     },
-    async signIn({ user, account, profile }) {
-      console.log("Twitter Sign-In Attempt:", {
-        user,
-        account,
-        profile,
-      });
-      return true;
-    },
-    async session({ session, token, user }) {
-      // Add user data to session
-      session.user = user;
+    async session({ session, token }) {
+      if (token) {
+        session.user.id = token.userId;
+        session.accessToken = token.accessToken;
+      }
       return session;
+    },
+    async redirect({ url, baseUrl }) {
+      if (url.startsWith(baseUrl)) return url;
+      return baseUrl;
     },
   },
   debug: process.env.NODE_ENV === "development",
