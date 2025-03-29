@@ -27,11 +27,19 @@ async function fetchHoldersData() {
     return cachedData;
   }
 
+  const currentDate = new Date();
+
+  const formatDate = (date) => {
+    return date.toISOString().split("T")[0];
+  };
+
+  const date = formatDate(currentDate);
+
   const query = `
     {
       EVM(dataset: archive, network: base) {
-        TokenHolders(
-          date: "2025-03-27"
+          TokenHolders(
+            date: "${date}"
           tokenSmartContract: "0x50e756Da72c902474CE43e36f05dD530580d5370"
           limit: { count: 500 }
           orderBy: { descending: Balance_Amount }
@@ -69,17 +77,51 @@ async function fetchTokenPrice() {
   try {
     const response = await fetch(
       `https://api.dexscreener.com/latest/dex/tokens/${CONTRACT_ADDRESS}`,
-      { next: { revalidate: 60 } } // Cache for 5 hours
+      { next: { revalidate: 60 } } // Cache for 1 minute
     );
 
     if (!response.ok) {
-      throw new Error(`DexScreener API error: ${response.status}`);
+      console.warn(`DexScreener API error: ${response.status}`);
+      return {
+        pairs: [],
+        mainPair: {
+          info: { imageUrl: "", socials: [] },
+          baseToken: { name: "", symbol: "" },
+          priceChange: { h24: 0, h1: 0 },
+          liquidity: { usd: 0 },
+          volume: { h24: 0 },
+          txns: { h24: { buys: 0, sells: 0 } },
+          combinedStats: {
+            volume24h: 0,
+            liquidity: 0,
+            txns24h: { buys: 0, sells: 0 },
+          },
+        },
+        priceUsd: 0,
+      };
     }
 
     const data = await response.json();
 
     if (!data?.pairs?.length) {
-      throw new Error("No pairs found for token");
+      console.warn("No pairs found for token, returning default values");
+      return {
+        pairs: [],
+        mainPair: {
+          info: { imageUrl: "", socials: [] },
+          baseToken: { name: "", symbol: "" },
+          priceChange: { h24: 0, h1: 0 },
+          liquidity: { usd: 0 },
+          volume: { h24: 0 },
+          txns: { h24: { buys: 0, sells: 0 } },
+          combinedStats: {
+            volume24h: 0,
+            liquidity: 0,
+            txns24h: { buys: 0, sells: 0 },
+          },
+        },
+        priceUsd: 0,
+      };
     }
 
     // Sort pairs by liquidity
@@ -123,7 +165,7 @@ async function fetchTokenPrice() {
       priceUsd: Number(mainPair.priceUsd || 0),
     };
   } catch (error) {
-    console.error("Error fetching token price:", error);
+    console.warn("Error fetching token price:", error);
     return {
       pairs: [],
       mainPair: {
@@ -151,10 +193,18 @@ async function fetchTotalHolders() {
     return cachedTotal;
   }
 
+  const currentDate = new Date();
+
+  const formatDate = (date) => {
+    return date.toISOString().split("T")[0];
+  };
+
+  const date = formatDate(currentDate);
+
   const query = `{
     EVM(dataset: archive, network: base) {
       TokenHolders(
-        date: "2025-03-27"
+        date: "${date}"
         tokenSmartContract: "0x50e756Da72c902474CE43e36f05dD530580d5370"
         where: { Balance: { Amount: { gt: "0" } } }
       ) {

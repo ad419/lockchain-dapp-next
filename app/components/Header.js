@@ -5,7 +5,7 @@ import React, { useContext, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { useNetwork } from "wagmi";
+import { useNetwork, useAccount } from "wagmi";
 import { Context } from "../context/context";
 import { DEFAULT_CHAIN, SUPPORTED_CHAIN, contract } from "../hooks/constant";
 import gldnTextImg from "../images/gldn-logotype.png";
@@ -23,6 +23,7 @@ import ConfettiLinear from "./IconConfetti";
 import styles from "../styles/header.module.css";
 import { signIn, signOut, useSession } from "next-auth/react";
 import ClipLoader from "react-spinners/ClipLoader";
+import { useToast } from "../context/ToastContext";
 
 export default function Header() {
   const context = useContext(Context);
@@ -41,6 +42,10 @@ export default function Header() {
   const [web3, setWeb3] = useState(null); // Add this line if not present
   const dropdownRef = useRef(null);
   const { data: session, status } = useSession();
+  const { address, isConnected } = useAccount();
+  const { showToast } = useToast();
+  const [isClaiming, setIsClaiming] = useState(false);
+  const [hasClaimedWallet, setHasClaimedWallet] = useState(false);
 
   useEffect(() => {
     // Check if MetaMask is installed and enabled
@@ -61,6 +66,12 @@ export default function Header() {
     console.log("Session status:", status);
     console.log("Session data:", session);
   }, [session, status]);
+
+  useEffect(() => {
+    if (session?.user?.name) {
+      checkWalletClaim(session.user.name);
+    }
+  }, [session?.user?.name]);
 
   const handleClickOutside = (event) => {
     if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -120,6 +131,71 @@ export default function Header() {
   const username = session?.user?.name
     ? session.user.name.replace(/\s+/g, "").toLowerCase()
     : "user";
+
+  const checkWalletClaim = async (twitterUsername) => {
+    try {
+      const response = await fetch(
+        `/api/check-wallet-claim?twitterUsername=${twitterUsername}`
+      );
+      const data = await response.json();
+      setHasClaimedWallet(data.claimed);
+    } catch (error) {
+      console.error("Error checking wallet claim:", error);
+    }
+  };
+
+  const checkWalletHoldings = async () => {
+    try {
+      const response = await fetch("/api/holders");
+      const data = await response.json();
+      return data.holders.some(
+        (holder) => holder.address.toLowerCase() === address.toLowerCase()
+      );
+    } catch (error) {
+      console.error("Error checking wallet holdings:", error);
+      return false;
+    }
+  };
+
+  const claimWallet = async () => {
+    if (!isConnected) {
+      showToast("Please connect your wallet first", "error");
+      return;
+    }
+
+    setIsClaiming(true);
+    try {
+      const hasHoldings = await checkWalletHoldings();
+      if (!hasHoldings) {
+        showToast("Your wallet must have token holdings to claim", "error");
+        return;
+      }
+
+      const response = await fetch("/api/claim-wallet", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          walletAddress: address,
+          twitterUsername: session.user.name,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        showToast("Wallet claimed successfully!", "success");
+        setHasClaimedWallet(true);
+      } else {
+        showToast(data.error || "Failed to claim wallet", "error");
+      }
+    } catch (error) {
+      console.error("Error claiming wallet:", error);
+      showToast("An error occurred while claiming your wallet", "error");
+    } finally {
+      setIsClaiming(false);
+    }
+  };
 
   return (
     <React.Fragment>
@@ -341,7 +417,7 @@ export default function Header() {
                         </Link>
                         <button
                           onClick={() => signOut()}
-                          className="btn btn-outline-primary btn-rounded d-flex align-items-center"
+                          className="btn btn-outline-primary btn-rounded d-flex align-items-center me-2"
                           style={{
                             background: "transparent",
                             border: "1px solid #1253ff",
@@ -359,6 +435,43 @@ export default function Header() {
                           </svg>
                           Logout
                         </button>
+                        {!hasClaimedWallet && (
+                          <button
+                            onClick={claimWallet}
+                            disabled={isClaiming}
+                            className="btn btn-primary btn-rounded d-flex align-items-center"
+                            style={{
+                              background: "#1253ff",
+                              border: "none",
+                              color: "#fff",
+                            }}
+                          >
+                            {isClaiming ? (
+                              <ClipLoader
+                                color="#ffffff"
+                                size={16}
+                                className="me-2"
+                              />
+                            ) : (
+                              <svg
+                                className="me-2"
+                                style={{ height: "16px", width: "16px" }}
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                xmlns="http://www.w3.org/2000/svg"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
+                                />
+                              </svg>
+                            )}
+                            {isClaiming ? "Claiming..." : "Claim Wallet"}
+                          </button>
+                        )}
                       </div>
                     ) : (
                       <button

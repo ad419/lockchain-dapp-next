@@ -9,6 +9,10 @@ import Script from "next/script";
 import Header from "./components/Header";
 import { useState, useEffect } from "react";
 import { SessionProvider } from "next-auth/react";
+import { Inter } from "next/font/google";
+import { ToastProvider } from "./context/ToastContext";
+
+const inter = Inter({ subsets: ["latin"] });
 
 export default function RootLayout({ children, session }) {
   const [isClient, setIsClient] = useState(false);
@@ -91,8 +95,10 @@ export default function RootLayout({ children, session }) {
           <SessionProvider session={session} refetchOnWindowFocus={true}>
             <WagmiConfig config={wagmiConfig}>
               <ContextProvider>
-                <Header />
-                {children}
+                <ToastProvider>
+                  <Header />
+                  {children}
+                </ToastProvider>
               </ContextProvider>
             </WagmiConfig>
           </SessionProvider>
