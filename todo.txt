@@ -1,0 +1,13 @@
+// fix the data on dashboard page Market Cap, Current Price(LockChain), Liquidity
+// fix the claim button on account <Profile /> page
+// fix the swap it does not work properly
+
+We previously changed the Token addresses from old ones to new ones
+
+These are the new ones
+
+vesting: 0x64D9D2ef90447A2f2BFCa8f8D3ec67f0109DbA91
+token: 0x32481ac9B124bD82944eac67B2EA449797d402D1
+swap: 0x32a48D1b897333B2B1e3AE4DB48206B49FEf5487
+
+Also whe changed the DEX_CHART_FRAME URL, SIDEBAR_CHART_LINK, SIDEBAR_TOKEN_LINK by replacing the old contract with the new one
