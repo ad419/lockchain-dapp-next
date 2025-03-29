@@ -5,85 +5,29 @@ export const trimAddress = (addr) => {
 };
 
 export const contract = {
-  // 1: {
-  //   name: "Ethereum",
-  //   symbol: "ETH",
-  //   img: ethIcon,
-  //   RPC: "https://mainnet.infura.io/v3/63f4b8ee61284419b46c780d03befc4e",
-  //   EXPLORE: 'https://etherscan.io/',
-  //   MULTICALL_ADDRESS: "0x5e227ad1969ea493b43f840cff78d08a6fc17796",
-  //   WETH_ADDRESS: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
-  //   GLDN_ADDRESS: "0xFeeB4D0f5463B1b04351823C246bdB84c4320CC2",
-  //   GLDN_LP_ADDRESS: "0x46cf1cf8c69595804ba91dfdd8d6b960c9b0a7c4",
-  //   WETH_USD_LP_ADDRESS: "0x0d4a11d5EEaaC28EC3F61d100daF4d40471f1852",
-  //   DIVIDEND_ADDRESS: "0xEFECAbFCc8a2E28Cc6278E95E6f20DE81D3C9A56",
-  //   PAXG_ADDRESS:"0x45804880De22913dAFE09f4980848ECE6EcbAf78",
-  //   PAXG_LP_ADDRESS:"0x9c4fe5ffd9a9fc5678cfbd93aa2d4fd684b67c4c",
-  //   USDT_USDC_LP_ADDRESS : "0x3041CbD36888bECc7bbCBc0045E3B1f144466f5f",
-  //   ETH_LINK_ADDRESS : "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419",
-  //   PAXG_LINK_ADDRESS : "0x9B97304EA12EFed0FAd976FBeCAad46016bf269e",
-  //   PAGX_RESERVE_ADDR : "0x716BB8c60D409e54b8Fb5C4f6aBC50E794DA048a",
-
-  // },
-  // 56: {
-  //   name: "Binance",
-  //   symbol: "BNB",
-  //   img: bnbIcon,
-  //   RPC: "https://bsc-dataseed1.binance.org/",
-  //   EXPLORE: 'https://bscscan.com/',
-  //   MULTICALL_ADDRESS: "0x5e227ad1969ea493b43f840cff78d08a6fc17796",
-  //   WETH_ADDRESS: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
-  //   GLDN_ADDRESS: "0xFeeB4D0f5463B1b04351823C246bdB84c4320CC2",
-  //   GLDN_LP_ADDRESS: "0x46cf1cf8c69595804ba91dfdd8d6b960c9b0a7c4",
-  //   WETH_USD_LP_ADDRESS: "0x0d4a11d5EEaaC28EC3F61d100daF4d40471f1852",
-  //   DIVIDEND_ADDRESS: "0xEFECAbFCc8a2E28Cc6278E95E6f20DE81D3C9A56",
-  //   PAXG_ADDRESS:"0x45804880De22913dAFE09f4980848ECE6EcbAf78",
-  //   PAXG_LP_ADDRESS:"0x9c4fe5ffd9a9fc5678cfbd93aa2d4fd684b67c4c",
-  //   USDT_USDC_LP_ADDRESS : "0x3041CbD36888bECc7bbCBc0045E3B1f144466f5f",
-  //   ETH_LINK_ADDRESS : "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419",
-  //   PAXG_LINK_ADDRESS : "0x9B97304EA12EFed0FAd976FBeCAad46016bf269e",
-  //   PAGX_RESERVE_ADDR : "0x716BB8c60D409e54b8Fb5C4f6aBC50E794DA048a",
-
-  // },
-  // 97 : {
-  //   name: "Binance",
-  //   symbol: "BNB",
-  //   img: bnbIcon,
-  //   coingecko_symbol : "binancecoin",
-  //   networkQuery : "bsc_testnet",
-  //   RPC: "https://data-seed-prebsc-2-s2.bnbchain.org:8545",
-  //   EXPLORE: 'https://testnet.bscscan.com/',
-  //   MULTICALL_ADDRESS: "0xa54fE4a3DbD1Eb21524Cd73754666b7E13b4cB18",
-  //   WETH_ADDRESS: "0xae13d989dac2f0debff460ac112a837c89baa7cd",
-  //   TOKEN_ADDRESS: "0xf00FFcc241Ef337Ce056B982de89E84D2405da9f",
-  //   TOKEN_LP_ADDRESS: "0xa6adfd4da5669596531faae98af4a2a686a319d0",
-  //   VESTING_ADDRESS : "0xe135b252828C1D989e2ce58aC0Bb328f90429f5b",
-  //   WETH : "0xae13d989dac2f0debff460ac112a837c89baa7cd",
-
-  // }
-
   8453: {
     name: "Base",
     symbol: "ETH",
     img: ethIcon,
     coingecko_symbol: "ethereum",
-    networkQuery: "bsc_testnet",
+    networkQuery: "base", // Changed from bsc_testnet to base
     RPC: "https://base.llamarpc.com",
     EXPLORE: "https://basescan.org/",
     MULTICALL_ADDRESS: "0xfEE958Fa595B4478cea7560C91400A98b83d6C91",
     WETH_ADDRESS: "0x4200000000000000000000000000000000000006",
-    TOKEN_ADDRESS: "0xA37aa38323f8b2a094BAF921199607F7377f276d", // 0xA548F1cf90D0FF4445fc311759a33EB1485A745A
+    TOKEN_ADDRESS: "0x32481ac9B124bD82944eac67B2EA449797d402D1",
     TOKEN_LP_ADDRESS: "0x5a4afdb29821d55b550b7b2bd5a5513ddc6e0dc2",
-    VESTING_ADDRESS: "0xA37aa38323f8b2a094BAF921199607F7377f276d", //0x1321a19E5100ca74F96A685149aF56D75EEB82f7
+    VESTING_ADDRESS: "0x64D9D2ef90447A2f2BFCa8f8D3ec67f0109DbA91",
     WETH: "0x4200000000000000000000000000000000000006",
-    ROUTER_ADDRESS: "0x4F1A1822F0Ba5eA22FEc05a1B03E781bB51f541a",
-    SWAP_ADDRESS: "0xcB75F9686f69C96763B528442284788B4e46dFB6", //0xcB75F9686f69C96763B528442284788B4e46dFB6
+    ROUTER_ADDRESS: "0x4752ba5dbc23f44d87826276bf6fd6b1c372ad24",
+    SWAP_ADDRESS: "0x32a48D1b897333B2B1e3AE4DB48206B49FEf5487",
   },
 };
 
 export const DEFAULT_CHAIN = 8453;
 export const SUPPORTED_CHAIN = [8453];
-export const networkQuery = "bsc_testnet";
+export const networkQuery = "base";
+
 export const afterDate = "2025-01-09";
 export const dateFormat = "%Y-%m-%d";
 export const api_key = "BQYD2cpwwlgnrI5Cpu2WqYnJ2IB1RVIw";
@@ -91,11 +35,11 @@ export const PROJECT_ID = "27b9720018bf7f8740936e6a6eb28604";
 export const BUY_TAX = 40;
 export const SELL_TAX = 3;
 export const DEX_CHART_FRAME =
-  "https://dexscreener.com/base/0x5a4afdb29821d55b550b7b2bd5a5513ddc6e0dc2?embed=1&amp;theme=dark&amp;info=0";
+  "https://dexscreener.com/base/0x32481ac9B124bD82944eac67B2EA449797d402D1?embed=1&amp;theme=dark&amp;info=0";
 export const SIDEBAR_CHART_LINK =
-  "https://www.dextools.io/app/en/base/pair-explorer/0x5a4afdb29821d55b550b7b2bd5a5513ddc6e0dc2";
+  "https://www.dextools.io/app/en/base/pair-explorer/0x32481ac9B124bD82944eac67B2EA449797d402D1";
 export const SIDEBAR_TOKEN_LINK =
-  "https://basescan.org/address/0xA548F1cf90D0FF4445fc311759a33EB1485A745A";
+  "https://basescan.org/address/0x32481ac9B124bD82944eac67B2EA449797d402D1";
 
 export const transactionQuery = `query ($network: EthereumNetwork!, $token: String!, $limit: Int!, $offset: Int!,$after: ISO8601DateTime  ) {
   ethereum(network: $network) {
@@ -103,6 +47,7 @@ export const transactionQuery = `query ($network: EthereumNetwork!, $token: Stri
       options: {desc: ["block.height", "tradeIndex"], limit: $limit, offset: $offset}
       date: {after: $after}
       baseCurrency: {is: $token}
+      network: {is: "base"}
     ) {
       block {
         timestamp {
@@ -147,6 +92,7 @@ export const userTransactionQuery = `query ($network: EthereumNetwork!,  $user: 
       options: {desc: ["block.height", "tradeIndex"], limit: $limit, offset: $offset}
       date: {after: $after}
       baseCurrency: {is: $token}
+      network: {is: "base"}
     ) {
       block {
         timestamp {
@@ -207,13 +153,12 @@ export const formatDateWithZone = (unixTime) => {
 };
 
 export const chartQuery = `{
-  ethereum(network: ethereum) {
+  ethereum(network: base) {
     dexTrades(
       options: {asc: "timeInterval.minute"}
-      date: {since: "2022-11-27"}
-      exchangeName: {is: "Uniswap"}
-      baseCurrency: {is: "0xfeeb4d0f5463b1b04351823c246bdb84c4320cc2"}
-      quoteCurrency: {is: "0x590619f44e1550cccd6f7778ae73947050aec22b"}
+      date: {since: "2024-01-01"}
+      baseCurrency: {is: "0x32481ac9B124bD82944eac67B2EA449797d402D1"}
+      quoteCurrency: {is: "0x4200000000000000000000000000000000000006"}
     ) {
       timeInterval {
         minute(count: 30)

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { LRUCache } from "lru-cache";
 
-const CONTRACT_ADDRESS = "0x50e756Da72c902474CE43e36f05dD530580d5370";
+const CONTRACT_ADDRESS = "0x32481ac9B124bD82944eac67B2EA449797d402D1";
 const MAX_SUPPLY = 1_000_000_000;
 
 // Initialize LRU cache with 5-minute TTL and max 1000 items
@@ -40,7 +40,7 @@ async function fetchHoldersData() {
       EVM(dataset: archive, network: base) {
           TokenHolders(
             date: "${date}"
-          tokenSmartContract: "0x50e756Da72c902474CE43e36f05dD530580d5370"
+          tokenSmartContract: "0x32481ac9B124bD82944eac67B2EA449797d402D1"
           limit: { count: 500 }
           orderBy: { descending: Balance_Amount }
         ) {
@@ -205,7 +205,7 @@ async function fetchTotalHolders() {
     EVM(dataset: archive, network: base) {
       TokenHolders(
         date: "${date}"
-        tokenSmartContract: "0x50e756Da72c902474CE43e36f05dD530580d5370"
+        tokenSmartContract: "0x32481ac9B124bD82944eac67B2EA449797d402D1"
         where: { Balance: { Amount: { gt: "0" } } }
       ) {
         uniq(of: Holder_Address)

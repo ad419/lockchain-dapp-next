@@ -63,11 +63,6 @@ export default function Header() {
   }, []);
 
   useEffect(() => {
-    console.log("Session status:", status);
-    console.log("Session data:", session);
-  }, [session, status]);
-
-  useEffect(() => {
     if (session?.user?.name) {
       checkWalletClaim(session.user.name);
     }
