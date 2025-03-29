@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { rateLimiter } from "./lib/rate-limiter";
+import { getToken } from "next-auth/jwt";
 
 // Define paths that should be excluded from rate limiting
 const EXCLUDED_PATHS = [
@@ -10,6 +11,14 @@ const EXCLUDED_PATHS = [
 
 export async function middleware(request) {
   const path = request.nextUrl.pathname;
+
+  // Handle auth callback redirects
+  if (path.startsWith("/api/auth/callback")) {
+    const token = await getToken({ req: request });
+    if (token) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+  }
 
   // Only apply rate limiting to API routes that aren't excluded
   if (
@@ -40,5 +49,5 @@ export async function middleware(request) {
 }
 
 export const config = {
-  matcher: ["/api/:path*"],
+  matcher: ["/api/:path*", "/api/auth/callback/:path*"],
 };

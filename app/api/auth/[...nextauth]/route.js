@@ -8,7 +8,7 @@ export const authOptions = {
     TwitterProvider({
       clientId: process.env.TWITTER_ID,
       clientSecret: process.env.TWITTER_SECRET,
-      version: "2.0", // Explicitly specify OAuth 2.0
+      version: "2.0",
       authorization: {
         url: "https://twitter.com/i/oauth2/authorize",
         params: {
@@ -20,12 +20,12 @@ export const authOptions = {
   adapter: FirestoreAdapter(db),
   secret: process.env.NEXTAUTH_SECRET,
   pages: {
-    signIn: "/", // This ensures redirect back to home
-    error: "/", // Error handling on home page
+    signIn: "/",
+    error: "/",
   },
   callbacks: {
     async redirect({ url, baseUrl }) {
-      // Handle redirect after sign in
+      // Always redirect to homepage after auth
       return baseUrl;
     },
     async signIn({ user, account, profile }) {
@@ -36,20 +36,13 @@ export const authOptions = {
       });
       return true;
     },
-  },
-
-  // Detailed error handling
-  events: {
-    async signIn(message) {
-      console.log("SignIn Event:", message);
-    },
-    async signOut(message) {
-      console.log("SignOut Event:", message);
-    },
-    async createUser(message) {
-      console.log("User Created:", message);
+    async session({ session, token, user }) {
+      // Add user data to session
+      session.user = user;
+      return session;
     },
   },
+  debug: process.env.NODE_ENV === "development",
 };
 
 const handler = NextAuth(authOptions);

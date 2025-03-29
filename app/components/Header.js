@@ -209,6 +209,13 @@ export default function Header() {
     }
   };
 
+  const handleLogout = async () => {
+    await signOut({
+      callbackUrl: window.location.origin,
+      redirect: true,
+    });
+  };
+
   const renderAuthButton = () => {
     if (status === "loading") {
       return <button disabled>Loading...</button>;
@@ -442,7 +449,7 @@ export default function Header() {
                           />
                         </Link>
                         <button
-                          onClick={() => signOut()}
+                          onClick={handleLogout}
                           className="btn btn-outline-primary btn-rounded d-flex align-items-center me-2"
                           style={{
                             background: "transparent",
@@ -501,7 +508,7 @@ export default function Header() {
                       </div>
                     ) : (
                       <button
-                        onClick={() => signIn("twitter")}
+                        onClick={handleLogin}
                         className="btn btn-primary btn-rounded d-flex align-items-center"
                         style={{
                           background: "#1253ff",
