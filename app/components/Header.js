@@ -197,6 +197,32 @@ export default function Header() {
     }
   };
 
+  const handleLogin = async () => {
+    try {
+      await signIn("twitter", {
+        callbackUrl: window.location.origin,
+        redirect: true,
+      });
+    } catch (error) {
+      console.error("Login error:", error);
+      showToast("Error logging in with Twitter", "error");
+    }
+  };
+
+  const renderAuthButton = () => {
+    if (status === "loading") {
+      return <button disabled>Loading...</button>;
+    }
+
+    if (session) {
+      return (
+        <button onClick={() => signOut({ callbackUrl: "/" })}>Logout</button>
+      );
+    }
+
+    return <button onClick={handleLogin}>Login with Twitter</button>;
+  };
+
   return (
     <React.Fragment>
       <div className={`main-header side-header sticky ${styles.mainHeader}`}>

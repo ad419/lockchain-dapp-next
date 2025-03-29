@@ -20,10 +20,14 @@ export const authOptions = {
   adapter: FirestoreAdapter(db),
   secret: process.env.NEXTAUTH_SECRET,
   pages: {
-    signIn: "/",
-    error: "/",
+    signIn: "/", // This ensures redirect back to home
+    error: "/", // Error handling on home page
   },
   callbacks: {
+    async redirect({ url, baseUrl }) {
+      // Handle redirect after sign in
+      return baseUrl;
+    },
     async signIn({ user, account, profile }) {
       console.log("Twitter Sign-In Attempt:", {
         user,
