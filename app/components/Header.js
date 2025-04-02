@@ -47,6 +47,9 @@ export default function Header() {
   const [isClaiming, setIsClaiming] = useState(false);
   const [hasClaimedWallet, setHasClaimedWallet] = useState(false);
 
+  // First, add a ref to track the interval
+  const checkIntervalRef = useRef(null);
+
   useEffect(() => {
     // Check if MetaMask is installed and enabled
     if (window.ethereum) {
@@ -62,11 +65,63 @@ export default function Header() {
     };
   }, []);
 
+  async function checkWalletClaim(twitterUsername) {
+    try {
+      // Add logging to track function execution
+      console.log("Checking wallet claim for:", twitterUsername);
+
+      const response = await fetch(
+        `/api/check-wallet-claim?twitterUsername=${encodeURIComponent(
+          twitterUsername
+        )}`
+      );
+      const data = await response.json();
+
+      if (data.error) {
+        console.error("Error from API:", data.error);
+        return;
+      }
+
+      setHasClaimedWallet(data.hasClaimed);
+      console.log("Updated claim status:", data.hasClaimed);
+
+      // If claimed, clear the interval
+      if (data.hasClaimed && checkIntervalRef.current) {
+        clearInterval(checkIntervalRef.current);
+        checkIntervalRef.current = null;
+      }
+    } catch (error) {
+      console.error("Error checking wallet claim:", error);
+    }
+  }
+
   useEffect(() => {
     if (session?.user?.name) {
+      // Clear any existing interval
+      if (checkIntervalRef.current) {
+        clearInterval(checkIntervalRef.current);
+        checkIntervalRef.current = null;
+      }
+
+      // Initial check
       checkWalletClaim(session.user.name);
+
+      // Only set up interval if wallet is not claimed
+      if (!hasClaimedWallet) {
+        checkIntervalRef.current = setInterval(() => {
+          checkWalletClaim(session.user.name);
+        }, 10000);
+      }
+
+      // Cleanup
+      return () => {
+        if (checkIntervalRef.current) {
+          clearInterval(checkIntervalRef.current);
+          checkIntervalRef.current = null;
+        }
+      };
     }
-  }, [session?.user?.name]);
+  }, [session?.user?.name, hasClaimedWallet]);
 
   const handleClickOutside = (event) => {
     if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -85,7 +140,6 @@ export default function Header() {
         { chainId: "0x" + network.toString(16) },
       ]);
       // Perform additional tasks if needed after switching the network
-      console.log(`Switched to network ${network}`);
     } catch (error) {
       console.error("Error switching network:", error);
       // If the error indicates that the network is not available, try adding it
@@ -127,18 +181,6 @@ export default function Header() {
     ? session.user.name.replace(/\s+/g, "").toLowerCase()
     : "user";
 
-  const checkWalletClaim = async (twitterUsername) => {
-    try {
-      const response = await fetch(
-        `/api/check-wallet-claim?twitterUsername=${twitterUsername}`
-      );
-      const data = await response.json();
-      setHasClaimedWallet(data.claimed);
-    } catch (error) {
-      console.error("Error checking wallet claim:", error);
-    }
-  };
-
   const checkWalletHoldings = async () => {
     try {
       const response = await fetch("/api/holders");
@@ -158,14 +200,37 @@ export default function Header() {
       return;
     }
 
+    if (!session?.user?.name) {
+      showToast("Please login with X first", "error");
+      return;
+    }
+
     setIsClaiming(true);
     try {
-      const hasHoldings = await checkWalletHoldings();
-      if (!hasHoldings) {
-        showToast("Your wallet must have token holdings to claim", "error");
+      // First check if wallet already claimed
+      const checkResponse = await fetch(
+        `/api/check-wallet-claim?twitterUsername=${encodeURIComponent(
+          session.user.name
+        )}`
+      );
+      const checkData = await checkResponse.json();
+
+      if (checkData.hasClaimed) {
+        showToast("This wallet has already been claimed", "error");
+        setHasClaimedWallet(true);
+        setIsClaiming(false);
         return;
       }
 
+      // Check holdings
+      const hasHoldings = await checkWalletHoldings();
+      if (!hasHoldings) {
+        showToast("Your wallet must have token holdings to claim", "error");
+        setIsClaiming(false);
+        return;
+      }
+
+      // Proceed with claim
       const response = await fetch("/api/claim-wallet", {
         method: "POST",
         headers: {
@@ -178,15 +243,21 @@ export default function Header() {
       });
 
       const data = await response.json();
+
       if (data.success) {
         showToast("Wallet claimed successfully!", "success");
         setHasClaimedWallet(true);
+
+        // Force an immediate check
+        await checkWalletClaim(session.user.name);
       } else {
         showToast(data.error || "Failed to claim wallet", "error");
+        setHasClaimedWallet(false);
       }
     } catch (error) {
       console.error("Error claiming wallet:", error);
       showToast("An error occurred while claiming your wallet", "error");
+      setHasClaimedWallet(false);
     } finally {
       setIsClaiming(false);
     }
@@ -195,8 +266,7 @@ export default function Header() {
   const handleLogin = async () => {
     try {
       await signIn("twitter", {
-        callbackUrl: window.location.origin,
-        redirect: true,
+        redirect: false,
       });
     } catch (error) {
       console.error("Login error:", error);
@@ -208,7 +278,7 @@ export default function Header() {
     try {
       await signOut({
         callbackUrl: window.location.origin,
-        redirect: true,
+        redirect: false,
       });
     } catch (error) {
       console.error("Logout error:", error);
@@ -468,7 +538,7 @@ export default function Header() {
                           </svg>
                           Logout
                         </button>
-                        {!hasClaimedWallet && (
+                        {!hasClaimedWallet ? (
                           <button
                             onClick={claimWallet}
                             disabled={isClaiming}
@@ -503,6 +573,34 @@ export default function Header() {
                               </svg>
                             )}
                             {isClaiming ? "Claiming..." : "Claim Wallet"}
+                          </button>
+                        ) : (
+                          <button
+                            disabled
+                            className="btn btn-success btn-rounded d-flex align-items-center"
+                            style={{
+                              background: "#10B981",
+                              border: "none",
+                              color: "#fff",
+                              opacity: 0.9,
+                            }}
+                          >
+                            <svg
+                              className="me-2"
+                              style={{ height: "16px", width: "16px" }}
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                              />
+                            </svg>
+                            Wallet Claimed
                           </button>
                         )}
                       </div>

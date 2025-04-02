@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "npm install --legacy-peer-deps && next build",
-    "start": "next start",
+    "dev": "concurrently \"next dev\" \"node server/websocket.js\"",
+    "build": "next build",
+    "start": "concurrently \"next start\" \"node server/websocket.js\"",
     "lint": "next lint"
   },
   "dependencies": {
@@ -28,6 +28,7 @@
     "lru-cache": "^11.1.0",
     "lucide-react": "^0.474.0",
     "moment": "^2.29.4",
+    "moralis": "^2.27.2",
     "next": "^14.0.0",
     "next-auth": "^4.24.11",
     "next-themes": "^0.4.6",

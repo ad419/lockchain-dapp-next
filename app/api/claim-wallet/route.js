@@ -26,17 +26,31 @@ export async function POST(request) {
     const normalizedWalletAddress = walletAddress.toLowerCase();
     const normalizedTwitterUsername = twitterUsername.toLowerCase();
 
-    // Check if wallet or Twitter username is already claimed
+    // Check if wallet is already claimed
     const walletClaimsRef = db.collection("walletClaims");
-    const existingClaim = await walletClaimsRef
+
+    // Check wallet address
+    const walletCheck = await walletClaimsRef
       .where("walletAddress", "==", normalizedWalletAddress)
-      .or("twitterUsername", "==", normalizedTwitterUsername)
       .limit(1)
       .get();
 
-    if (!existingClaim.empty) {
+    if (!walletCheck.empty) {
       return NextResponse.json(
-        { error: "Wallet or Twitter account already claimed" },
+        { error: "Wallet address already claimed" },
+        { status: 400 }
+      );
+    }
+
+    // Check Twitter username
+    const twitterCheck = await walletClaimsRef
+      .where("twitterUsername", "==", normalizedTwitterUsername)
+      .limit(1)
+      .get();
+
+    if (!twitterCheck.empty) {
+      return NextResponse.json(
+        { error: "Twitter account already claimed" },
         { status: 400 }
       );
     }
@@ -46,7 +60,7 @@ export async function POST(request) {
       walletAddress: normalizedWalletAddress,
       twitterUsername: normalizedTwitterUsername,
       claimedAt: Timestamp.now(),
-      userId: session.user.id, // Store the NextAuth user ID
+      userId: session.user.id,
     };
 
     const newClaim = await walletClaimsRef.add(claimData);

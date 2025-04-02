@@ -5,17 +5,19 @@ import { useInView } from "react-intersection-observer";
 import { motion } from "framer-motion";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import useSWR from "swr";
+import { useSession } from "next-auth/react";
 import AnimatedNumber from "./AnimatedNumber";
 import Modal from "./Modal";
 import Tooltip from "./Tooltip";
 import "../styles/Leaderboard.css";
 import Link from "next/link";
 import Image from "next/image";
+import defaultTokenLogo from "../images/logo.png"; // Add your default token image
+import Messages from "./Messages";
 
 const MAX_SUPPLY = 1_000_000_000;
 const DEFAULT_TOKEN_DATA = {
   totalSupply: MAX_SUPPLY,
-  totalHolders: 0,
   tokenPrice: 0,
   dexData: {
     mainPair: {
@@ -30,16 +32,16 @@ const DEFAULT_TOKEN_DATA = {
 };
 
 const RANK_TITLES = {
-  1: { title: "The Lockmaster", color: "#FFD700", badge: "👑" },
-  2: { title: "Diamond Vault", color: "#C0C0C0", badge: "💎" },
-  3: { title: "Diamond Vault", color: "#CD7F32", badge: "💎" },
-  4: { title: "Diamond Vault", color: "#6286fc", badge: "💎" },
-  5: { title: "Diamond Vault", color: "#6286fc", badge: "💎" },
-  6: { title: "Guardian of the Lock", color: "#7DA0FF", badge: "🛡️" },
-  7: { title: "Guardian of the Lock", color: "#7DA0FF", badge: "🛡️" },
-  8: { title: "Guardian of the Lock", color: "#7DA0FF", badge: "🛡️" },
-  9: { title: "Guardian of the Lock", color: "#7DA0FF", badge: "🛡️" },
-  10: { title: "Guardian of the Lock", color: "#7DA0FF", badge: "🛡️" },
+  1: { title: "S Tier", color: "#FFD700", badge: "👑" },
+  2: { title: "Tier 2", color: "#C0C0C0", badge: "💎" },
+  3: { title: "Tier 2", color: "#CD7F32", badge: "💎" },
+  4: { title: "Tier 2", color: "#6286fc", badge: "💎" },
+  5: { title: "Tier 2", color: "#6286fc", badge: "💎" },
+  6: { title: "Tier 3", color: "#7DA0FF", badge: "🛡️" },
+  7: { title: "Tier 3", color: "#7DA0FF", badge: "🛡️" },
+  8: { title: "Tier 3", color: "#7DA0FF", badge: "🛡️" },
+  9: { title: "Tier 3", color: "#7DA0FF", badge: "🛡️" },
+  10: { title: "Tier 3", color: "#7DA0FF", badge: "🛡️" },
 };
 
 const getRankTitle = (rank) => {
@@ -64,7 +66,17 @@ const fetcher = async (url) => {
   }
 };
 
+const generateWalletColor = (walletAddress) => {
+  if (!walletAddress) return "#6286fc";
+  const hash = walletAddress.slice(-6);
+  const r = parseInt(hash.slice(0, 2), 16);
+  const g = parseInt(hash.slice(2, 4), 16);
+  const b = parseInt(hash.slice(4, 6), 16);
+  return `rgb(${r}, ${g}, ${b})`;
+};
+
 export default function LeaderboardClient({ initialData }) {
+  const { data: session } = useSession();
   const [mounted, setMounted] = useState(false);
   const scrollRef = useRef(null);
   const { ref: inViewRef, inView } = useInView();
@@ -74,39 +86,52 @@ export default function LeaderboardClient({ initialData }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const animationTimeoutRef = useRef(null);
-  // const animationIntervalRef = useRef(null);
 
-  const { data, error, isLoading } = useSWR("/api/holders", fetcher, {
-    fallbackData: { ...DEFAULT_TOKEN_DATA, ...initialData },
-    refreshInterval: 15000, // Refresh every 15 seconds
+  const [userHolderData, setUserHolderData] = useState(null);
+  const [userHolderIndex, setUserHolderIndex] = useState(null);
+  const [userWalletData, setUserWalletData] = useState(null);
+  const [claimChecked, setClaimChecked] = useState(false);
+
+  // Update the SWR hook to include polling
+  const { data, error, isLoading, mutate } = useSWR("/api/holders", {
+    refreshInterval: 3000, // Poll every 3 seconds
+    dedupingInterval: 1000,
     revalidateOnFocus: true,
-    suspense: false,
-    keepPreviousData: true,
-    shouldRetryOnError: true,
-    errorRetryInterval: 5000,
-    errorRetryCount: 3,
+    onSuccess: (data) => {
+      // Update user holder data when new data arrives
+      if (userWalletData?.walletAddress && data?.holders) {
+        const holderIndex = data.holders.findIndex(
+          (holder) =>
+            holder.address.toLowerCase() ===
+            userWalletData.walletAddress.toLowerCase()
+        );
+
+        if (holderIndex !== -1) {
+          setUserHolderData((prevData) => ({
+            ...prevData,
+            ...data.holders[holderIndex],
+            rank: holderIndex + 1,
+          }));
+        }
+      }
+    },
   });
 
-  // Move useEffect to top level
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Update animation effect
   useEffect(() => {
     const startAnimation = () => {
       setIsAnimating(true);
-      // Remove the class after 1 minute
       animationTimeoutRef.current = setTimeout(() => {
         setIsAnimating(false);
-        // Wait 30 seconds before starting again
         animationTimeoutRef.current = setTimeout(() => {
           startAnimation();
         }, 30000);
-      }, 60000); // 1 minute
+      }, 60000);
     };
 
-    // Start the first animation
     startAnimation();
 
     return () => {
@@ -116,9 +141,116 @@ export default function LeaderboardClient({ initialData }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (session?.user?.name) {
+      async function fetchWalletClaim() {
+        try {
+          const response = await fetch(
+            `/api/check-wallet-claim?twitterUsername=${encodeURIComponent(
+              session.user.name
+            )}`
+          );
+
+          if (!response.ok) throw new Error("Failed to fetch wallet claim");
+
+          const claimData = await response.json();
+
+          if (claimData.hasClaimed && claimData.claim) {
+            setUserWalletData(claimData.claim);
+
+            // Find user's position in full holders list
+            if (data?.holders?.length > 0) {
+              const holderIndex = data.holders.findIndex(
+                (holder) =>
+                  holder.address.toLowerCase() ===
+                  claimData.claim.walletAddress.toLowerCase()
+              );
+
+              if (holderIndex !== -1) {
+                const holderData = data.holders[holderIndex];
+                // Set user holder data with correct rank
+                setUserHolderData({
+                  ...holderData,
+                  rank: holderIndex + 1,
+                });
+              }
+            }
+          }
+          setClaimChecked(true);
+        } catch (error) {
+          console.error("Error fetching wallet claim:", error);
+        }
+      }
+
+      fetchWalletClaim();
+    }
+  }, [session?.user?.name, data?.holders]);
+
+  useEffect(() => {
+    if (userWalletData?.walletAddress && data?.holders) {
+      const holderIndex = data.holders.findIndex(
+        (holder) =>
+          holder.address.toLowerCase() ===
+          userWalletData.walletAddress.toLowerCase()
+      );
+
+      if (holderIndex !== -1) {
+        setUserHolderData((prevData) => ({
+          ...prevData,
+          ...data.holders[holderIndex],
+          rank: holderIndex + 1,
+        }));
+      }
+    }
+  }, [data?.holders, userWalletData]);
+
+  useEffect(() => {
+    if (!session) {
+      setClaimChecked(false);
+      setUserWalletData(null);
+      setUserHolderData(null);
+      setUserHolderIndex(null);
+    }
+  }, [session]);
+
+  // Add a refresh effect when messages are sent
+  useEffect(() => {
+    const messageUpdateInterval = setInterval(() => {
+      mutate(); // Force refresh holdings data
+    }, 5000); // Check every 5 seconds
+
+    return () => clearInterval(messageUpdateInterval);
+  }, [mutate]);
+
+  // Add WebSocket connection for real-time updates if available
+  useEffect(() => {
+    let ws;
+    try {
+      ws = new WebSocket(
+        process.env.NEXT_PUBLIC_WS_URL || "wss://your-websocket-url"
+      );
+
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.type === "holdings_update") {
+          mutate(); // Refresh data when holdings update received
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error("WebSocket error:", error);
+      };
+
+      return () => {
+        if (ws) ws.close();
+      };
+    } catch (error) {
+      console.error("WebSocket connection failed:", error);
+    }
+  }, [mutate]);
+
   const {
     totalSupply = MAX_SUPPLY,
-    totalHolders = 0,
     tokenPrice = 0,
     dexData = DEFAULT_TOKEN_DATA.dexData,
   } = data || {};
@@ -126,7 +258,6 @@ export default function LeaderboardClient({ initialData }) {
   const indexOfLastHolder = currentPage * holdersPerPage;
   const indexOfFirstHolder = indexOfLastHolder - holdersPerPage;
 
-  // Update virtualization to use currentHolders instead of all holders
   const rowVirtualizer = useVirtualizer({
     count: holdersPerPage,
     getScrollElement: () => scrollRef.current,
@@ -134,12 +265,11 @@ export default function LeaderboardClient({ initialData }) {
     overscan: 5,
     scrollToFn: (offset, { behavior }) => {
       if (scrollRef.current) {
-        scrollRef.current.scrollTop = 0; // Reset scroll position on page change
+        scrollRef.current.scrollTop = 0;
       }
     },
   });
 
-  // Update holders memo to include pagination
   const holders = useMemo(() => {
     if (!data?.holders) return [];
     const allHolders = data.holders.map((holder, index) => ({
@@ -149,7 +279,6 @@ export default function LeaderboardClient({ initialData }) {
     return allHolders.slice(indexOfFirstHolder, indexOfLastHolder);
   }, [data?.holders, indexOfFirstHolder, indexOfLastHolder]);
 
-  // Add page change effect
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = 0;
@@ -168,22 +297,19 @@ export default function LeaderboardClient({ initialData }) {
     }
   };
 
-  // Early return for non-mounted state
   if (!mounted) return null;
 
-  // Render loading state
   if (isLoading) {
     return (
       <div style={{ marginTop: "60px" }} className="leaderboard-container-bg">
         <div className="leaderboard-container">
           <h2 className="leaderboard-title">Loading holders data...</h2>
-          <div className="loading-spinner" />
+          <div className="loading-spinner-leaderboard" />
         </div>
       </div>
     );
   }
 
-  // Render error state
   if (error) {
     return (
       <div style={{ marginTop: "60px" }} className="leaderboard-container-bg">
@@ -201,7 +327,6 @@ export default function LeaderboardClient({ initialData }) {
     );
   }
 
-  // Ensure data and holders exist before rendering
   if (!data || !data.holders || data.holders.length === 0) {
     return (
       <div style={{ marginTop: "60px" }} className="leaderboard-container-bg">
@@ -212,7 +337,6 @@ export default function LeaderboardClient({ initialData }) {
     );
   }
 
-  // First, update the table headers function
   const renderTableHeaders = () =>
     mounted && (
       <div className="table-header">
@@ -226,7 +350,6 @@ export default function LeaderboardClient({ initialData }) {
       </div>
     );
 
-  // Then, update the virtualized list rendering
   const renderVirtualizedList = () => {
     if (!mounted) return null;
 
@@ -234,14 +357,19 @@ export default function LeaderboardClient({ initialData }) {
       const holder = holders[virtualRow.index];
       if (!holder) return null;
 
-      // Calculate USD value using token price
-      const usdValue = Number(holder.value) * Number(tokenPrice);
       const rankTitle = getRankTitle(holder.rank);
+      const isUserWallet =
+        userWalletData &&
+        holder.address.toLowerCase() ===
+          userWalletData.walletAddress.toLowerCase();
+      const walletColor = isUserWallet
+        ? generateWalletColor(holder.address)
+        : null;
 
       return (
         <div
           key={holder.address}
-          className="holder-row"
+          className={`holder-row`}
           style={{
             position: "absolute",
             top: 0,
@@ -255,6 +383,30 @@ export default function LeaderboardClient({ initialData }) {
             className={`holder-content ${
               holder.rank === 1 && isAnimating ? "animating" : ""
             }`}
+            style={
+              isUserWallet
+                ? {
+                    background: `linear-gradient(90deg, 
+                      rgba(${parseInt(
+                        walletColor.slice(4, -1).split(",")[0]
+                      )}, ${parseInt(
+                      walletColor.slice(4, -1).split(",")[1]
+                    )}, ${parseInt(
+                      walletColor.slice(4, -1).split(",")[2]
+                    )}, 0.1) 0%,
+                      rgba(${parseInt(
+                        walletColor.slice(4, -1).split(",")[0]
+                      )}, ${parseInt(
+                      walletColor.slice(4, -1).split(",")[1]
+                    )}, ${parseInt(
+                      walletColor.slice(4, -1).split(",")[2]
+                    )}, 0.05) 100%
+                    )`,
+                    borderLeft: `4px solid ${walletColor}`,
+                    boxShadow: `0 0 20px ${walletColor}33`,
+                  }
+                : {}
+            }
           >
             <div className="rank-container">
               <span className="rank">#{holder.rank}</span>
@@ -266,43 +418,54 @@ export default function LeaderboardClient({ initialData }) {
               </div>
             </div>
             <div className="address">
-              <Link
-                href={`https://bscscan.com/address/${holder.address}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="address-link"
-              >
-                {holder.address}
-              </Link>
+              <div className="address-container">
+                <Link
+                  href={`https://basescan.org/address/${holder.address}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="address-link"
+                >
+                  {holder.address}
+                </Link>
+                {holder.social && holder.social.showProfile !== false && (
+                  <Link
+                    href={`https://twitter.com/${holder.social.twitter}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="twitter-link"
+                  >
+                    <Image
+                      src={holder.social.profileImage}
+                      alt={holder.social.name}
+                      width={20}
+                      height={20}
+                      className="twitter-avatar"
+                    />
+                    <span className="twitter-username">
+                      @{holder.social.twitter}
+                    </span>
+                  </Link>
+                )}
+              </div>
             </div>
             <div className="holdings">
               <AnimatedNumber
-                value={Number(holder.value).toFixed(2)}
+                value={parseFloat(holder.balance_formatted).toFixed(2)}
                 duration={1000}
-                formatValue={(value) =>
-                  value.toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })
-                }
+                formatValue={(value) => value.toFixed(2)}
               />
             </div>
             <div className="percentage">
               <AnimatedNumber
-                value={Number(holder.percentage).toFixed(2)}
+                value={parseFloat(holder.percentage).toFixed(2)}
                 duration={1000}
-                formatValue={(value) =>
-                  value.toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })
-                }
+                formatValue={(value) => value.toFixed(2)}
               />
               %
             </div>
             <div className="value">
               <AnimatedNumber
-                value={usdValue.toFixed(2)}
+                value={parseFloat(holder.usdValue)}
                 duration={1000}
                 formatValue={(value) =>
                   value.toLocaleString(undefined, {
@@ -312,31 +475,58 @@ export default function LeaderboardClient({ initialData }) {
                     maximumFractionDigits: 2,
                   })
                 }
-              />
+              />{" "}
               $
             </div>
+            {isUserWallet && (
+              <div
+                className="wallet-indicator"
+                style={{
+                  position: "absolute",
+                  right: "10px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  color: walletColor,
+                  padding: "4px 12px",
+                  borderRadius: "4px",
+                  fontSize: "0.8rem",
+                  fontWeight: "600",
+                }}
+              ></div>
+            )}
           </div>
         </div>
       );
     });
   };
 
-  // Main render
   return (
     <div style={{ marginTop: "60px" }} className="leaderboard-container-bg">
       <motion.div className="leaderboard-container fade-in">
+        {userWalletData && userHolderData && (
+          <div className="user-wallet-stats">
+            <div className="user-holder-info">
+              <span className="label">Your Wallet:</span>
+              <span className="value">{userWalletData.walletAddress}</span>
+              <span className="label">Position:</span>
+              <span className="value">#{userHolderData.rank}</span>
+              <span className="label">Holdings:</span>
+              <span className="holdings">
+                {Number(userHolderData.balance_formatted).toFixed(2)} tokens
+              </span>
+              <span className="label">Value:</span>
+              <span className="value">
+                ${Number(userHolderData.usdValue).toFixed(2)}
+              </span>
+            </div>
+          </div>
+        )}
         <h2 className="leaderboard-title">Top 500 Token Holders</h2>
         <div className="leaderboard-stats">
           <div className="stat-item">
             <span className="stat-label">Total Supply:</span>
             <span className="stat-value">
               <AnimatedNumber value={totalSupply} duration={2000} /> Tokens
-            </span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-label">Total Holders:</span>
-            <span className="stat-value">
-              <AnimatedNumber value={totalHolders} duration={1500} />
             </span>
           </div>
           <div className="stat-item">
@@ -360,14 +550,14 @@ export default function LeaderboardClient({ initialData }) {
         <div className="token-stats-container">
           <div className="token-info">
             <Image
-              src={dexData?.mainPair?.info?.imageUrl || ""}
+              src={dexData?.mainPair?.info?.imageUrl || defaultTokenLogo}
               alt="Token Logo"
               width={48}
               height={48}
               className="token-logo"
               onError={(e) => {
-                e.target.src =
-                  "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/smartchain/assets/0x5C85D6C6825aB4032337F11Ee92a72DF936b46F6/logo.png";
+                e.target.onerror = null; // Prevent infinite loop
+                e.target.src = defaultTokenLogo.src;
               }}
             />
             <div className="token-details">
@@ -509,7 +699,6 @@ export default function LeaderboardClient({ initialData }) {
           <div className="pagination-numbers">
             {[...Array(totalPages)].map((_, index) => {
               const pageNumber = index + 1;
-              // Show first 3, last 3, and 2 around current page
               if (
                 pageNumber <= 3 ||
                 pageNumber > totalPages - 3 ||
@@ -574,6 +763,7 @@ export default function LeaderboardClient({ initialData }) {
           onSubmit={setCurrentPage}
           totalPages={totalPages}
         />
+        <Messages session={session} userWalletData={userWalletData} />
       </motion.div>
     </div>
   );
