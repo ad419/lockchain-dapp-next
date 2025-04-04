@@ -1,26 +1,20 @@
-import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
 
-export default withAuth(
-  function middleware(req) {
-    const isAuthenticated = !!req.nextauth?.token;
+export function middleware(request) {
+  const response = NextResponse.next();
 
-    if (!isAuthenticated) {
-      const url = req.nextUrl.clone();
-      url.pathname = "/";
-      url.searchParams.set("callbackUrl", req.nextUrl.pathname);
-      return NextResponse.redirect(url);
-    }
+  // Add CORS headers
+  response.headers.set("Access-Control-Allow-Credentials", "true");
+  response.headers.set("Access-Control-Allow-Origin", "*");
+  response.headers.set(
+    "Access-Control-Allow-Methods",
+    "GET,POST,PUT,DELETE,OPTIONS"
+  );
+  response.headers.set("Access-Control-Allow-Headers", "Content-Type");
 
-    return NextResponse.next();
-  },
-  {
-    callbacks: {
-      authorized: ({ token }) => !!token,
-    },
-  }
-);
+  return response;
+}
 
 export const config = {
-  matcher: ["/api/auth/:path*"], // Removed /leaderboard from protected routes
+  matcher: "/api/:path*",
 };

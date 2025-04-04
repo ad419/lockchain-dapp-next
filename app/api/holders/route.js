@@ -20,7 +20,7 @@ const initMoralis = async () => {
 // Initialize LRU cache
 const cache = new LRUCache({
   max: 1000,
-  ttl: 1000 * 60 * 10, // 30 seconds cache
+  ttl: 1000 * 3, // 30 seconds cache
   updateAgeOnGet: true,
 });
 

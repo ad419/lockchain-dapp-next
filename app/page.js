@@ -1,7 +1,5 @@
-import LeaderboardServer from "./components/LeaderboardServer";
-
-export const revalidate = 15; // Revalidate page every 15 seconds
+import Dashboard from "./components/Dashboard";
 
 export default function Home() {
-  return <LeaderboardServer />;
+  return <Dashboard />;
 }

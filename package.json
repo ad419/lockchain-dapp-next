@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"next dev\" \"node server/websocket.js\"",
-    "build": "next build",
-    "start": "concurrently \"next start\" \"node server/websocket.js\"",
+    "dev": "next dev",
+    "build": "npm install --legacy-peer-deps && next build",
+    "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {

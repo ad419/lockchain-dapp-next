@@ -3,10 +3,9 @@ import { db } from "../../lib/firebase-admin";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route";
 
-const MESSAGES_LIMIT = 5;
-let lastUpdate = Date.now();
+const MESSAGES_LIMIT = 50;
 
-export async function GET(request) {
+export async function GET() {
   try {
     const messagesRef = db.collection("messages");
     const snapshot = await messagesRef
@@ -23,10 +22,8 @@ export async function GET(request) {
       });
     });
 
-    return NextResponse.json({
-      messages: messages.reverse(),
-      timestamp: lastUpdate,
-    });
+    console.log("Fetched messages:", messages);
+    return NextResponse.json({ messages: messages.reverse() });
   } catch (error) {
     console.error("Error fetching messages:", error);
     return NextResponse.json(
@@ -44,7 +41,6 @@ export async function POST(request) {
     }
 
     const { text, walletAddress } = await request.json();
-
     if (!text?.trim()) {
       return NextResponse.json(
         { error: "Message is required" },
@@ -53,20 +49,23 @@ export async function POST(request) {
     }
 
     const messagesRef = db.collection("messages");
-    const newMessage = await messagesRef.add({
+    const newMessage = {
       text: text.trim(),
       user: session.user.name,
       walletAddress,
       profileImage: session.user.image,
       timestamp: new Date(),
-    });
+    };
 
-    lastUpdate = Date.now(); // Update timestamp when new message is added
+    const docRef = await messagesRef.add(newMessage);
+    console.log("Message added:", { id: docRef.id, ...newMessage });
 
     return NextResponse.json({
       success: true,
-      messageId: newMessage.id,
-      timestamp: lastUpdate,
+      message: {
+        id: docRef.id,
+        ...newMessage,
+      },
     });
   } catch (error) {
     console.error("Error sending message:", error);

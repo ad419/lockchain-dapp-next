@@ -13,7 +13,7 @@ import "../styles/Leaderboard.css";
 import Link from "next/link";
 import Image from "next/image";
 import defaultTokenLogo from "../images/logo.png"; // Add your default token image
-import Messages from "./Messages";
+import Messages from "./Messages"; // Add this import at the top
 
 const MAX_SUPPLY = 1_000_000_000;
 const DEFAULT_TOKEN_DATA = {
@@ -75,10 +75,24 @@ const generateWalletColor = (walletAddress) => {
   return `rgb(${r}, ${g}, ${b})`;
 };
 
+const STATIC_SOCIAL_LINKS = [
+  {
+    type: "Website",
+    url: "https://thegreatfinancialexperiment.com/",
+    icon: "🌐",
+  },
+  {
+    type: "Twitter",
+    url: "https://x.com/LockChainAi",
+    icon: "𝕏",
+  },
+];
+
 export default function LeaderboardClient({ initialData }) {
   const { data: session } = useSession();
   const [mounted, setMounted] = useState(false);
   const scrollRef = useRef(null);
+  const tableContainerRef = useRef(null);
   const { ref: inViewRef, inView } = useInView();
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -91,30 +105,17 @@ export default function LeaderboardClient({ initialData }) {
   const [userHolderIndex, setUserHolderIndex] = useState(null);
   const [userWalletData, setUserWalletData] = useState(null);
   const [claimChecked, setClaimChecked] = useState(false);
+  const [walletDataLoading, setWalletDataLoading] = useState(true);
 
-  // Update the SWR hook to include polling
-  const { data, error, isLoading, mutate } = useSWR("/api/holders", {
-    refreshInterval: 3000, // Poll every 3 seconds
-    dedupingInterval: 1000,
+  const { data, error, isLoading } = useSWR("/api/holders", fetcher, {
+    fallbackData: { ...DEFAULT_TOKEN_DATA, ...initialData },
+    refreshInterval: 15000, // Refresh every 15 seconds
     revalidateOnFocus: true,
-    onSuccess: (data) => {
-      // Update user holder data when new data arrives
-      if (userWalletData?.walletAddress && data?.holders) {
-        const holderIndex = data.holders.findIndex(
-          (holder) =>
-            holder.address.toLowerCase() ===
-            userWalletData.walletAddress.toLowerCase()
-        );
-
-        if (holderIndex !== -1) {
-          setUserHolderData((prevData) => ({
-            ...prevData,
-            ...data.holders[holderIndex],
-            rank: holderIndex + 1,
-          }));
-        }
-      }
-    },
+    suspense: false,
+    keepPreviousData: true,
+    shouldRetryOnError: true,
+    errorRetryInterval: 5000,
+    errorRetryCount: 3,
   });
 
   useEffect(() => {
@@ -143,6 +144,8 @@ export default function LeaderboardClient({ initialData }) {
 
   useEffect(() => {
     if (session?.user?.name) {
+      setWalletDataLoading(true); // Set loading to true when starting the fetch
+
       async function fetchWalletClaim() {
         try {
           const response = await fetch(
@@ -179,10 +182,14 @@ export default function LeaderboardClient({ initialData }) {
           setClaimChecked(true);
         } catch (error) {
           console.error("Error fetching wallet claim:", error);
+        } finally {
+          setWalletDataLoading(false); // Set loading to false when fetch completes
         }
       }
 
       fetchWalletClaim();
+    } else {
+      setWalletDataLoading(false); // No session, so no loading needed
     }
   }, [session?.user?.name, data?.holders]);
 
@@ -213,41 +220,59 @@ export default function LeaderboardClient({ initialData }) {
     }
   }, [session]);
 
-  // Add a refresh effect when messages are sent
+  // Update the useEffect for scroll handling
   useEffect(() => {
-    const messageUpdateInterval = setInterval(() => {
-      mutate(); // Force refresh holdings data
-    }, 5000); // Check every 5 seconds
+    const handleScroll = () => {
+      if (!tableContainerRef.current) return;
 
-    return () => clearInterval(messageUpdateInterval);
-  }, [mutate]);
+      // Need to select the table header after the container is mounted
+      // Using a more reliable selector
+      const tableHeader =
+        tableContainerRef.current.querySelector(".table-header");
 
-  // Add WebSocket connection for real-time updates if available
-  useEffect(() => {
-    let ws;
-    try {
-      ws = new WebSocket(
-        process.env.NEXT_PUBLIC_WS_URL || "wss://your-websocket-url"
-      );
+      if (tableHeader) {
+        // Log for debugging
+        console.log("Scroll position:", tableContainerRef.current.scrollTop);
 
-      ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        if (data.type === "holdings_update") {
-          mutate(); // Refresh data when holdings update received
+        // Check for vertical scroll with a lower threshold
+        if (tableContainerRef.current.scrollTop > 5) {
+          // Add the class
+          tableHeader.classList.add("scrolled-vertical");
+          // Debug
+          console.log("Added scrolled-vertical class");
+        } else {
+          // Remove the class
+          tableHeader.classList.remove("scrolled-vertical");
+          // Debug
+          console.log("Removed scrolled-vertical class");
         }
-      };
 
-      ws.onerror = (error) => {
-        console.error("WebSocket error:", error);
-      };
+        // Same for horizontal scroll
+        if (tableContainerRef.current.scrollLeft > 5) {
+          tableContainerRef.current.classList.add("scrolled");
+        } else {
+          tableContainerRef.current.classList.remove("scrolled");
+        }
+      } else {
+        console.log("Table header not found"); // Debug
+      }
+    };
 
-      return () => {
-        if (ws) ws.close();
-      };
-    } catch (error) {
-      console.error("WebSocket connection failed:", error);
+    // Add the event listener only when the component is fully mounted
+    if (tableContainerRef.current) {
+      console.log("Adding scroll listener"); // Debug
+      tableContainerRef.current.addEventListener("scroll", handleScroll);
+
+      // Force an initial check after a short delay
+      setTimeout(handleScroll, 100);
     }
-  }, [mutate]);
+
+    return () => {
+      if (tableContainerRef.current) {
+        tableContainerRef.current.removeEventListener("scroll", handleScroll);
+      }
+    };
+  }, [mounted]); // Add mounted as a dependency to ensure this runs after mounting
 
   const {
     totalSupply = MAX_SUPPLY,
@@ -429,9 +454,7 @@ export default function LeaderboardClient({ initialData }) {
                 </Link>
                 {holder.social && holder.social.showProfile !== false && (
                   <Link
-                    href={`https://twitter.com/${holder.social.twitter}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    href={`/public-profile/${holder.social.twitter}`}
                     className="twitter-link"
                   >
                     <Image
@@ -502,24 +525,78 @@ export default function LeaderboardClient({ initialData }) {
 
   return (
     <div style={{ marginTop: "60px" }} className="leaderboard-container-bg">
-      <motion.div className="leaderboard-container fade-in">
-        {userWalletData && userHolderData && (
-          <div className="user-wallet-stats">
-            <div className="user-holder-info">
-              <span className="label">Your Wallet:</span>
-              <span className="value">{userWalletData.walletAddress}</span>
-              <span className="label">Position:</span>
-              <span className="value">#{userHolderData.rank}</span>
-              <span className="label">Holdings:</span>
-              <span className="holdings">
-                {Number(userHolderData.balance_formatted).toFixed(2)} tokens
-              </span>
-              <span className="label">Value:</span>
-              <span className="value">
-                ${Number(userHolderData.usdValue).toFixed(2)}
-              </span>
-            </div>
-          </div>
+      <motion.div
+        style={{
+          overflowX: "hidden",
+        }}
+        className="leaderboard-container fade-in"
+      >
+        {session && (
+          <>
+            {walletDataLoading ? (
+              <div className="user-wallet-stats loading">
+                <div className="wallet-stats-loading">
+                  <div className="loading-shimmer"></div>
+                  <div className="stat-items-loading">
+                    <div className="stat-item-loader"></div>
+                    <div className="stat-item-loader"></div>
+                    <div className="stat-item-loader"></div>
+                  </div>
+                </div>
+              </div>
+            ) : userWalletData && userHolderData ? (
+              <div className="user-wallet-stats">
+                <div className="user-stats-header">
+                  <h3>Your Position</h3>
+                  <div className="wallet-address">
+                    {userWalletData.walletAddress.substring(0, 6)}...
+                    {userWalletData.walletAddress.substring(
+                      userWalletData.walletAddress.length - 4
+                    )}
+                    <button
+                      className="copy-button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(
+                          userWalletData.walletAddress
+                        );
+                      }}
+                      title="Copy to clipboard"
+                    >
+                      📋
+                    </button>
+                  </div>
+                </div>
+
+                <div className="user-stats-content">
+                  <div className="user-stat-card rank-card">
+                    <div className="stat-value">#{userHolderData.rank}</div>
+                    <div className="stat-label">Position</div>
+                  </div>
+
+                  <div className="user-stat-card holdings-card">
+                    <div className="stat-value">
+                      {Number(userHolderData.balance_formatted).toFixed(2)}
+                    </div>
+                    <div className="stat-label">Tokens</div>
+                  </div>
+
+                  <div className="user-stat-card value-card">
+                    <div className="stat-value">
+                      $
+                      {Number(userHolderData.usdValue).toLocaleString(
+                        undefined,
+                        {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        }
+                      )}
+                    </div>
+                    <div className="stat-label">Value</div>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </>
         )}
         <h2 className="leaderboard-title">Top 500 Token Holders</h2>
         <div className="leaderboard-stats">
@@ -546,6 +623,16 @@ export default function LeaderboardClient({ initialData }) {
               />
             </span>
           </div>
+          <div className="stat-item">
+            <span className="stat-label">Total Holders:</span>
+            <span className="stat-value">
+              <AnimatedNumber
+                value={data?.holders?.length || 0}
+                duration={1500}
+                formatValue={(value) => value.toLocaleString()}
+              />
+            </span>
+          </div>
         </div>
         <div className="token-stats-container">
           <div className="token-info">
@@ -562,11 +649,11 @@ export default function LeaderboardClient({ initialData }) {
             />
             <div className="token-details">
               <h3>
-                {dexData?.mainPair?.baseToken?.name || "Token"} (
-                {dexData?.mainPair?.baseToken?.symbol || "SYMBOL"})
+                {dexData?.mainPair?.baseToken?.name || "LockChain"} (
+                {dexData?.mainPair?.baseToken?.symbol || "LOCK"})
               </h3>
               <div className="social-links">
-                {dexData?.mainPair?.info?.socials?.map((social) => (
+                {STATIC_SOCIAL_LINKS.map((social) => (
                   <Link
                     key={social.type}
                     href={social.url}
@@ -661,7 +748,10 @@ export default function LeaderboardClient({ initialData }) {
           holdings
         </p>
         <div
-          ref={scrollRef}
+          ref={(el) => {
+            scrollRef.current = el;
+            tableContainerRef.current = el;
+          }}
           className="leaderboard-table-container"
           style={{
             height: "600px",
@@ -674,7 +764,10 @@ export default function LeaderboardClient({ initialData }) {
           {renderTableHeaders()}
           <div
             style={{
-              height: `${rowVirtualizer.getTotalSize()}px`,
+              height: `${Math.min(
+                rowVirtualizer.getTotalSize(),
+                holders.length * 60
+              )}px`, // Limit height to actual content
               width: "100%",
               position: "relative",
               minWidth: "800px",
@@ -763,7 +856,15 @@ export default function LeaderboardClient({ initialData }) {
           onSubmit={setCurrentPage}
           totalPages={totalPages}
         />
-        <Messages session={session} userWalletData={userWalletData} />
+
+        {/* Add Messages component here */}
+        {mounted && (
+          <Messages
+            session={session}
+            userWalletData={userWalletData}
+            userHolderData={userHolderData}
+          />
+        )}
       </motion.div>
     </div>
   );

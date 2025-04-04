@@ -103,12 +103,6 @@ form {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-.message-bubble:nth-child(1) { bottom: 20px; }
-.message-bubble:nth-child(2) { bottom: 90px; }
-.message-bubble:nth-child(3) { bottom: 160px; }
-.message-bubble:nth-child(4) { bottom: 230px; }
-.message-bubble:nth-child(5) { bottom: 300px; }
-
 .message-avatar {
   width: 32px;
   height: 32px;
@@ -134,4 +128,831 @@ form {
   line-height: 1.4;
   margin: 0;
   word-break: break-word;
+}
+
+.messages-wrapper {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 300px;
+  max-height: 500px;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+}
+
+.messages-title {
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 14px;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.shortcut-hint {
+  font-size: 0.8rem;
+  opacity: 0.7;
+  margin-left: 1rem;
+}
+
+.messages-container {
+  flex: 1;
+  height: auto;
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0.5rem;
+}
+
+.message-bubble {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  animation: slideIn 0.3s ease-out;
+}
+
+.message-bubble.own-message {
+  background: rgba(98, 134, 252, 0.15);
+  margin-left: auto;
+}
+
+.message-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.message-content {
+  flex: 1;
+}
+
+.message-username {
+  font-size: 0.875rem;
+  color: #6286fc;
+  font-weight: 600;
+}
+
+.message-text {
+  margin: 0.25rem 0 0;
+  color: #fff;
+  word-break: break-word;
+}
+
+.message-input-wrapper {
+  padding: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 0 0 12px 12px;
+}
+
+.message-form {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.message-input {
+  flex: 1;
+  padding: 0.75rem;
+  border-radius: 20px;
+  border: 1px solid rgba(98, 134, 252, 0.2);
+  background: rgba(0, 0, 0, 0.2);
+  color: #fff;
+}
+
+.send-button {
+  padding: 0.75rem 1.5rem;
+  border-radius: 20px;
+  background: #6286fc;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.send-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Add slide-in animation */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Remove the fixed positioning of individual bubbles */
+.message-bubble:nth-child(1),
+.message-bubble:nth-child(2),
+.message-bubble:nth-child(3),
+.message-bubble:nth-child(4),
+.message-bubble:nth-child(5) {
+  position: relative;
+  bottom: auto;
+}
+
+/* Improve scrollbar styling */
+.messages-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.messages-container::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.messages-container::-webkit-scrollbar-thumb {
+  background: rgba(98, 134, 252, 0.3);
+  border-radius: 3px;
+}
+
+messages-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(98, 134, 252, 0.5);
+}
+
+/* Floating Messages */
+.messages-float {
+  position: fixed;
+  right: -10px; /* Negative right value to move it off-screen slightly */
+  bottom: 100px;
+  width: 300px;
+  max-width: 80vw;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 8px;
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+  overflow-x: hidden; /* Prevent horizontal scrolling */
+  padding: 10px;
+  pointer-events: none; /* Make container transparent to clicks by default */
+}
+
+/* Make individual messages clickable */
+.message-float {
+  pointer-events: auto; /* Re-enable pointer events for messages */
+  margin-right: 15px; /* Add right margin to account for negative container positioning */
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Add media query for mobile devices */
+@media (max-width: 768px) {
+  .messages-float {
+    right: -5px; /* Less negative on mobile */
+    bottom: 80px;
+    width: 250px;
+    max-width: 70vw;
+  }
+  
+  .message-float {
+    margin-right: 10px; /* Less margin on mobile */
+  }
+}
+
+/* Add additional positioning for very small screens */
+@media (max-width: 480px) {
+  .messages-float {
+    right: -3px;
+    width: 220px;
+    max-width: 65vw;
+  }
+  
+  .message-float {
+    margin-right: 8px;
+  }
+}
+
+.message-float {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(14, 14, 14, 0.95);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  width: fit-content;
+  max-width: 100%;
+  margin-left: auto;
+  position: relative;
+}
+
+.message-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+  max-width: calc(100% - 50px); /* Account for avatar and close button */
+}
+
+.message-username {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6286fc;
+  white-space: nowrap;
+}
+
+.message-text {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 13px;
+  line-height: 1.4;
+  margin: 0;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.message-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.message-close {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.message-float:hover .message-close {
+  opacity: 1;
+}
+
+.message-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+/* Remove old animations */
+.message-float {
+  animation: none;
+}
+
+/* Update the initial appear animation */
+@keyframes messageAppear {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Apply initial animation only when message appears */
+.message-float:first-child {
+  animation: messageAppear 0.3s cubic-bezier(0.4, 0, 0.2, 1), messageGlow 2s ease-out;
+}
+
+@keyframes messageGlow {
+  0% { box-shadow: 0 0 0 rgba(98, 134, 252, 0); }
+  50% { box-shadow: 0 0 10px rgba(98, 134, 252, 0.3); }
+  100% { box-shadow: 0 0 0 rgba(98, 134, 252, 0); }
+}
+
+.message-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.message-username {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6286fc;
+  white-space: nowrap;
+}
+
+.message-text {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 13px;
+  line-height: 1.4;
+  margin: 0;
+  word-break: break-word;
+}
+
+.message-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Prevent text selection while dragging */
+.message-float * {
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.message-float.own-message.dragging {
+  background: rgba(15, 18, 30, 0.95);
+  border-color: rgba(98, 134, 252, 0.4);
+}
+
+/* Swipe indicator */
+.message-float::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  width: 4px;
+  height: 20px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-50%);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.message-float:hover::after {
+  opacity: 1;
+}
+
+/* Animation */
+@keyframes messageFloat {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.message-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.message-content {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+.message-text {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 13px;
+  line-height: 1.4;
+  margin: 0;
+  word-break: break-word;
+  white-space: pre-wrap;
+  max-width: 220px;
+}
+
+.message-username {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6286fc;
+  white-space: nowrap;
+  margin-right: 4px;
+}
+
+/* Close button styles */
+.close-indicator {
+  opacity: 0;
+  width: 16px;
+  height: 16px;
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s;
+}
+
+.close-indicator::after {
+  content: '×';
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+}
+
+.message-float:hover .close-indicator {
+  opacity: 1;
+}
+
+/* Custom scrollbar for the messages container */
+.messages-float::-webkit-scrollbar {
+  width: 4px;
+}
+
+.messages-float::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.messages-float::-webkit-scrollbar-thumb {
+  background: rgba(98, 134, 252, 0.3);
+  border-radius: 2px;
+}
+
+/* Hover effects */
+.message-float:hover {
+  transform: translateX(-2px);
+  transition: transform 0.2s ease;
+}
+
+.message-float:hover .message-username {
+  color: #7c9aff;
+}
+
+/* Chat Input Overlay */
+.chat-input-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(3px);
+  z-index: 1001;
+}
+
+/* Mobile overlay positions content at bottom */
+.chat-input-overlay.mobile {
+  align-items: flex-end;
+  padding-bottom: 0;
+}
+
+.chat-input-container {
+  width: 100%;
+  max-width: 500px;
+  background: rgba(14, 14, 14, 0.95);
+  border-radius: 12px;
+  padding: 15px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Mobile specific container */
+.chat-input-overlay.mobile .chat-input-container {
+  border-radius: 12px 12px 0 0;
+  max-width: 100%;
+  border-bottom: none;
+}
+
+.chat-input-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.chat-input-header span {
+  color: white;
+  font-size: 16px;
+  margin: 0;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chat-input-form {
+  padding: 16px;
+  display: flex;
+  gap: 8px;
+}
+
+.chat-input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 8px 16px;
+  color: white !important;
+  font-size: 14px;
+}
+
+.send-button {
+  background: #6286fc !important;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 16px;
+  margin-right: -8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: opacity 0.2s;
+}
+
+.send-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@keyframes floatIn {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Mobile FAB button */
+.chat-fab {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6286fc, #4566c9);
+  color: white;
+  border: none;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1001;
+  transition: all 0.2s ease;
+}
+
+.fab-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.fab-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background-color: #ff3e3e;
+  color: white;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  font-size: 12px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+/* Make sure it stays visible when scrolling on all devices */
+@media (max-width: 768px) {
+  .chat-fab {
+    bottom: 20px;
+    right: 20px;
+  }
+}
+
+/* Smaller devices adjustment */
+@media (max-width: 480px) {
+  .chat-fab {
+    width: 48px;
+    height: 48px;
+    bottom: 15px;
+    right: 15px;
+  }
+  
+  .fab-icon {
+    font-size: 20px;
+  }
+  
+  .fab-badge {
+    width: 18px;
+    height: 18px;
+    font-size: 10px;
+  }
+}
+
+/* Mobile chat input adjustments */
+.chat-input-overlay.mobile {
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: auto;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 10px;
+}
+
+.chat-input-overlay.mobile .chat-input-container {
+  max-width: 100%;
+  border-radius: 15px;
+  margin-bottom: 10px;
+}
+
+.chat-input-overlay.mobile .chat-input {
+  height: 50px;
+}
+
+/* Gesture indicator for mobile */
+@keyframes pulseIndicator {
+  0% { transform: scale(1); opacity: 0.7; }
+  50% { transform: scale(1.2); opacity: 0.3; }
+  100% { transform: scale(1); opacity: 0.7; }
+}
+
+/* Only show on first visit using local storage */
+.swipe-indicator {
+  position: fixed;
+  bottom: 80px;
+  right: 30px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  animation: pulseIndicator 2s infinite;
+  z-index: 1000;
+}
+
+.swipe-indicator::after {
+  content: "↑";
+  color: white;
+  font-size: 20px;
+}
+
+/* Messages Toggle Button - Improved positioning */
+.messages-toggle {
+
+  background: rgba(14, 14, 14, 0.85);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 5px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  z-index: 999;
+  margin-top: 10px;
+  transition: all 0.2s;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.messages-toggle:hover {
+  background: rgba(30, 30, 30, 0.95);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+@media (max-width: 768px) {
+  .messages-toggle {
+    display: none;
+  }
+}
+
+/* Mobile chat controls container */
+.mobile-chat-controls {
+  position: fixed;
+  bottom: 20px;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  z-index: 1001;
+  pointer-events: none; /* Make container transparent to clicks */
+}
+
+/* Make buttons clickable */
+.mobile-chat-controls button {
+  pointer-events: auto; /* Re-enable pointer events for buttons */
+}
+
+/* Toggle messages button - left side */
+.messages-toggle-mobile {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(16, 16, 30, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: white;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 1001;
+}
+
+.messages-toggle-mobile:hover {
+  background: rgba(30, 30, 40, 0.95);
+  transform: translateY(-2px);
+}
+
+/* Chat button - right side */
+.chat-fab {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6286fc, #4566c9);
+  color: white;
+  border: none;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1001;
+  transition: all 0.2s ease;
+}
+
+/* Ensure the eye icon is clear */
+.messages-toggle-mobile .fab-icon {
+  font-size: 18px;
+}
+
+/* Add staggered exit animations */
+@keyframes messageExit {
+  0% { opacity: 1; transform: translateX(0); }
+  100% { opacity: 0; transform: translateX(-50px); }
+}
+
+/* Update both body and html for extra safety */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+@media (max-width: 768px) {
+  .mobile-chat-controls {
+    bottom: 15px;
+    right: 15px;
+  }
+  
+  .chat-fab {
+    width: 48px;
+    height: 48px;
+  }
+  
+  .messages-toggle-mobile {
+    width: 48px;
+    height: 48px;
+  }
 }

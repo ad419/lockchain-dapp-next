@@ -11,7 +11,6 @@ import { useState, useEffect } from "react";
 import { SessionProvider } from "next-auth/react";
 import { Inter } from "next/font/google";
 import { ToastProvider } from "./context/ToastContext";
-import { SWRConfig } from "swr";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -97,22 +96,8 @@ export default function RootLayout({ children }) {
             <WagmiConfig config={wagmiConfig}>
               <ContextProvider>
                 <ToastProvider>
-                  <SWRConfig
-                    value={{
-                      fetcher: (url) => fetch(url).then((r) => r.json()),
-                      refreshInterval: 0, // Disable automatic polling
-                      revalidateOnFocus: false, // Disable revalidation on focus
-                      revalidateOnReconnect: true,
-                      shouldRetryOnError: true,
-                      dedupingInterval: 5000, // Increase deduping interval
-                      provider: () => new Map(), // Add custom cache provider
-                      isVisible: () => true, // Prevent focus revalidation
-                      isOnline: () => true, // Prevent online/offline revalidation
-                    }}
-                  >
-                    {mounted && <Header />}
-                    {children}
-                  </SWRConfig>
+                  {mounted && <Header />}
+                  {children}
                 </ToastProvider>
               </ContextProvider>
             </WagmiConfig>
