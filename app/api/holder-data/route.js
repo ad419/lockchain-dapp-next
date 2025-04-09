@@ -4,7 +4,10 @@ import { db } from "../../../app/lib/firebase-admin";
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const address = searchParams.get("address");
+
+    // Accept both address and walletAddress parameters
+    const address =
+      searchParams.get("address") || searchParams.get("walletAddress");
 
     if (!address) {
       return NextResponse.json(
@@ -20,7 +23,7 @@ export async function GET(request) {
 
     // Fetch current holders data from DEX API
     const holdersResponse = await fetch(
-      "https://api.dexscreener.com/latest/dex/tokens/0xbBe476B50D857BF41bBd1EB02F777CB9084C2e95",
+      `https://api.dexscreener.com/latest/dex/tokens/0x32481ac9B124bD82944eac67B2EA449797d402D1`,
       {
         next: { revalidate: 60 },
       }

@@ -16,7 +16,7 @@ export async function GET(request) {
       );
     }
 
-    console.log(`Looking up user profile for: ${username}`);
+    console.log(`Looking up user profile for username: ${username}`);
 
     // First, try to find the user by twitterUsername
     const usersSnapshot = await db
@@ -46,10 +46,13 @@ export async function GET(request) {
     const profileData = {
       id: userId,
       name: userData.name || username,
-      twitterUsername: userData.twitterUsername,
-      profileImage: userData.image || null,
+      twitterUsername: userData.twitterUsername || userData.username,
+      profileImage: userData.profileImage || userData.image || null,
+      bannerImage: userData.bannerImage || null,
+      bio: userData.bio || null,
+      status: userData.status || null,
       joinedAt: userData.createdAt
-        ? new Date(userData.createdAt.seconds * 1000)
+        ? new Date(userData.createdAt.seconds * 1000).toISOString()
         : null,
     };
 
@@ -66,7 +69,7 @@ export async function GET(request) {
 
       profileData.walletAddress = walletData.walletAddress;
       profileData.walletConnectedAt = walletData.claimedAt
-        ? new Date(walletData.claimedAt.seconds * 1000)
+        ? new Date(walletData.claimedAt.seconds * 1000).toISOString()
         : null;
       profileData.showProfile = walletData.showProfile !== false;
 

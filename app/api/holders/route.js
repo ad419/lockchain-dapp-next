@@ -231,7 +231,8 @@ async function fetchSocialDataBatch(addresses) {
         const userData = user.data();
         socialDataMap.set(address, {
           twitter: userData.username || userData.twitterUsername,
-          profileImage: userData.image,
+          // Use profileImage if available, fall back to image field
+          profileImage: userData.profileImage || userData.image,
           name: userData.name,
           verified: userData.emailVerified || false,
           showProfile: claim.showProfile !== false, // Use the showProfile value from claim

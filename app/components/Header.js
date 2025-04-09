@@ -850,7 +850,7 @@ export default function Header() {
                       }}
                       className="sidemenu-label"
                     >
-                      Calcuate Profit
+                      Speculator
                     </span>
                     <i className="angle fe fe-chevron-right"></i>
                   </Link>

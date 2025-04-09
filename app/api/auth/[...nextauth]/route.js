@@ -67,10 +67,11 @@ export const authOptions = {
         if (userDoc.exists) {
           const userData = userDoc.data();
           session.user.username = userData.username;
-          // console.log(
-          //   "[next-auth][debug][FIREBASE_READ]",
-          //   "Username fetched from Firestore"
-          // );
+
+          // Include custom profile image if available
+          if (userData.profileImage) {
+            session.user.profileImage = userData.profileImage;
+          }
         }
       } catch (error) {
         console.error("[next-auth][debug][FIREBASE_READ_ERROR]", error);

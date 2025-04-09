@@ -9,7 +9,9 @@ const MESSAGE_LIMIT = 50;
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { text, walletAddress, user, profileImage } = body;
+    const { text, walletAddress, user, profileImage, customStyle } = body;
+
+    console.log("Message with custom style:", customStyle);
 
     if (!text?.trim()) {
       return NextResponse.json(
@@ -21,13 +23,42 @@ export async function POST(request) {
     const messagesRef = db.collection("messages");
     const newMessage = {
       text: text.trim(),
-      walletAddress,
+      walletAddress: walletAddress || null,
       user,
       profileImage,
+      customStyle: customStyle || null, // Add custom style to the message
       timestamp: new Date(),
     };
 
     await messagesRef.add(newMessage);
+
+    // Store the user's message style preference in their profile
+    if (customStyle && walletAddress) {
+      try {
+        // Find the user document by wallet address
+        const walletClaimsRef = db.collection("walletClaims");
+        const walletClaim = await walletClaimsRef
+          .where("walletAddress", "==", walletAddress.toLowerCase())
+          .limit(1)
+          .get();
+
+        if (!walletClaim.empty) {
+          const userData = walletClaim.docs[0].data();
+          const userId = userData.userId;
+
+          // Update the user's profile with their message style preference
+          await db.collection("users").doc(userId).update({
+            messageStyle: customStyle,
+            updatedAt: new Date(),
+          });
+
+          console.log("Saved message style to user profile:", userId);
+        }
+      } catch (error) {
+        console.error("Error updating user message style:", error);
+      }
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error adding message:", error);

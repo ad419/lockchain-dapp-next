@@ -548,13 +548,13 @@ export default function LeaderboardClient({ initialData }) {
               <div className="user-wallet-stats">
                 <div className="user-stats-header">
                   <h3>Your Position</h3>
-                  <div className="wallet-address">
+                  <div className="wallet-address-ld">
                     {userWalletData.walletAddress.substring(0, 6)}...
                     {userWalletData.walletAddress.substring(
                       userWalletData.walletAddress.length - 4
                     )}
                     <button
-                      className="copy-button"
+                      className="copy-button-ld"
                       onClick={() => {
                         navigator.clipboard.writeText(
                           userWalletData.walletAddress

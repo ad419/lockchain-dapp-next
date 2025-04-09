@@ -9,10 +9,9 @@ import Script from "next/script";
 import Header from "./components/Header";
 import { useState, useEffect } from "react";
 import { SessionProvider } from "next-auth/react";
-import { Inter } from "next/font/google";
 import { ToastProvider } from "./context/ToastContext";
 
-const inter = Inter({ subsets: ["latin"] });
+// const inter = Inter({ subsets: ["latin"] });
 
 export default function RootLayout({ children }) {
   const [mounted, setMounted] = useState(false);
@@ -89,6 +88,18 @@ export default function RootLayout({ children }) {
         <link href="/assets/switcher/css/switcher.css" rel="stylesheet" />
         <link href="/assets/switcher/demo.css" rel="stylesheet" />
         <meta httpEquiv="imagetoolbar" content="no" />
+
+        {/* Font Links */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Comic+Sans+MS&family=Courier+New&family=Georgia&family=Impact&family=Lucida+Console&family=Trebuchet+MS&display=swap"
+          rel="stylesheet"
+        />
       </head>
       <body suppressHydrationWarning={true} className="ltr main-body leftmenu">
         <div className="horizontalMenucontainer">

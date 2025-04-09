@@ -1,22 +1,39 @@
 "use client";
 
-import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
-import Image from "next/image";
+import { useState, useEffect, useRef } from "react";
+import Image from "next/image"; // Rename to avoid conflict
 import Link from "next/link";
 import { useAccount, useDisconnect } from "wagmi";
+import { useSession, signOut } from "next-auth/react";
 import { ethers } from "ethers";
 import "../styles/Profile.css";
-import { LuClipboard } from "react-icons/lu";
-import { LuClipboardCheck } from "react-icons/lu";
+import { LuClipboard, LuClipboardCheck } from "react-icons/lu";
 import { contract, DEFAULT_CHAIN } from "../hooks/constant";
 import tokenAbi from "../json/token.json";
 import Web3 from "web3";
-import { signOut } from "next-auth/react";
-import DisconnectModal from './DisconnectModal';
+import DisconnectModal from "./DisconnectModal";
+import { MdModeEdit } from "react-icons/md";
+import { BiCamera } from "react-icons/bi";
+import { useToast } from "../context/ToastContext";
 
-export default function Profile() {
-  const { data: session, status } = useSession(); // Add status from useSession
+// Add this function before your ProfileManager component
+const generateWalletColor = (walletAddress) => {
+  if (!walletAddress) return "rgb(64, 63, 173)";
+
+  const hash = walletAddress.slice(-6);
+  const r = parseInt(hash.slice(0, 2), 16);
+  const g = parseInt(hash.slice(2, 4), 16);
+  const b = parseInt(hash.slice(4, 6), 16);
+
+  return `rgb(${r}, ${g}, ${b})`;
+};
+
+export default function ProfileManager() {
+  // Keep the same export name
+  // Add useToast hook
+  const { showToast } = useToast();
+
+  const { data: session, status } = useSession();
   const { address, isConnected } = useAccount();
   const { disconnect } = useDisconnect();
   const [balance, setBalance] = useState(null);
@@ -28,12 +45,12 @@ export default function Profile() {
   const [modalType, setModalType] = useState(null);
   const [showProfile, setShowProfile] = useState(true);
 
-  // Add loading spinner component
+  // Add loading spinner component with renamed classes
   const LoadingSpinner = () => (
-    <div style={{ paddingTop: "100px" }} className="profile-container">
-      <div className="profile-card">
-        <div className="loading-spinner">
-          <div className="spinner"></div>
+    <div style={{ paddingTop: "100px" }} className="mgr-profile-container">
+      <div className="mgr-profile-card">
+        <div className="mgr-loading-spinner">
+          <div className="mgr-spinner"></div>
           <p>Loading profile...</p>
         </div>
       </div>
@@ -57,7 +74,9 @@ export default function Profile() {
           contract[DEFAULT_CHAIN].TOKEN_ADDRESS
         );
 
-        const tokenBalanceRaw = await tokenContract.methods.balanceOf(address).call();
+        const tokenBalanceRaw = await tokenContract.methods
+          .balanceOf(address)
+          .call();
         const decimals = await tokenContract.methods.decimals().call();
         const formattedBalance = tokenBalanceRaw / Math.pow(10, decimals);
         setTokenBalance(formattedBalance);
@@ -74,7 +93,9 @@ export default function Profile() {
   useEffect(() => {
     const fetchVisibility = async () => {
       if (address) {
-        const response = await fetch(`/api/profile-visibility?address=${address}`);
+        const response = await fetch(
+          `/api/profile-visibility?address=${address}`
+        );
         const data = await response.json();
         setShowProfile(data.showProfile);
       }
@@ -88,24 +109,24 @@ export default function Profile() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000); // Reset after 2 seconds
     } catch (err) {
-      console.error('Failed to copy text: ', err);
+      console.error("Failed to copy text: ", err);
     }
   };
 
   const handleDisconnectWallet = () => {
-    setModalType('wallet');
+    setModalType("wallet");
     setShowModal(true);
   };
 
   const handleDisconnectTwitter = () => {
-    setModalType('twitter');
+    setModalType("twitter");
     setShowModal(true);
   };
 
   const handleConfirmDisconnect = async () => {
-    if (modalType === 'wallet') {
+    if (modalType === "wallet") {
       disconnect();
-    } else if (modalType === 'twitter') {
+    } else if (modalType === "twitter") {
       await signOut({ redirect: false });
     }
     setShowModal(false);
@@ -113,22 +134,24 @@ export default function Profile() {
 
   const handleToggleVisibility = async () => {
     try {
-      const response = await fetch('/api/profile-visibility', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+      const response = await fetch("/api/profile-visibility", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           address: address,
-          showProfile: !showProfile 
-        })
+          showProfile: !showProfile,
+        }),
       });
 
       if (response.ok) {
         setShowProfile(!showProfile);
       }
     } catch (error) {
-      console.error('Error toggling profile visibility:', error);
+      console.error("Error toggling profile visibility:", error);
     }
   };
+
+  // Add this function to your component
 
   // Show loading state while checking session
   if (status === "loading") {
@@ -137,9 +160,9 @@ export default function Profile() {
 
   if (!session) {
     return (
-      <div style={{ paddingTop: "100px" }} className="profile-container">
-        <div className="profile-card">
-          <div className="profile-error">
+      <div style={{ paddingTop: "100px" }} className="mgr-profile-container">
+        <div className="mgr-profile-card">
+          <div className="mgr-profile-error">
             Please sign in to view your profile
           </div>
         </div>
@@ -147,67 +170,68 @@ export default function Profile() {
     );
   }
 
-  const username = session?.user?.username || session?.user?.name?.split('@')[0] || "User";
+  const username =
+    session?.user?.username || session?.user?.name?.split("@")[0] || "User";
 
   return (
-    <div style={{ paddingTop: "100px" }} className="profile-container">
-      <div className="profile-card">
-        <div className="profile-header">
-          <div className="profile-avatar">
+    <div style={{ paddingTop: "100px" }} className="mgr-profile-container">
+      <div className="mgr-profile-card">
+        <div className="mgr-profile-header">
+          <div className="mgr-profile-avatar">
             {!imageError ? (
               <Image
                 src={session.user.image}
                 alt={session.user.name}
                 width={120}
                 height={120}
-                className="avatar-image"
+                className="mgr-avatar-image"
                 onError={() => setImageError(true)}
                 priority
               />
             ) : (
-              <div className="avatar-fallback">
+              <div className="mgr-avatar-fallback">
                 {session.user.name.charAt(0).toUpperCase()}
               </div>
             )}
           </div>
-          <div className="profile-info">
-            <h1 className="profile-name">
-              {session.user.name?.includes('@') 
-                ? session.user.name.split('@')[0] 
+          <div className="mgr-profile-info">
+            <h1 className="mgr-profile-name">
+              {session.user.name?.includes("@")
+                ? session.user.name.split("@")[0]
                 : session.user.name}
             </h1>
-            <p className="profile-username">@{username}</p>
+            <p className="mgr-profile-username">@{username}</p>
           </div>
         </div>
 
-        <div className="profile-stats">
-          <div className="stat-box">
+        <div className="mgr-profile-stats">
+          <div className="mgr-stat-box">
             <h4>Wallet Status</h4>
-            <p className={isConnected ? "connected" : "disconnected"}>
+            <p className={isConnected ? "mgr-connected" : "mgr-disconnected"}>
               {isConnected ? "Connected" : "Disconnected"}
             </p>
           </div>
-          
+
           {isConnected && (
-            <div className="stat-box">
+            <div className="mgr-stat-box">
               <h4>Wallet Address</h4>
-              <div className="wallet-address-container">
-                <p className="wallet-address">
+              <div className="mgr-wallet-address-container">
+                <p className="mgr-wallet-address">
                   {address.slice(0, 6)}...{address.slice(-4)}
                 </p>
-                <button 
+                <button
                   onClick={copyToClipboard}
-                  className="copy-button"
+                  className="mgr-copy-button"
                   title="Copy to clipboard"
                   style={{
-                    background: 'transparent',
-                    border: 'none',
-                    padding: '4px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    color: copied ? '#00ff00' : '#1253ff'
+                    background: "transparent",
+                    border: "none",
+                    padding: "4px",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    color: copied ? "#00ff00" : "#1253ff",
                   }}
                 >
                   {copied ? (
@@ -226,62 +250,71 @@ export default function Profile() {
 
           {isConnected && (
             <>
-              <div className="stat-box">
+              <div className="mgr-stat-box">
                 <h4>ETH Balance</h4>
-                <p className="balance">
-                  {loading ? "Loading..." : `${parseFloat(balance).toFixed(4)} ETH`}
+                <p className="mgr-balance">
+                  {loading
+                    ? "Loading..."
+                    : `${parseFloat(balance).toFixed(4)} ETH`}
                 </p>
               </div>
-              <div className="stat-box">
+              <div className="mgr-stat-box">
                 <h4>LockChain Balance</h4>
-                <p className="balance">
-                  {loading ? "Loading..." : 
-                    tokenBalance ? `${parseFloat(tokenBalance).toFixed(2)} LOCKCHAIN` : "0 LOCKCHAIN"}
+                <p className="mgr-balance">
+                  {loading
+                    ? "Loading..."
+                    : tokenBalance
+                    ? `${parseFloat(tokenBalance).toFixed(2)} LOCKCHAIN`
+                    : "0 LOCKCHAIN"}
                 </p>
               </div>
             </>
           )}
 
-          <div className="stat-box">
+          <div className="mgr-stat-box">
             <h4>X Profile Visibility</h4>
-            <div className="visibility-toggle">
-              <button 
+            <div className="mgr-visibility-toggle">
+              <button
                 onClick={handleToggleVisibility}
-                className={`toggle-button ${showProfile ? 'visible' : 'hidden'}`}
+                className={`mgr-toggle-button ${
+                  showProfile ? "mgr-visible" : "mgr-hidden"
+                }`}
               >
-                {showProfile ? 'Visible on Leaderboard' : 'Hidden from Leaderboard'}
+                {showProfile
+                  ? "Visible on Leaderboard"
+                  : "Hidden from Leaderboard"}
               </button>
             </div>
           </div>
         </div>
 
-        <div className="profile-actions">
-          <Link href="/account" className="action-button">
+        <div className="mgr-profile-actions">
+          <Link href="/account" className="mgr-action-button">
             <i className="ti-user"></i>
             Account Settings
           </Link>
-          <Link href="/swap" className="action-button">
+          <Link href="/swap" className="mgr-action-button">
             <i className="si si-layers"></i>
             LockSwap
           </Link>
-          <Link href="/leaderboard" className="action-button">
+          <Link href="/leaderboard" className="mgr-action-button">
             <i className="ti-bar-chart"></i>
             View Leaderboard
           </Link>
 
-          <div className="disconnect-actions">
+          <div className="mgr-disconnect-actions">
             {isConnected && (
-              <button 
+              <button
                 onClick={handleDisconnectWallet}
-                className="disconnect-button wallet"
+                className="mgr-disconnect-button mgr-wallet"
               >
                 Disconnect Wallet
               </button>
             )}
             {session && (
-              <button 
+              <button
                 onClick={handleDisconnectTwitter}
-                className="disconnect-button twitter"
+                className="mgr-disconnect-button mgr-twitter"
               >
                 Disconnect X Account
               </button>

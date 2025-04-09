@@ -229,7 +229,7 @@ export default function Dashboard() {
           className={`jumps-prevent`}
           style={{
             marginTop: "60px",
-          }}
+          }} // fix the gap on mobile
         ></div>{" "}
         {/* Reduced from 63.998px */}
         <div

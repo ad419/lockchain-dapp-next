@@ -194,7 +194,7 @@ const CalcuateProfit = () => {
       {/* Contribution Amount Input */}
       <div className="input-group fade-in">
         <label htmlFor="contribution" style={{ color: "#d1d1d1" }}>
-          Recurring Contribution ($)
+          Recurring Buys ($ <span className="tooltip-icon">if any</span>)
         </label>
         <input
           type="number"
@@ -293,7 +293,7 @@ const CalcuateProfit = () => {
         <div className="profit-calculator">
           <div className="calculator-wrapper">
             <div className="input-section">
-              <h2>Calculate Your Profits</h2>
+              <h2>Speculate Profits</h2>
               <form onSubmit={handleSubmit} className="calculator-form">
                 <div className="input-group">
                   <label
@@ -348,7 +348,7 @@ const CalcuateProfit = () => {
                 </div>
 
                 <button type="submit" className="calculate-btn">
-                  Calculate Profits
+                  Calculate
                 </button>
               </form>
             </div>

@@ -13,6 +13,7 @@ const nextConfig = {
       "dexscreener.com",
       "dextools.io",
       "basescan.org",
+      "res.cloudinary.com",
     ],
     remotePatterns: [
       {

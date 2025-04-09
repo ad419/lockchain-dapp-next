@@ -1,66 +1,249 @@
 "use client";
 
-import { useState, useEffect, useRef, forwardRef } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import '../styles/Messages.css';
+import { useState, useEffect, useRef, forwardRef } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import SimpleEmojiPicker from "./SimpleEmojiPicker";
+import SimpleMobileEmojiPicker from "./SimpleMobileEmojiPicker";
+import { BsEmojiSmile } from "react-icons/bs";
+import {
+  MdFormatColorText,
+  MdFormatColorFill,
+  MdModeEdit,
+} from "react-icons/md";
+import "../styles/Messages.css";
+import MessagePreview from "./MessagePreview";
+import DraggableComponent from "./DraggableComponent";
+import ColorPicker from "./ColorPicker";
+import {
+  IoAddCircleOutline,
+  IoSaveOutline,
+  IoTrashOutline,
+} from "react-icons/io5";
+import MessageArchive from "./MessageArchive";
+import "../styles/MessageArchive.css";
 
-const MAX_VISIBLE_MESSAGES = 14; // Updated limit
+const MAX_VISIBLE_MESSAGES = 14;
 const COOLDOWN_TIME = 30000;
 
-// Update the Message component to include staggered animations
-const Message = forwardRef(({ msg, userWalletData, onDismiss, index }, ref) => {
-  return (
-    <motion.div
-      ref={ref}
-      className={`message-float ${
-        msg.walletAddress === userWalletData?.walletAddress ? 'own-message' : ''
-      }`}
-      initial={{ opacity: 0, x: 50, scale: 0.9 }}
-      animate={{ opacity: 1, x: 0, scale: 1 }}
-      exit={{ opacity: 0, x: -100, transition: { duration: 0.2 } }}
-      transition={{ 
-        type: "spring",
-        stiffness: 50, 
-        damping: 20,
-        delay: index * 0.08 // Add staggered delay based on index
-      }}
-      whileHover={{
-        scale: 1.02
-      }}
-      style={{
-        backfaceVisibility: "hidden",
-        WebkitFontSmoothing: "subpixel-antialiased",
-      }}
-    >
-      <img
-        src={msg.profileImage}
-        alt={msg.user}
-        className="message-avatar"
-        onError={(e) => {
-          e.target.src = '/default-avatar.png';
+// Update MESSAGE_THEMES with more creative themes
+const MESSAGE_THEMES = [
+  { name: "Default", bgColor: "rgba(14, 14, 14, 0.95)", textColor: "#ffffff" },
+  { name: "Blue", bgColor: "#1a237e", textColor: "#ffffff" },
+  { name: "Green", bgColor: "#004d40", textColor: "#ffffff" },
+  { name: "Purple", bgColor: "#4a148c", textColor: "#ffffff" },
+  { name: "Red", bgColor: "#b71c1c", textColor: "#ffffff" },
+  { name: "Gold", bgColor: "#ff6f00", textColor: "#000000" },
+  // Adding gradient themes
+  {
+    name: "Ocean",
+    gradient: "linear-gradient(135deg, #1a237e, #0288d1)",
+    textColor: "#ffffff",
+  },
+  {
+    name: "Sunset",
+    gradient: "linear-gradient(135deg, #ff6f00, #e53935)",
+    textColor: "#ffffff",
+  },
+  {
+    name: "Forest",
+    gradient: "linear-gradient(135deg, #004d40, #689f38)",
+    textColor: "#ffffff",
+  },
+  {
+    name: "Cosmic",
+    gradient: "linear-gradient(135deg, #311b92, #7b1fa2)",
+    textColor: "#ffffff",
+  },
+];
+
+// Add list of premium fonts (for top 10 users)
+const PREMIUM_FONTS = [
+  { name: "Default", value: "inherit" },
+  { name: "Arial", value: "Arial, sans-serif" },
+  { name: "Verdana", value: "Verdana, sans-serif" },
+  { name: "Tahoma", value: "Tahoma, sans-serif" },
+  { name: "Trebuchet MS", value: "'Trebuchet MS', sans-serif" },
+  { name: "Georgia", value: "Georgia, serif" },
+  { name: "Courier", value: "'Courier New', monospace" },
+  { name: "Comic Sans", value: "'Comic Sans MS', cursive" },
+  { name: "Impact", value: "Impact, sans-serif" },
+  { name: "Lucida Console", value: "'Lucida Console', monospace" },
+];
+
+// Add premium animations (for top 100 users only)
+const PREMIUM_ANIMATIONS = [
+  { name: "None", value: null },
+  { name: "Pulse Glow", value: "pulse" },
+  { name: "Gradient Shift", value: "gradient" },
+  { name: "Rainbow Flow", value: "rainbow" },
+  { name: "Neon Glow", value: "glow" },
+];
+
+// Update the Message component to support advanced styling
+const Message = forwardRef(
+  ({ msg, userWalletData, onDismiss, index, userRank, onShowArchive }, ref) => {
+    const isOwnMessage = msg.walletAddress === userWalletData?.walletAddress;
+
+    // Extract custom style if available
+    const customStyle = msg.customStyle || {};
+
+    // Check if user can use custom styles (top 500 holder)
+    const canUseCustomStyles = userRank && userRank <= 500;
+
+    // Check if user can use animations (top 100 holder only)
+    const canUseAnimations = userRank && userRank <= 100;
+
+    // Get default or custom colors - always allow for all users
+    const bgColor =
+      customStyle.bgColor ||
+      (isOwnMessage ? "rgba(98, 134, 252, 0.15)" : "rgba(14, 14, 14, 0.95)");
+    const textColor = customStyle.textColor || "#ffffff";
+
+    // Get font styles (only for top 500 users)
+    const fontFamily = canUseCustomStyles
+      ? customStyle.fontFamily || "inherit"
+      : "inherit";
+    const fontWeight = canUseCustomStyles
+      ? customStyle.fontWeight || "normal"
+      : "normal";
+    const fontStyle = canUseCustomStyles
+      ? customStyle.fontStyle || "normal"
+      : "normal";
+
+    // Get animation type (only for top 100 users)
+    const animationType = canUseAnimations
+      ? customStyle.animationType || null
+      : null;
+
+    // Create style based on theme type
+    let messageStyle = {
+      color: textColor,
+      backfaceVisibility: "hidden",
+      WebkitFontSmoothing: "subpixel-antialiased",
+    };
+
+    // Add background - either gradient or solid
+    messageStyle.background = customStyle.gradient || bgColor;
+
+    // Add border radius to default style
+    messageStyle.borderRadius = "12px";
+
+    // Add box shadow for glow effect
+    if (customStyle.glow) {
+      messageStyle.boxShadow = `0 0 15px ${customStyle.gradient || bgColor}`;
+    }
+
+    // Apply animation class name based on animation type
+    let animationClass = "";
+    if (animationType === "pulse") {
+      animationClass = "animate-pulse";
+    } else if (animationType === "gradient") {
+      animationClass = "animate-gradient";
+    } else if (animationType === "rainbow") {
+      animationClass = "animate-rainbow";
+    } else if (animationType === "glow") {
+      animationClass = "animate-glow";
+    }
+
+    const handleUserClick = (e) => {
+      e.stopPropagation();
+      // Instead of setting local state, call parent handler
+      onShowArchive(msg);
+    };
+
+    // Use the most up-to-date profile image if it's the current user's message
+    const profileImage =
+      isOwnMessage && userWalletData?.profileImage
+        ? userWalletData.profileImage
+        : msg.profileImage || "/default-avatar.png";
+
+    console.log(
+      "Message component rendered with profileImage:",
+      userWalletData
+    );
+
+    return (
+      <motion.div
+        ref={ref}
+        className={`message-float ${
+          isOwnMessage ? "own-message" : ""
+        } ${animationClass}`}
+        initial={{ opacity: 0, x: 50, scale: 0.9 }}
+        animate={{ opacity: 1, x: 0, scale: 1 }}
+        exit={{ opacity: 0, x: -100, transition: { duration: 0.2 } }}
+        transition={{
+          type: "keyframes",
+          stiffness: 50,
+          damping: 20,
+          delay: index * 0.08,
         }}
-        draggable={false}
-      />
-      <div className="message-content">
-        <span className="message-username">@{msg.user}</span>
-        <p className="message-text">{msg.text}</p>
-      </div>
-      <button 
-        className="message-close"
-        onClick={() => onDismiss(msg.id)}
-        aria-label="Close message"
+        style={messageStyle}
       >
-        ×
-      </button>
-    </motion.div>
-  );
-});
+        <img
+          src={profileImage}
+          alt={msg.user}
+          className="message-avatar"
+          onClick={handleUserClick}
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = "/default-avatar.png";
+          }}
+          draggable={false}
+          style={{ cursor: "pointer" }}
+        />
+        <div className="message-content">
+          <span
+            className="message-username"
+            style={{
+              color: textColor,
+              fontFamily: fontFamily !== "inherit" ? fontFamily : "inherit",
+              fontWeight: fontWeight !== "normal" ? fontWeight : "normal",
+              cursor: "pointer",
+            }}
+            onClick={handleUserClick}
+          >
+            @{msg.user}
+          </span>
+          <p
+            className="message-text"
+            style={{
+              color: textColor,
+              fontFamily: fontFamily !== "inherit" ? fontFamily : "inherit",
+              fontWeight: fontWeight !== "normal" ? fontWeight : "normal",
+              fontStyle: fontStyle !== "normal" ? fontStyle : "normal",
+            }}
+          >
+            {msg.text}
+          </p>
 
-// Important: Add a display name for better debugging
-Message.displayName = 'Message';
+          {customStyle.sticker && (
+            <div className="message-sticker">{customStyle.sticker}</div>
+          )}
+        </div>
+        <button
+          className="message-close"
+          onClick={() => onDismiss(msg.id)}
+          aria-label="Close message"
+        >
+          ×
+        </button>
+      </motion.div>
+    );
+  }
+);
 
-// Update the ChatFab component to include toggle functionality with opposite positioning
-const ChatFab = ({ onClick, showInput, messageCount, onToggleMessages, showMessages, hasMessages }) => {
+Message.displayName = "Message";
+
+// Keep your existing ChatFab component
+const ChatFab = ({
+  onClick,
+  showInput,
+  messageCount,
+  onToggleMessages,
+  showMessages,
+  hasMessages,
+}) => {
+  // Keep your existing implementation
   return (
     <div className="mobile-chat-controls">
       {/* Toggle messages button - positioned on left */}
@@ -77,10 +260,10 @@ const ChatFab = ({ onClick, showInput, messageCount, onToggleMessages, showMessa
           <span className="fab-icon">{showMessages ? "👁️" : "👓"}</span>
         </motion.button>
       )}
-      
+
       {/* Spacer div to push chat button to right */}
       <div style={{ flex: 1 }}></div>
-      
+
       {/* Chat button - positioned on right */}
       <motion.button
         className="chat-fab"
@@ -96,7 +279,9 @@ const ChatFab = ({ onClick, showInput, messageCount, onToggleMessages, showMessa
           <>
             <span className="fab-icon">💬</span>
             {messageCount > 0 && (
-              <span className="fab-badge">{messageCount > 99 ? '99+' : messageCount}</span>
+              <span className="fab-badge">
+                {messageCount > 99 ? "99+" : messageCount}
+              </span>
             )}
           </>
         )}
@@ -105,9 +290,14 @@ const ChatFab = ({ onClick, showInput, messageCount, onToggleMessages, showMessa
   );
 };
 
-export default function Messages({ session, userWalletData }) {
+// Update the main Messages component to include rank data
+export default function Messages({ session, userWalletData, userHolderData }) {
+  // Add this to get the user's rank
+  const userRank = userHolderData?.rank || null;
+
+  // Keep all your existing state
   const [messages, setMessages] = useState([]);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
   const [cooldown, setCooldown] = useState(false);
   const [cooldownTime, setCooldownTime] = useState(0);
   const [showInput, setShowInput] = useState(false);
@@ -115,16 +305,111 @@ export default function Messages({ session, userWalletData }) {
   const eventSourceRef = useRef(null);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
-
-  // Add these new states
   const [isMobile, setIsMobile] = useState(false);
   const [newMessageCount, setNewMessageCount] = useState(0);
   const [lastSeenMessageId, setLastSeenMessageId] = useState(null);
   const [showMessages, setShowMessages] = useState(true);
 
+  // Add new state for message customization
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [customStyle, setCustomStyle] = useState({});
+  const [showStyleOptions, setShowStyleOptions] = useState(false);
+  const [activeStyleTab, setActiveStyleTab] = useState("themes");
+
+  // Add new state for custom themes
+  const [customThemes, setCustomThemes] = useState([]);
+  const [isEditingCustomTheme, setIsEditingCustomTheme] = useState(false);
+  const [customThemeColors, setCustomThemeColors] = useState({
+    name: "My Theme",
+    bgColor: "#151515",
+    textColor: "#ffffff",
+    useGradient: false,
+    gradientStart: "#1a237e",
+    gradientEnd: "#0288d1",
+  });
+
+  // Add these state variables to your Messages component
+  const [editingThemeId, setEditingThemeId] = useState(null);
+
+  // Add a previewStyle state to track temporary changes during theme editing
+  const [previewStyle, setPreviewStyle] = useState({});
+
+  // Save and load message style preferences from localStorage
+  useEffect(() => {
+    // Load saved style preferences
+    if (session?.user?.id) {
+      try {
+        const savedStyle = localStorage.getItem(
+          `messageStyle_${session.user.id}`
+        );
+        if (savedStyle) {
+          setCustomStyle(JSON.parse(savedStyle));
+        }
+      } catch (error) {
+        console.error("Error loading style preferences:", error);
+      }
+    }
+  }, [session?.user?.id]);
+
+  // Save style preferences when they change
+  useEffect(() => {
+    if (session?.user?.id && Object.keys(customStyle).length > 0) {
+      try {
+        localStorage.setItem(
+          `messageStyle_${session.user.id}`,
+          JSON.stringify(customStyle)
+        );
+      } catch (error) {
+        console.error("Error saving style preferences:", error);
+      }
+    }
+  }, [customStyle, session?.user?.id]);
+
+  // Add this effect to load custom themes from localStorage
+  useEffect(() => {
+    if (session?.user?.id) {
+      try {
+        const savedThemes = localStorage.getItem(
+          `customThemes_${session.user.id}`
+        );
+        if (savedThemes) {
+          setCustomThemes(JSON.parse(savedThemes));
+        }
+      } catch (error) {
+        console.error("Error loading custom themes:", error);
+      }
+    }
+  }, [session?.user?.id]);
+
+  // In the useEffect hook that loads from localStorage
+  useEffect(() => {
+    if (session?.user?.id) {
+      try {
+        const savedStyle = localStorage.getItem(
+          `messageStyle_${session.user.id}`
+        );
+        if (savedStyle) {
+          const parsedStyle = JSON.parse(savedStyle);
+          setCustomStyle(parsedStyle);
+        }
+
+        const savedThemes = localStorage.getItem(
+          `customThemes_${session.user.id}`
+        );
+        if (savedThemes) {
+          const parsedThemes = JSON.parse(savedThemes);
+          setCustomThemes(parsedThemes);
+        }
+      } catch (error) {
+        console.error("Error loading styles from localStorage:", error);
+      }
+    }
+  }, [session?.user?.id]);
+
+  // Keep all your other existing effect hooks
   useEffect(() => {
     const handleKeyPress = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'm') {
+      if ((e.ctrlKey || e.metaKey) && e.key === "m") {
         e.preventDefault();
         setShowInput((prev) => !prev);
         if (!showInput && inputRef.current) {
@@ -133,17 +418,17 @@ export default function Messages({ session, userWalletData }) {
       }
     };
 
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
   }, [showInput]);
 
   useEffect(() => {
     const setupEventSource = () => {
-      console.log('Setting up EventSource...');
-      const eventSource = new EventSource('/api/messages/stream');
+      console.log("Setting up EventSource...");
+      const eventSource = new EventSource("/api/messages/stream");
       eventSourceRef.current = eventSource;
 
-      eventSource.onopen = () => console.log('SSE Connected');
+      eventSource.onopen = () => console.log("SSE Connected");
 
       eventSource.onmessage = (event) => {
         try {
@@ -154,26 +439,29 @@ export default function Messages({ session, userWalletData }) {
               // First sort by timestamp
               const timeA = new Date(a.timestamp).getTime();
               const timeB = new Date(b.timestamp).getTime();
-              
+
               // If timestamps are equal (rare but possible), use message ID as secondary sort
               if (timeA === timeB) {
-                return a.id.localeCompare(b.id);
+                return b.id.localeCompare(a.id); // Reverse ID comparison
               }
-              
-              return timeA - timeB; // Ascending order (oldest first)
+
+              return timeB - timeA; // CHANGED: Sort by descending time (newest first)
             });
-            
-            // Take just the last MAX_VISIBLE_MESSAGES
-            const latestMessages = sortedMessages.slice(-MAX_VISIBLE_MESSAGES);
+
+            // Take just the first MAX_VISIBLE_MESSAGES, since we're already sorting newest first
+            const latestMessages = sortedMessages.slice(
+              0,
+              MAX_VISIBLE_MESSAGES
+            );
             setMessages(latestMessages);
           }
         } catch (error) {
-          console.error('Parse error:', error);
+          console.error("Parse error:", error);
         }
       };
 
       eventSource.onerror = (error) => {
-        console.error('SSE Error:', error);
+        console.error("SSE Error:", error);
         eventSource.close();
         setTimeout(setupEventSource, 3000);
       };
@@ -183,18 +471,21 @@ export default function Messages({ session, userWalletData }) {
     return () => eventSourceRef.current?.close();
   }, []);
 
+  // Fix for cooldown timer in Messages.jsx
   useEffect(() => {
     if (cooldown && cooldownTime > 0) {
-      const timer = setInterval(() => {
-        setCooldownTime((prev) => {
-          if (prev <= 1000) {
-            setCooldown(false);
-            return 0;
-          }
-          return prev - 1000;
-        });
+      const timer = setTimeout(() => {
+        if (cooldownTime <= 1) {
+          // When we reach 1 second or less, clear the cooldown completely
+          setCooldownTime(0);
+          setCooldown(false);
+        } else {
+          // Otherwise, continue the countdown
+          setCooldownTime((prevTime) => prevTime - 1);
+        }
       }, 1000);
-      return () => clearInterval(timer);
+
+      return () => clearTimeout(timer);
     }
   }, [cooldown, cooldownTime]);
 
@@ -203,24 +494,26 @@ export default function Messages({ session, userWalletData }) {
     const checkDevice = () => {
       setIsMobile(window.innerWidth <= 768);
     };
-    
+
     checkDevice();
-    window.addEventListener('resize', checkDevice);
-    return () => window.removeEventListener('resize', checkDevice);
+    window.addEventListener("resize", checkDevice);
+    return () => window.removeEventListener("resize", checkDevice);
   }, []);
 
   // Track new messages
   useEffect(() => {
     if (messages.length > 0 && !showInput) {
       const newestMessageId = messages[messages.length - 1].id;
-      
+
       if (lastSeenMessageId && lastSeenMessageId !== newestMessageId) {
         // Count new messages since last seen
-        const lastSeenIndex = messages.findIndex(msg => msg.id === lastSeenMessageId);
+        const lastSeenIndex = messages.findIndex(
+          (msg) => msg.id === lastSeenMessageId
+        );
         if (lastSeenIndex !== -1) {
           setNewMessageCount(messages.length - lastSeenIndex - 1);
         } else {
-          setNewMessageCount(prev => prev + 1);
+          setNewMessageCount((prev) => prev + 1);
         }
       } else if (!lastSeenMessageId) {
         setLastSeenMessageId(newestMessageId);
@@ -238,7 +531,7 @@ export default function Messages({ session, userWalletData }) {
 
   // Update toggle function for show/hide messages
   const toggleMessages = () => {
-    setShowMessages(prev => !prev);
+    setShowMessages((prev) => !prev);
   };
 
   // Update the auto-dismiss effect for staggered dismissal
@@ -249,96 +542,412 @@ export default function Messages({ session, userWalletData }) {
         // Stagger dismissals by 1 second for each message
         return setTimeout(() => {
           dismissMessage(msg.id);
-        }, 30000 + (index * 1000)); // Base 30s + stagger
+        }, 30000 + index * 1000); // Base 30s + stagger
       });
-      
+
       return () => {
-        timers.forEach(timer => clearTimeout(timer));
+        timers.forEach((timer) => clearTimeout(timer));
       };
     }
   }, [messages, isMobile]);
 
+  // Update sendMessage function to fix cooldown while preserving styles
   const sendMessage = async (e) => {
     e.preventDefault();
-    
-    // Additional check for empty message after trim
-    const messageText = message.trim();
-    if (!session || !messageText || cooldown || isSubmitting) return;
+    if (!message.trim() || cooldown || isSubmitting) return;
 
-    // Prevent double submissions
-    if (isSubmitting) return;
+    setIsSubmitting(true);
 
     try {
-      setIsSubmitting(true);
-      setMessage(''); // Clear input immediately
+      // Get the latest profile image from the userWalletData or session
+      const currentProfileImage =
+        userWalletData?.profileImage || session?.user?.image;
 
-      const response = await fetch('/api/messages/stream', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text: messageText,
-          walletAddress: userWalletData?.walletAddress,
-          user: session.user.name,
-          profileImage: session.user.image,
-        }),
+      // Create a message object with conditional customization based on user rank
+      const messageData = {
+        text: message.trim(),
+        walletAddress: userWalletData?.walletAddress,
+        user: session.user.name,
+        profileImage: currentProfileImage,
+      };
+
+      // Apply style customization based on user rank tiers
+      if (userRank && userRank <= 500) {
+        // Top 500 holders can use basic custom styles (colors, stickers)
+        messageData.customStyle = {
+          bgColor: customStyle.bgColor,
+          gradient: customStyle.gradient,
+          textColor: customStyle.textColor,
+          sticker: customStyle.sticker,
+        };
+
+        // Additional customization for top 100 holders (animations)
+        if (userRank <= 100) {
+          messageData.customStyle.animationType = customStyle.animationType;
+        }
+
+        // Top tier customization for top 10 holders (fonts, advanced styling)
+        if (userRank <= 10) {
+          messageData.customStyle.fontFamily = customStyle.fontFamily;
+          messageData.customStyle.fontWeight = customStyle.fontWeight;
+          messageData.customStyle.fontStyle = customStyle.fontStyle;
+        }
+      }
+
+      const response = await fetch("/api/messages/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(messageData),
       });
 
-      if (!response.ok) throw new Error('Failed to send message');
+      if (!response.ok) {
+        throw new Error("Failed to send message");
+      }
 
+      setMessage("");
+      // Set cooldown state directly rather than using interval in this function
       setCooldown(true);
-      setCooldownTime(COOLDOWN_TIME);
+      setCooldownTime(COOLDOWN_TIME / 1000);
+
+      // Clear the new message notification
+      setNewMessageCount(0);
+      setLastSeenMessageId(messages.length > 0 ? messages[0].id : null);
+
+      // Let the useEffect handle the countdown instead
     } catch (error) {
-      console.error('Send error:', error);
-      setMessage(messageText); // Restore message if failed
+      console.error("Error sending message:", error);
     } finally {
-      // Add a small delay before allowing new submissions
-      setTimeout(() => {
-        setIsSubmitting(false);
-      }, 500);
+      setIsSubmitting(false);
     }
   };
 
-  const dismissMessage = (id) => {
-    setMessages(prev => prev.filter(msg => msg.id !== id));
+  // Add these handlers for customization
+  const handleSelectEmoji = (emoji) => {
+    setCustomStyle((prev) => ({
+      ...prev,
+      sticker: emoji,
+    }));
+    setShowEmojiPicker(false);
   };
 
-  // Update toggle function for FAB
+  // Modify handleSelectTheme function for clarity
+  const handleSelectTheme = (theme) => {
+    const newStyle = {
+      ...customStyle,
+      textColor: theme.textColor,
+      // Store the selected theme's identifier
+      selectedThemeId: theme.id || `preset-${theme.name}`,
+    };
+
+    // Add either gradient or bgColor, not both
+    if (theme.gradient) {
+      newStyle.gradient = theme.gradient;
+      delete newStyle.bgColor;
+    } else {
+      newStyle.bgColor = theme.bgColor;
+      delete newStyle.gradient;
+    }
+
+    setCustomStyle(newStyle);
+  };
+
+  const handleResetStyle = () => {
+    setCustomStyle({});
+    localStorage.removeItem(`messageStyle_${session?.user?.id}`);
+  };
+
+  // Improve the extractGradientColors function to properly parse gradients
+  const extractGradientColors = (gradientString) => {
+    if (!gradientString) return ["#1a237e", "#0288d1"];
+
+    // Try different regex patterns to match various gradient formats
+    const linearGradientPattern =
+      /linear-gradient\(\s*([^,]+),\s*([^,]+),\s*([^)]+)\)/;
+    const simpleGradientPattern = /linear-gradient\(\s*([^,]+),\s*([^)]+)\)/;
+
+    let matches = gradientString.match(linearGradientPattern);
+
+    if (matches && matches.length >= 4) {
+      // This handles linear-gradient(angle, color1, color2)
+      return [matches[2].trim(), matches[3].trim()];
+    }
+
+    matches = gradientString.match(simpleGradientPattern);
+
+    if (matches && matches.length >= 3) {
+      // This handles simpler gradient formats
+      return [matches[1].trim(), matches[2].trim()];
+    }
+
+    // Default fallback colors if parsing fails
+    return ["#1a237e", "#0288d1"];
+  };
+
+  // Update the openThemeEditor function to set preview style
+  const openThemeEditor = (theme = null) => {
+    if (theme) {
+      // We're modifying an existing theme
+      setEditingThemeId(theme.id || `preset-${theme.name}`);
+
+      // Extract colors properly
+      let gradientStart = "#1a237e";
+      let gradientEnd = "#0288d1";
+      let bgColor = theme.bgColor || "#151515";
+      let textColor = theme.textColor || "#ffffff";
+      let useGradient = !!theme.gradient;
+
+      if (useGradient && theme.gradient) {
+        const extractedColors = extractGradientColors(theme.gradient);
+        gradientStart = extractedColors[0];
+        gradientEnd = extractedColors[1];
+      }
+
+      // Set initial values based on existing theme
+      const themeColors = {
+        name: `${theme.name} (Copy)`,
+        textColor,
+        useGradient,
+        gradientStart,
+        gradientEnd,
+        bgColor,
+      };
+
+      setCustomThemeColors(themeColors);
+
+      // Create preview style from the theme being edited
+      updatePreviewFromThemeColors(themeColors);
+    } else {
+      // We're creating a brand new theme
+      setEditingThemeId(null);
+      const defaultColors = {
+        name: "My Theme",
+        bgColor: "#151515",
+        textColor: "#ffffff",
+        useGradient: false,
+        gradientStart: "#1a237e",
+        gradientEnd: "#0288d1",
+      };
+
+      setCustomThemeColors(defaultColors);
+
+      // Create preview style for new theme
+      updatePreviewFromThemeColors(defaultColors);
+    }
+
+    setIsEditingCustomTheme(true);
+  };
+
+  // Helper function to update preview style from theme colors
+  const updatePreviewFromThemeColors = (themeColors) => {
+    const newPreviewStyle = {
+      ...customStyle, // Keep other style properties like fonts, etc.
+      textColor: themeColors.textColor,
+    };
+
+    if (themeColors.useGradient) {
+      newPreviewStyle.gradient = `linear-gradient(135deg, ${themeColors.gradientStart}, ${themeColors.gradientEnd})`;
+      delete newPreviewStyle.bgColor; // Remove bgColor if using gradient
+    } else {
+      newPreviewStyle.bgColor = themeColors.bgColor;
+      delete newPreviewStyle.gradient; // Remove gradient if using bgColor
+    }
+
+    setPreviewStyle(newPreviewStyle);
+  };
+
+  // Update customThemeColors setter to also update preview style
+  const updateCustomThemeColors = (updatedColors) => {
+    setCustomThemeColors(updatedColors);
+    updatePreviewFromThemeColors(updatedColors);
+  };
+
+  // Update the saveCustomTheme function
+  const saveCustomTheme = () => {
+    const themeId = editingThemeId || Date.now().toString();
+
+    const newTheme = {
+      id: themeId,
+      name: customThemeColors.name || "Custom Theme",
+      textColor: customThemeColors.textColor,
+      ...(customThemeColors.useGradient
+        ? {
+            gradient: `linear-gradient(135deg, ${customThemeColors.gradientStart}, ${customThemeColors.gradientEnd})`,
+          }
+        : {
+            bgColor: customThemeColors.bgColor,
+          }),
+    };
+
+    let updatedThemes;
+
+    if (editingThemeId) {
+      // If editing, replace the existing theme
+      updatedThemes = customThemes.map((theme) =>
+        theme.id === editingThemeId ? newTheme : theme
+      );
+    } else {
+      // Otherwise add a new theme
+      updatedThemes = [...customThemes, newTheme];
+    }
+
+    setCustomThemes(updatedThemes);
+
+    // Save to localStorage
+    if (session?.user?.id) {
+      try {
+        localStorage.setItem(
+          `customThemes_${session.user.id}`,
+          JSON.stringify(updatedThemes)
+        );
+      } catch (error) {
+        console.error("Error saving custom themes:", error);
+      }
+    }
+
+    // Apply the new theme immediately and ensure it's marked as selected
+    handleSelectTheme(newTheme);
+
+    // Reset state
+    setIsEditingCustomTheme(false);
+    setEditingThemeId(null);
+    setPreviewStyle({});
+  };
+
+  // Add this function to delete a custom theme
+  const deleteCustomTheme = (themeId) => {
+    const themeToDelete = customThemes.find((theme) => theme.id === themeId);
+    const updatedThemes = customThemes.filter((theme) => theme.id !== themeId);
+    setCustomThemes(updatedThemes);
+
+    // Save updated themes to localStorage
+    if (session?.user?.id) {
+      try {
+        localStorage.setItem(
+          `customThemes_${session.user.id}`,
+          JSON.stringify(updatedThemes)
+        );
+      } catch (error) {
+        console.error("Error saving custom themes:", error);
+      }
+    }
+
+    // Reset style if deleted theme was active
+    if (themeToDelete) {
+      const wasSelected =
+        (themeToDelete.gradient &&
+          themeToDelete.gradient === customStyle.gradient) ||
+        (themeToDelete.bgColor &&
+          themeToDelete.bgColor === customStyle.bgColor);
+
+      if (wasSelected) {
+        setCustomStyle({});
+        // Save empty style to localStorage
+        if (session?.user?.id) {
+          try {
+            localStorage.setItem(
+              `messageStyle_${session.user.id}`,
+              JSON.stringify({})
+            );
+          } catch (error) {
+            console.error("Error saving message style:", error);
+          }
+        }
+      }
+    }
+  };
+
+  // Cancel edit function to reset preview
+  const cancelThemeEditing = () => {
+    setIsEditingCustomTheme(false);
+    setEditingThemeId(null);
+    setPreviewStyle({}); // Clear preview style
+  };
+
+  // Keep the rest of your component's logic
+  const dismissMessage = (id) => {
+    setMessages((prev) => prev.filter((msg) => msg.id !== id));
+  };
+
   const toggleChatInput = () => {
-    setShowInput(prev => {
+    setShowInput((prev) => {
       const newState = !prev;
-      
+
       if (newState) {
-        // Show messages when opening chat
         setShowMessages(true);
-        
-        // Only do special scrolling on desktop
+
         if (!isMobile) {
           setTimeout(() => {
-            // Scroll to middle of viewport if not mobile
             const viewportHeight = window.innerHeight;
-            const scrollTarget = Math.max(0, window.scrollY + (viewportHeight / 2) - 150);
+            const scrollTarget = Math.max(
+              0,
+              window.scrollY + viewportHeight / 2 - 150
+            );
             window.scrollTo({
               top: scrollTarget,
-              behavior: 'smooth'
+              behavior: "smooth",
             });
           }, 150);
         }
-        
-        // Focus the input field in all cases
+
         setTimeout(() => {
           if (inputRef.current) {
             inputRef.current.focus();
           }
         }, 200);
       }
-      
+
       return newState;
     });
   };
 
+  // Add state for the archive modal
+  const [archiveVisible, setArchiveVisible] = useState(false);
+  const [selectedMessage, setSelectedMessage] = useState(null);
+
+  // Add handler for showing the archive
+  const handleShowArchive = (message) => {
+    setSelectedMessage({
+      ...message,
+      // Ensure walletAddress is never undefined
+      walletAddress: message.walletAddress || null,
+    });
+    setArchiveVisible(true);
+  };
+
+  const handleCloseArchive = () => {
+    setArchiveVisible(false);
+    setSelectedMessage(null);
+  };
+
+  // Add renderSendButton function
+  const renderSendButton = () => {
+    if (cooldown) {
+      return (
+        <button
+          className="send-button"
+          disabled={true}
+          aria-label="Send message"
+        >
+          {cooldownTime > 0 ? `Wait ${cooldownTime}s` : "Send"}
+        </button>
+      );
+    }
+
+    return (
+      <button
+        className="send-button"
+        disabled={!message.trim() || isSubmitting}
+        aria-label="Send message"
+        onClick={sendMessage}
+      >
+        {isSubmitting ? "Sending..." : "Send"}
+      </button>
+    );
+  };
+
+  // Pass userRank to the Message component
   return (
     <>
-      {/* Chat Messages - Animate with staggered appearance/disappearance */}
       <AnimatePresence>
         {showMessages && (
           <motion.div
@@ -354,8 +963,10 @@ export default function Messages({ session, userWalletData }) {
                   key={msg.id}
                   msg={msg}
                   userWalletData={userWalletData}
+                  userRank={userRank} // Pass the rank data
                   onDismiss={dismissMessage}
                   index={index}
+                  onShowArchive={handleShowArchive} // Add this prop
                 />
               ))}
             </AnimatePresence>
@@ -363,9 +974,9 @@ export default function Messages({ session, userWalletData }) {
         )}
       </AnimatePresence>
 
-      {/* Add the toggle button */}
+      {/* Keep message toggle button */}
       {!isMobile && session && (
-        <button 
+        <button
           className="messages-toggle"
           onClick={toggleMessages}
           aria-label={showMessages ? "Hide messages" : "Show messages"}
@@ -376,8 +987,8 @@ export default function Messages({ session, userWalletData }) {
 
       {/* Mobile Chat FAB */}
       {isMobile && session && (
-        <ChatFab 
-          onClick={toggleChatInput} 
+        <ChatFab
+          onClick={toggleChatInput}
           showInput={showInput}
           messageCount={newMessageCount}
           onToggleMessages={toggleMessages}
@@ -386,11 +997,11 @@ export default function Messages({ session, userWalletData }) {
         />
       )}
 
-      {/* Chat Input */}
+      {/* Chat Input with Style Options */}
       <AnimatePresence>
         {showInput && session && (
           <motion.div
-            className={`chat-input-overlay ${isMobile ? 'mobile' : ''}`}
+            className={`chat-input-overlay ${isMobile ? "mobile" : ""}`}
             initial={{ opacity: 0, y: isMobile ? 100 : 0 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: isMobile ? 100 : 0 }}
@@ -398,13 +1009,450 @@ export default function Messages({ session, userWalletData }) {
             <div className="chat-input-container">
               <div className="chat-input-header">
                 <span>Send Message</span>
-                <button 
-                  onClick={() => setShowInput(false)}
-                  className="close-button"
-                >
-                  ×
-                </button>
+                <div className="style-buttons">
+                  <button
+                    className="style-toggle-button"
+                    onClick={() => setShowStyleOptions(!showStyleOptions)}
+                    title="Message Style"
+                  >
+                    <MdFormatColorFill />
+                  </button>
+                  <button
+                    className="style-toggle-button"
+                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                    title="Add Sticker"
+                  >
+                    <BsEmojiSmile />
+                  </button>
+                  <button
+                    onClick={() => setShowInput(false)}
+                    className="close-button"
+                  >
+                    ×
+                  </button>
+                </div>
               </div>
+
+              {/* Style Options Dropdown */}
+              {showStyleOptions && (
+                <div className="style-options-dropdown">
+                  <div className="style-options-header">
+                    <div className="style-options-tabs">
+                      <button
+                        className={`style-tab ${
+                          activeStyleTab === "themes" ? "active" : ""
+                        }`}
+                        onClick={() => setActiveStyleTab("themes")}
+                      >
+                        Themes
+                      </button>
+                      {userRank && userRank <= 500 && (
+                        <button
+                          className={`style-tab ${
+                            activeStyleTab === "fonts" ? "active" : ""
+                          }`}
+                          onClick={() => setActiveStyleTab("fonts")}
+                        >
+                          Fonts
+                        </button>
+                      )}
+                      {userRank && userRank <= 100 && (
+                        <button
+                          className={`style-tab ${
+                            activeStyleTab === "animations" ? "active" : ""
+                          }`}
+                          onClick={() => setActiveStyleTab("animations")}
+                        >
+                          Animations
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Add reset button in the header */}
+                    {Object.keys(customStyle).length > 0 && (
+                      <button
+                        className="reset-all-styles"
+                        onClick={handleResetStyle}
+                        title="Reset all styles"
+                      >
+                        Reset All
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Update the themes section to include edit buttons */}
+                  {activeStyleTab === "themes" && (
+                    <>
+                      <h4>Color Themes</h4>
+                      <div className="theme-grid">
+                        {MESSAGE_THEMES.map((theme, index) => (
+                          <div
+                            key={`preset-${index}`}
+                            className={`theme-option ${
+                              customStyle.selectedThemeId ===
+                              `preset-${theme.name}`
+                                ? "selected"
+                                : ""
+                            }`}
+                            style={{
+                              background: theme.gradient || theme.bgColor,
+                              color: theme.textColor,
+                            }}
+                            onClick={() => handleSelectTheme(theme)}
+                          >
+                            <span className="theme-name">{theme.name}</span>
+                            <button
+                              className="edit-theme-btn"
+                              onClick={(e) => {
+                                e.stopPropagation(); // Prevent theme selection when clicking edit
+                                openThemeEditor(theme);
+                              }}
+                              title="Customize theme"
+                            >
+                              <MdModeEdit />
+                            </button>
+                          </div>
+                        ))}
+
+                        {/* Custom themes */}
+                        {customThemes.map((theme) => (
+                          <div
+                            key={`custom-${theme.id}`}
+                            className={`theme-option custom-theme ${
+                              customStyle.selectedThemeId === theme.id
+                                ? "selected"
+                                : ""
+                            }`}
+                            style={{
+                              background: theme.gradient || theme.bgColor,
+                              color: theme.textColor,
+                            }}
+                            onClick={() => handleSelectTheme(theme)}
+                          >
+                            <button
+                              className="delete-theme-btn"
+                              onClick={(e) => {
+                                e.stopPropagation(); // Prevent theme selection when clicking delete
+                                deleteCustomTheme(theme.id);
+                              }}
+                              title="Delete theme"
+                            >
+                              <IoTrashOutline />
+                            </button>
+
+                            <span className="theme-name">{theme.name}</span>
+
+                            <button
+                              className="edit-theme-btn"
+                              onClick={(e) => {
+                                e.stopPropagation(); // Prevent theme selection when clicking edit
+                                openThemeEditor(theme);
+                              }}
+                              title="Customize theme"
+                            >
+                              <MdModeEdit />
+                            </button>
+                          </div>
+                        ))}
+
+                        {/* Add button for creating new theme */}
+                        <button
+                          className="create-theme-btn"
+                          onClick={() => openThemeEditor()}
+                          title="Create custom theme"
+                        >
+                          <IoAddCircleOutline />
+                          <span>Create Theme</span>
+                        </button>
+                      </div>
+
+                      {/* Custom theme creator/editor */}
+                      {isEditingCustomTheme && (
+                        <div className="custom-theme-editor">
+                          <h4>
+                            {editingThemeId
+                              ? "Customize Theme"
+                              : "Create Custom Theme"}
+                          </h4>
+
+                          {editingThemeId && (
+                            <p className="theme-editor-description">
+                              You're creating a copy of an existing theme. The
+                              original theme will not be modified.
+                            </p>
+                          )}
+
+                          <div className="theme-editor-form">
+                            {/* Update input handlers to use the new updateCustomThemeColors function */}
+                            <div className="theme-name-input">
+                              <label>Theme Name</label>
+                              <input
+                                type="text"
+                                value={customThemeColors.name}
+                                onChange={(e) =>
+                                  updateCustomThemeColors({
+                                    ...customThemeColors,
+                                    name: e.target.value,
+                                  })
+                                }
+                                placeholder="My Theme"
+                                maxLength={20}
+                              />
+                            </div>
+
+                            <div className="custom-theme-form">
+                              {/* Update ColorPicker onChange handlers */}
+                              <label>
+                                Text Color:
+                                <ColorPicker
+                                  color={customThemeColors.textColor}
+                                  onChange={(color) =>
+                                    updateCustomThemeColors({
+                                      ...customThemeColors,
+                                      textColor: color,
+                                    })
+                                  }
+                                />
+                              </label>
+
+                              {/* Update gradient toggle */}
+                              <label>
+                                Use Gradient:
+                                <input
+                                  type="checkbox"
+                                  checked={customThemeColors.useGradient}
+                                  onChange={() =>
+                                    updateCustomThemeColors({
+                                      ...customThemeColors,
+                                      useGradient:
+                                        !customThemeColors.useGradient,
+                                    })
+                                  }
+                                />
+                              </label>
+
+                              {/* Update gradient color pickers */}
+                              {customThemeColors.useGradient ? (
+                                <>
+                                  <label>
+                                    Gradient Start:
+                                    <ColorPicker
+                                      color={customThemeColors.gradientStart}
+                                      onChange={(color) =>
+                                        updateCustomThemeColors({
+                                          ...customThemeColors,
+                                          gradientStart: color,
+                                        })
+                                      }
+                                    />
+                                  </label>
+                                  <label>
+                                    Gradient End:
+                                    <ColorPicker
+                                      color={customThemeColors.gradientEnd}
+                                      onChange={(color) =>
+                                        updateCustomThemeColors({
+                                          ...customThemeColors,
+                                          gradientEnd: color,
+                                        })
+                                      }
+                                    />
+                                  </label>
+                                </>
+                              ) : (
+                                <label>
+                                  Background Color:
+                                  <ColorPicker
+                                    color={customThemeColors.bgColor}
+                                    onChange={(color) =>
+                                      updateCustomThemeColors({
+                                        ...customThemeColors,
+                                        bgColor: color,
+                                      })
+                                    }
+                                  />
+                                </label>
+                              )}
+
+                              {/* Update buttons */}
+                              <div className="custom-theme-buttons">
+                                <button onClick={saveCustomTheme}>
+                                  <IoSaveOutline /> Save Theme
+                                </button>
+                                <button onClick={cancelThemeEditing}>
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Keep the fonts and animations tabs the same */}
+                  {activeStyleTab === "fonts" &&
+                    userRank &&
+                    userRank <= 500 && (
+                      <div className="premium-options">
+                        <h4>Premium Font Style (Top 500 Holder)</h4>
+                        <div className="font-selector">
+                          <select
+                            value={customStyle.fontFamily || "inherit"}
+                            onChange={(e) =>
+                              setCustomStyle((prev) => ({
+                                ...prev,
+                                fontFamily: e.target.value,
+                              }))
+                            }
+                            className="font-select-dropdown"
+                          >
+                            {PREMIUM_FONTS.map((font) => (
+                              <option
+                                key={font.value}
+                                value={font.value}
+                                style={{ fontFamily: font.value }}
+                              >
+                                {font.name}
+                              </option>
+                            ))}
+                          </select>
+
+                          {/* Remove the redundant font examples div */}
+
+                          <div className="font-style-options">
+                            <label>
+                              <input
+                                type="checkbox"
+                                checked={customStyle.fontWeight === "bold"}
+                                onChange={() =>
+                                  setCustomStyle((prev) => ({
+                                    ...prev,
+                                    fontWeight:
+                                      prev.fontWeight === "bold"
+                                        ? "normal"
+                                        : "bold",
+                                  }))
+                                }
+                              />
+                              Bold
+                            </label>
+
+                            <label>
+                              <input
+                                type="checkbox"
+                                checked={customStyle.fontStyle === "italic"}
+                                onChange={() =>
+                                  setCustomStyle((prev) => ({
+                                    ...prev,
+                                    fontStyle:
+                                      prev.fontStyle === "italic"
+                                        ? "normal"
+                                        : "italic",
+                                  }))
+                                }
+                              />
+                              Italic
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                  {activeStyleTab === "animations" &&
+                    userRank &&
+                    userRank <= 100 && (
+                      <div className="premium-options elite-options">
+                        <h4>Premium Animations (Top 100 Holder)</h4>
+                        <div className="animation-selector">
+                          {PREMIUM_ANIMATIONS.map((animation) => (
+                            <div
+                              key={animation.value || "none"}
+                              className={`animation-option ${
+                                customStyle.animationType === animation.value
+                                  ? "selected"
+                                  : ""
+                              }`}
+                              onClick={() =>
+                                setCustomStyle((prev) => ({
+                                  ...prev,
+                                  animationType: animation.value,
+                                }))
+                              }
+                            >
+                              {animation.name}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                  {/* Always show the preview */}
+                  <div className="message-preview-wrapper">
+                    <h4 className="preview-title">Live Preview</h4>
+                    <MessagePreview
+                      style={
+                        isEditingCustomTheme &&
+                        Object.keys(previewStyle).length > 0
+                          ? previewStyle
+                          : customStyle
+                      }
+                      username={session?.user?.name}
+                      text={message || "This is how your message will look"}
+                      userImage={
+                        session?.user?.image || session?.user?.profileImage
+                      }
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Custom Theme Editor */}
+
+              {/* Emoji Picker - Optimized for Mobile and Desktop */}
+              {showEmojiPicker && (
+                <>
+                  {isMobile ? (
+                    <div className="mobile-emoji-picker-wrapper">
+                      <div
+                        className="emoji-picker-backdrop"
+                        onClick={() => setShowEmojiPicker(false)}
+                      ></div>
+                      <div className="mobile-emoji-picker-container">
+                        <div className="mobile-emoji-picker-header">
+                          <h4>Select Emoji</h4>
+                        </div>
+                        <SimpleMobileEmojiPicker
+                          onSelect={handleSelectEmoji}
+                          onClose={() => setShowEmojiPicker(false)}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      className="desktop-emoji-picker-wrapper"
+                      style={{ zIndex: 999999 }}
+                    >
+                      <DraggableComponent
+                        initialPosition={{
+                          x: Math.min(
+                            window.innerWidth - 350,
+                            Math.max(20, window.innerWidth / 2 - 160)
+                          ),
+                          y: 50,
+                        }}
+                        onClose={() => setShowEmojiPicker(false)}
+                      >
+                        <SimpleEmojiPicker
+                          onSelect={handleSelectEmoji}
+                          onClose={() => setShowEmojiPicker(false)}
+                        />
+                      </DraggableComponent>
+                    </div>
+                  )}
+                </>
+              )}
+
               <form onSubmit={sendMessage} className="chat-input-form">
                 <input
                   ref={inputRef}
@@ -413,26 +1461,51 @@ export default function Messages({ session, userWalletData }) {
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder={
                     cooldown
-                      ? `Wait ${Math.ceil(cooldownTime / 1000)}s...`
-                      : 'Type your message...'
+                      ? `Wait ${cooldownTime > 0 ? cooldownTime : 0}s...`
+                      : "Type your message..."
                   }
                   disabled={cooldown}
                   className="chat-input"
                   maxLength={100}
                 />
-                <button
-                  type="submit"
-                  disabled={cooldown || !message.trim() || isSubmitting}
-                  className="send-button"
-                >
-                  {cooldown ? `${Math.ceil(cooldownTime / 1000)}s` : 
-                   isSubmitting ? 'Sending...' : 'Send'}
-                </button>
+                {renderSendButton()}
               </form>
+
+              {/* Add this right below the chat input form */}
+              {userRank && (
+                <div className="user-rank-indicator">
+                  {userRank <= 500 ? (
+                    <div className="premium-user-badge">
+                      Premium Messaging Enabled (Rank: #{userRank})
+                    </div>
+                  ) : (
+                    <div className="standard-user-badge">
+                      Standard Messaging (Rank: #{userRank})
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Render MessageArchive at the root level */}
+      {selectedMessage && (
+        <MessageArchive
+          isOpen={archiveVisible}
+          onClose={handleCloseArchive}
+          username={selectedMessage.user}
+          walletAddress={selectedMessage.walletAddress}
+          // Use the current profile image from userWalletData if it's the current user's message
+          profileImage={
+            selectedMessage.walletAddress === userWalletData?.walletAddress
+              ? userWalletData.profileImage || selectedMessage.profileImage
+              : selectedMessage.profileImage
+          }
+          rank={userRank}
+        />
+      )}
     </>
   );
 }
