@@ -86,9 +86,14 @@ export const WalletClaimProvider = ({ children }) => {
               apiKey: "AIzaSyBvdIVxvUb3uqpubOvkhPTdEro8aaqbKuI",
               authDomain: "lockchain-tickets-3eb4d.firebaseapp.com",
               projectId: "lockchain-tickets-3eb4d",
-              storageBucket: "lockchain-tickets-3eb4d.appspot.com", // Fixed storage bucket URL
+              storageBucket: "lockchain-tickets-3eb4d.appspot.com",
               messagingSenderId: "747664160474",
               appId: "1:747664160474:web:202fea05b4ed105631d7e3",
+              // Remove the "data" property that was causing issues
+              // Initialize the database property explicitly
+              databaseURL: `https://${
+                process.env.NEXT_PUBLIC_PROJECT_ID || "lockchain-tickets-3eb4d"
+              }.firebaseio.com`,
             };
 
             // Use a try-catch block for Firebase initialization
@@ -106,98 +111,107 @@ export const WalletClaimProvider = ({ children }) => {
               return;
             }
 
+            // Initialize Firestore with explicit settings
             const firestoreDb = getFirestore(app);
 
-            console.log("Setting up real-time listener for claim:", claimId);
-            const unsubscribe = onSnapshot(
-              doc(firestoreDb, "walletClaims", claimId),
-              (docSnapshot) => {
-                if (docSnapshot.exists()) {
-                  const updatedData = docSnapshot.data();
-                  console.log("Real-time update received:", updatedData);
+            // Use try-catch for listener initialization
+            try {
+              console.log("Setting up real-time listener for claim:", claimId);
+              const unsubscribe = onSnapshot(
+                doc(firestoreDb, "walletClaims", claimId),
+                (docSnapshot) => {
+                  if (docSnapshot.exists()) {
+                    const updatedData = docSnapshot.data();
+                    console.log("Real-time update received:", updatedData);
 
-                  // Update the local state and cache immediately
-                  setWalletClaim((prev) => ({
-                    ...prev,
-                    ...updatedData,
-                    id: docSnapshot.id,
-                  }));
+                    // Update the local state and cache immediately
+                    setWalletClaim((prev) => ({
+                      ...prev,
+                      ...updatedData,
+                      id: docSnapshot.id,
+                    }));
 
-                  // Update visibility state specifically
-                  setShowProfile(updatedData.showProfile !== false);
+                    // Update visibility state specifically
+                    setShowProfile(updatedData.showProfile !== false);
 
-                  // Update cache with fresh data
-                  if (username) {
-                    const cacheKey = `claim_${username.toLowerCase()}`;
+                    // Update cache with fresh data
+                    if (username) {
+                      const cacheKey = `claim_${username.toLowerCase()}`;
 
-                    // Save to session storage for better persistence
-                    if (typeof window !== "undefined") {
-                      try {
-                        const existingData = sessionStorage.getItem(cacheKey);
-                        if (existingData) {
-                          const parsedData = JSON.parse(existingData);
-                          sessionStorage.setItem(
-                            cacheKey,
-                            JSON.stringify({
-                              hasClaimed: true,
-                              claim: {
-                                ...parsedData.claim,
-                                ...updatedData,
-                              },
-                              timestamp: Date.now(),
-                            })
-                          );
+                      // Save to session storage for better persistence
+                      if (typeof window !== "undefined") {
+                        try {
+                          const existingData = sessionStorage.getItem(cacheKey);
+                          if (existingData) {
+                            const parsedData = JSON.parse(existingData);
+                            sessionStorage.setItem(
+                              cacheKey,
+                              JSON.stringify({
+                                hasClaimed: true,
+                                claim: {
+                                  ...parsedData.claim,
+                                  ...updatedData,
+                                },
+                                timestamp: Date.now(),
+                              })
+                            );
+                          }
+                        } catch (e) {
+                          console.error("Session storage error:", e);
                         }
-                      } catch (e) {
-                        console.error("Session storage error:", e);
+                      }
+
+                      // Update client-side cache too
+                      if (claimCache.has(cacheKey)) {
+                        const cached = claimCache.get(cacheKey);
+                        const updatedClaim = {
+                          ...cached.claim,
+                          ...updatedData,
+                        };
+
+                        claimCache.set(cacheKey, {
+                          hasClaimed: true,
+                          claim: updatedClaim,
+                        });
+
+                        // Special cache for visibility status with shorter TTL
+                        visibilityCache.set(
+                          `visibility_${updatedClaim.walletAddress}`,
+                          {
+                            showProfile: updatedData.showProfile !== false,
+                            lastUpdated: Date.now(),
+                          }
+                        );
                       }
                     }
+                  }
+                },
+                (error) => {
+                  console.error("Firestore listener error:", error);
 
-                    // Update client-side cache too
-                    if (claimCache.has(cacheKey)) {
-                      const cached = claimCache.get(cacheKey);
-                      const updatedClaim = {
-                        ...cached.claim,
-                        ...updatedData,
-                      };
+                  // Clean up this failed listener
+                  if (unsubscribeRef.current) {
+                    unsubscribeRef.current = null;
+                  }
 
-                      claimCache.set(cacheKey, {
-                        hasClaimed: true,
-                        claim: updatedClaim,
-                      });
-
-                      // Special cache for visibility status with shorter TTL
-                      visibilityCache.set(
-                        `visibility_${updatedClaim.walletAddress}`,
-                        {
-                          showProfile: updatedData.showProfile !== false,
-                          lastUpdated: Date.now(),
-                        }
-                      );
+                  // Attempt to reconnect after delay if still mounted
+                  setTimeout(() => {
+                    if (claimId && typeof window !== "undefined") {
+                      console.log("Attempting to reconnect Firestore listener");
+                      setupFirestoreListener(claimId);
                     }
-                  }
+                  }, 5000);
                 }
-              },
-              (error) => {
-                console.error("Firestore listener error:", error);
+              );
 
-                // Clean up this failed listener
-                if (unsubscribeRef.current) {
-                  unsubscribeRef.current = null;
-                }
-
-                // Attempt to reconnect after delay if still mounted
-                setTimeout(() => {
-                  if (claimId && typeof window !== "undefined") {
-                    console.log("Attempting to reconnect Firestore listener");
-                    setupFirestoreListener(claimId);
-                  }
-                }, 5000);
-              }
-            );
-
-            // Save the unsubscribe function
-            unsubscribeRef.current = unsubscribe;
+              // Save the unsubscribe function
+              unsubscribeRef.current = unsubscribe;
+            } catch (listenerError) {
+              console.error(
+                "Error creating Firestore listener:",
+                listenerError
+              );
+            }
           })
           .catch((importError) => {
             console.error("Error importing Firebase modules:", importError);
