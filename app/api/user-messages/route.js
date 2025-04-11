@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "../../lib/firebase-admin";
 
+export const dynamic = "force-dynamic";
+
 // Simple in-memory cache
 const userMessagesCache = new Map();
 const CACHE_TTL = 60000; // 1 minute
