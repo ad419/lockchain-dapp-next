@@ -92,7 +92,7 @@ export const WalletClaimProvider = ({ children }) => {
                 const app = getApps().length
                   ? getApp()
                   : initializeApp(firebaseConfig);
-                const firestore = getFirestore(app);
+                const firestore = getFirestore("lockchain-tickets-3eb4d");
 
                 console.log(
                   "Setting up real-time listener for claim:",
