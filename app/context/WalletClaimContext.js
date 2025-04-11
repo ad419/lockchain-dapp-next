@@ -77,8 +77,8 @@ export const WalletClaimProvider = ({ children }) => {
       try {
         // Import Firebase client-side only - but with better error handling
         Promise.all([import("firebase/firestore"), import("firebase/app")])
-          .then(([firestore, firebase]) => {
-            const { getFirestore, doc, onSnapshot } = firestore;
+          .then(([firestoreModule, firebase]) => {
+            const { getFirestore, doc, onSnapshot } = firestoreModule;
             const { initializeApp, getApps, getApp } = firebase;
 
             // Initialize Firebase if needed
@@ -106,11 +106,11 @@ export const WalletClaimProvider = ({ children }) => {
               return;
             }
 
-            const firestore = getFirestore(app);
+            const firestoreDb = getFirestore(app);
 
             console.log("Setting up real-time listener for claim:", claimId);
             const unsubscribe = onSnapshot(
-              doc(firestore, "walletClaims", claimId),
+              doc(firestoreDb, "walletClaims", claimId),
               (docSnapshot) => {
                 if (docSnapshot.exists()) {
                   const updatedData = docSnapshot.data();
