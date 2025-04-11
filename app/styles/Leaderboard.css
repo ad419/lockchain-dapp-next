@@ -1740,3 +1740,109 @@
     height: 40px;
   }
 }
+
+.desktop-only {
+  display: none;
+}
+
+.mobile-only {
+  display: inline;
+}
+
+@media (min-width: 768px) {
+  .desktop-only {
+    display: inline;
+  }
+  
+  .mobile-only {
+    display: none;
+  }
+}
+
+/* Add these styles at the end of your Leaderboard.css file */
+.leaderboard-maintenance {
+  text-align: center;
+  padding: 40px 20px;
+  background: rgba(64, 63, 173, 0.1);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 40px auto;
+  max-width: 600px;
+}
+
+.maintenance-icon {
+  font-size: 48px;
+  margin-bottom: 20px;
+  animation: pulse 2s infinite;
+}
+
+.leaderboard-maintenance h3 {
+  color: white;
+  font-size: 24px;
+  margin-bottom: 16px;
+}
+
+.leaderboard-maintenance p {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 16px;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.maintenance-error {
+  background: rgba(255, 0, 0, 0.1);
+  border: 1px solid rgba(255, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 10px;
+  margin: 15px 0;
+  color: #ff6b6b;
+  font-family: monospace;
+  font-size: 14px;
+  overflow-wrap: break-word;
+  max-width: 100%;
+}
+
+.retry-button {
+  background: rgba(98, 134, 252, 0.2);
+  color: white;
+  border: 1px solid rgba(98, 134, 252, 0.4);
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.retry-button:hover {
+  background: rgba(98, 134, 252, 0.3);
+  transform: translateY(-2px);
+}
+
+.retry-icon {
+  display: inline-block;
+  animation: spin 1.5s infinite linear;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.6;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -12,9 +12,8 @@ import { contract, DEFAULT_CHAIN } from "../hooks/constant";
 import tokenAbi from "../json/token.json";
 import Web3 from "web3";
 import DisconnectModal from "./DisconnectModal";
-import { MdModeEdit } from "react-icons/md";
-import { BiCamera } from "react-icons/bi";
 import { useToast } from "../context/ToastContext";
+import { useWalletClaim } from "../context/WalletClaimContext";
 
 // Add this function before your ProfileManager component
 const generateWalletColor = (walletAddress) => {
@@ -43,7 +42,8 @@ export default function ProfileManager() {
   const [copied, setCopied] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState(null);
-  const [showProfile, setShowProfile] = useState(true);
+
+  const { showProfile, toggleProfileVisibility, isToggling } = useWalletClaim();
 
   // Add loading spinner component with renamed classes
   const LoadingSpinner = () => (
@@ -90,19 +90,6 @@ export default function ProfileManager() {
     fetchBalances();
   }, [address]);
 
-  useEffect(() => {
-    const fetchVisibility = async () => {
-      if (address) {
-        const response = await fetch(
-          `/api/profile-visibility?address=${address}`
-        );
-        const data = await response.json();
-        setShowProfile(data.showProfile);
-      }
-    };
-    fetchVisibility();
-  }, [address]);
-
   const copyToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(address);
@@ -134,24 +121,22 @@ export default function ProfileManager() {
 
   const handleToggleVisibility = async () => {
     try {
-      const response = await fetch("/api/profile-visibility", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          address: address,
-          showProfile: !showProfile,
-        }),
-      });
+      // Use the context function for optimistic updates
+      const result = await toggleProfileVisibility();
 
-      if (response.ok) {
-        setShowProfile(!showProfile);
+      if (result.success) {
+        showToast(
+          `Profile ${result.showProfile ? "visible" : "hidden"} on leaderboard`,
+          "success"
+        );
+      } else {
+        showToast(result.error || "Failed to update visibility", "error");
       }
     } catch (error) {
       console.error("Error toggling profile visibility:", error);
+      showToast("Failed to update visibility settings", "error");
     }
   };
-
-  // Add this function to your component
 
   // Show loading state while checking session
   if (status === "loading") {
@@ -180,7 +165,7 @@ export default function ProfileManager() {
           <div className="mgr-profile-avatar">
             {!imageError ? (
               <Image
-                src={session.user.image}
+                src={session.user.profileImage || session.user.image}
                 alt={session.user.name}
                 width={120}
                 height={120}
@@ -276,13 +261,33 @@ export default function ProfileManager() {
             <div className="mgr-visibility-toggle">
               <button
                 onClick={handleToggleVisibility}
+                disabled={isToggling}
                 className={`mgr-toggle-button ${
                   showProfile ? "mgr-visible" : "mgr-hidden"
                 }`}
               >
-                {showProfile
-                  ? "Visible on Leaderboard"
-                  : "Hidden from Leaderboard"}
+                {isToggling ? (
+                  <>
+                    <span
+                      className="spinner"
+                      style={{
+                        display: "inline-block",
+                        width: "12px",
+                        height: "12px",
+                        border: "2px solid rgba(255, 255, 255, 0.3)",
+                        borderTop: "2px solid #fff",
+                        borderRadius: "50%",
+                        animation: "spin 1s linear infinite",
+                        marginRight: "8px",
+                      }}
+                    ></span>
+                    Updating...
+                  </>
+                ) : showProfile ? (
+                  "Visible on Leaderboard"
+                ) : (
+                  "Hidden from Leaderboard"
+                )}
               </button>
             </div>
           </div>

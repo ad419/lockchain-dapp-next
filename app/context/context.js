@@ -1,52 +1,47 @@
 "use client";
 
 import { createContext, useState, useEffect } from "react";
-import { useTheme } from "next-themes";
 
-export const Context = createContext();
+// Create context with default values
+export const Context = createContext({
+  darkMode: false,
+  setDarkMode: () => {},
+  mounted: false,
+});
 
 export function ContextProvider({ children }) {
-  const [mounted, setMounted] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // Check localStorage first
-    const savedTheme = localStorage.getItem("theme");
-    if (savedTheme) {
-      setDarkMode(savedTheme === "dark");
-    } else {
-      // Fall back to system preference
-      const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      setDarkMode(isDark);
-    }
+    // Only run on client side
     setMounted(true);
+
+    // Load dark mode preference from localStorage
+    try {
+      const savedMode = localStorage.getItem("darkMode");
+      if (savedMode !== null) {
+        setDarkMode(savedMode === "true");
+      }
+    } catch (error) {
+      console.error("Failed to load dark mode preference:", error);
+    }
   }, []);
 
+  // Save dark mode preference when it changes
   useEffect(() => {
     if (mounted) {
-      // Update localStorage and body class when theme changes
-      localStorage.setItem("theme", darkMode ? "dark" : "light");
-      document.body.classList.toggle("dark-mode", darkMode);
-      setTheme(darkMode ? "dark" : "light");
+      try {
+        localStorage.setItem("darkMode", darkMode.toString());
+      } catch (error) {
+        console.error("Failed to save dark mode preference:", error);
+      }
     }
   }, [darkMode, mounted]);
 
-  const contextValue = {
-    darkMode,
-    setDarkMode: (value) => {
-      setDarkMode(value);
-      setTheme(value ? "dark" : "light");
-    },
-    progress,
-    setProgress,
-    mounted,
-  };
-
-  if (!mounted) {
-    return <div style={{ visibility: "hidden" }}>{children}</div>;
-  }
-
-  return <Context.Provider value={contextValue}>{children}</Context.Provider>;
+  return (
+    <Context.Provider value={{ darkMode, setDarkMode, mounted }}>
+      {children}
+    </Context.Provider>
+  );
 }

@@ -11,7 +11,6 @@ import { DEFAULT_CHAIN, SUPPORTED_CHAIN, contract } from "../hooks/constant";
 import gldnTextImg from "../images/gldn-logotype.png";
 import { IoStatsChartSharp } from "react-icons/io5";
 import { FaChartColumn } from "react-icons/fa6";
-// import { CgMenuLeftAlt } from "react-icons/cg";
 import {
   default as lconImg,
   default as lconLight,
@@ -24,6 +23,7 @@ import styles from "../styles/header.module.css";
 import { signIn, signOut, useSession } from "next-auth/react";
 import ClipLoader from "react-spinners/ClipLoader";
 import { useToast } from "../context/ToastContext";
+import { useWalletClaim } from "../context/WalletClaimContext";
 
 export default function Header() {
   const context = useContext(Context);
@@ -38,20 +38,22 @@ export default function Header() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { chain } = useNetwork();
-  const [dropdownOpen, setDropdownOpen] = useState(false); // Add this line
-  const [web3, setWeb3] = useState(null); // Add this line if not present
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [web3, setWeb3] = useState(null);
   const dropdownRef = useRef(null);
   const { data: session, status } = useSession();
   const { address, isConnected } = useAccount();
   const { showToast } = useToast();
-  const [isClaiming, setIsClaiming] = useState(false);
-  const [hasClaimedWallet, setHasClaimedWallet] = useState(false);
+  const {
+    hasClaimedWallet,
+    isClaiming,
+    claimWallet: contextClaimWallet,
+  } = useWalletClaim();
 
-  // First, add a ref to track the interval
-  const checkIntervalRef = useRef(null);
+  console.log(hasClaimedWallet);
 
   useEffect(() => {
-    // Check if MetaMask is installed and enabled
+    // Only initialize web3 provider
     if (window.ethereum) {
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       setWeb3(provider);
@@ -59,69 +61,11 @@ export default function Header() {
 
     document.addEventListener("mousedown", handleClickOutside);
 
-    // Cleanup function to remove event listener
+    // Cleanup function
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-
-  async function checkWalletClaim(twitterUsername) {
-    try {
-      // Add logging to track function execution
-      console.log("Checking wallet claim for:", twitterUsername);
-
-      const response = await fetch(
-        `/api/check-wallet-claim?twitterUsername=${encodeURIComponent(
-          twitterUsername
-        )}`
-      );
-      const data = await response.json();
-
-      if (data.error) {
-        console.error("Error from API:", data.error);
-        return;
-      }
-
-      setHasClaimedWallet(data.hasClaimed);
-      console.log("Updated claim status:", data.hasClaimed);
-
-      // If claimed, clear the interval
-      if (data.hasClaimed && checkIntervalRef.current) {
-        clearInterval(checkIntervalRef.current);
-        checkIntervalRef.current = null;
-      }
-    } catch (error) {
-      console.error("Error checking wallet claim:", error);
-    }
-  }
-
-  useEffect(() => {
-    if (session?.user?.name) {
-      // Clear any existing interval
-      if (checkIntervalRef.current) {
-        clearInterval(checkIntervalRef.current);
-        checkIntervalRef.current = null;
-      }
-
-      // Initial check
-      checkWalletClaim(session.user.name);
-
-      // Only set up interval if wallet is not claimed
-      if (!hasClaimedWallet) {
-        checkIntervalRef.current = setInterval(() => {
-          checkWalletClaim(session.user.name);
-        }, 10000);
-      }
-
-      // Cleanup
-      return () => {
-        if (checkIntervalRef.current) {
-          clearInterval(checkIntervalRef.current);
-          checkIntervalRef.current = null;
-        }
-      };
-    }
-  }, [session?.user?.name, hasClaimedWallet]);
 
   const handleClickOutside = (event) => {
     if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -181,20 +125,7 @@ export default function Header() {
     ? session.user.name.replace(/\s+/g, "").toLowerCase()
     : "user";
 
-  const checkWalletHoldings = async () => {
-    try {
-      const response = await fetch("/api/holders");
-      const data = await response.json();
-      return data.holders.some(
-        (holder) => holder.address.toLowerCase() === address.toLowerCase()
-      );
-    } catch (error) {
-      console.error("Error checking wallet holdings:", error);
-      return false;
-    }
-  };
-
-  const claimWallet = async () => {
+  const handleClaimWallet = async () => {
     if (!isConnected) {
       showToast("Please connect your wallet first", "error");
       return;
@@ -205,61 +136,16 @@ export default function Header() {
       return;
     }
 
-    setIsClaiming(true);
     try {
-      // First check if wallet already claimed
-      const checkResponse = await fetch(
-        `/api/check-wallet-claim?twitterUsername=${encodeURIComponent(
-          session.user.name
-        )}`
-      );
-      const checkData = await checkResponse.json();
-
-      if (checkData.hasClaimed) {
-        showToast("This wallet has already been claimed", "error");
-        setHasClaimedWallet(true);
-        setIsClaiming(false);
-        return;
-      }
-
-      // Check holdings
-      const hasHoldings = await checkWalletHoldings();
-      if (!hasHoldings) {
-        showToast("Your wallet must have token holdings to claim", "error");
-        setIsClaiming(false);
-        return;
-      }
-
-      // Proceed with claim
-      const response = await fetch("/api/claim-wallet", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          walletAddress: address,
-          twitterUsername: session.user.name,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
+      const result = await contextClaimWallet();
+      if (result.success) {
         showToast("Wallet claimed successfully!", "success");
-        setHasClaimedWallet(true);
-
-        // Force an immediate check
-        await checkWalletClaim(session.user.name);
       } else {
-        showToast(data.error || "Failed to claim wallet", "error");
-        setHasClaimedWallet(false);
+        showToast(result.error || "Failed to claim wallet", "error");
       }
     } catch (error) {
       console.error("Error claiming wallet:", error);
-      showToast("An error occurred while claiming your wallet", "error");
-      setHasClaimedWallet(false);
-    } finally {
-      setIsClaiming(false);
+      showToast("An error occurred while claiming wallet", "error");
     }
   };
 
@@ -511,7 +397,9 @@ export default function Header() {
                       <div className="d-flex align-items-center">
                         <Link href={`/profile/${username}`}>
                           <Image
-                            src={session.user.image}
+                            src={
+                              session.user.profileImage || session.user.image
+                            }
                             alt={session.user.name}
                             className="rounded-circle me-2"
                             width={32}
@@ -540,7 +428,7 @@ export default function Header() {
                         </button>
                         {!hasClaimedWallet ? (
                           <button
-                            onClick={claimWallet}
+                            onClick={handleClaimWallet}
                             disabled={isClaiming}
                             className="btn btn-primary btn-rounded d-flex align-items-center"
                             style={{
@@ -905,30 +793,6 @@ export default function Header() {
                     <i className="angle fe fe-chevron-right"></i>
                   </Link>
                 </li>
-                {/* <li className="nav-item">
-                  <a
-                    className="nav-link"
-                    rel="noreferrer"
-                    target="_blank"
-                    href={SIDEBAR_TOKEN_LINK}
-                  >
-                    <i className="ti-receipt sidemenu-icon menu-icon"></i>
-                    <span className="sidemenu-label">LockChain Contract</span>
-                    <i className="angle fe fe-chevron-right"></i>
-                  </a>
-                </li>
-                <li className="nav-item">
-                  <a
-                    className="nav-link"
-                    rel="noreferrer"
-                    target="_blank"
-                    href={SIDEBAR_CHART_LINK}
-                  >
-                    <i className="ti-receipt sidemenu-icon menu-icon"></i>
-                    <span className="sidemenu-label">LockChain Chart</span>
-                    <i className="angle fe fe-chevron-right"></i>
-                  </a>
-                </li> */}
                 <li className="nav-header active">
                   <span
                     style={{
@@ -977,15 +841,6 @@ export default function Header() {
                     <i className="angle fe fe-chevron-right"></i>
                   </Link>
                 </li>
-                {/* <li className="nav-item">
-                                    <a className="nav-link" target="_self" href="hmailto:water@bluarctic.xyz">
-                                        <span className="shape1"></span>
-                                        <span className="shape2"></span>
-                                        <i className="si si-envelope-open sidemenu-icon menu-icon"></i>
-                                        <span className="sidemenu-label">Email</span>
-                                        <i className="angle fe fe-chevron-right"></i>
-                                    </a>
-                                </li> */}
               </ul>
               <div className="slide-right" id="slide-right">
                 <i className="fe fe-chevron-right"></i>

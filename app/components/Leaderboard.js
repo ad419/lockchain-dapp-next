@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useInView } from "react-intersection-observer";
 import { motion } from "framer-motion";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -12,8 +12,10 @@ import Tooltip from "./Tooltip";
 import "../styles/Leaderboard.css";
 import Link from "next/link";
 import Image from "next/image";
-import defaultTokenLogo from "../images/logo.png"; // Add your default token image
-import Messages from "./Messages"; // Add this import at the top
+import defaultTokenLogo from "../images/logo.png";
+import Messages from "./Messages";
+import { useToast } from "../context/ToastContext";
+import { useWalletClaim } from "../context/WalletClaimContext";
 
 const MAX_SUPPLY = 1_000_000_000;
 const DEFAULT_TOKEN_DATA = {
@@ -53,15 +55,51 @@ const getRankTitle = (rank) => {
   return { title: "Token Holder", color: "#6286fc", badge: "🔒" };
 };
 
-const fetcher = async (url) => {
+const fetcher = async (url, { refreshData } = {}) => {
   try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error("Network response was not ok");
+    const fetchUrl = refreshData ? `${url}?refresh=true` : url;
+
+    const cachedData = sessionStorage.getItem(`cache_${url}`);
+    const cachedTimestamp = sessionStorage.getItem(`cache_timestamp_${url}`);
+    const now = Date.now();
+
+    if (cachedData && cachedTimestamp && !refreshData) {
+      if (now - parseInt(cachedTimestamp) < 30000) {
+        console.log("Using sessionStorage cached data for:", url);
+        return JSON.parse(cachedData);
+      }
     }
-    return response.json();
+
+    console.log("Fetching fresh data for:", url);
+    const response = await fetch(fetchUrl);
+
+    if (!response.ok) {
+      throw new Error(`Network response was not ok: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    try {
+      sessionStorage.setItem(`cache_${url}`, JSON.stringify(data));
+      sessionStorage.setItem(`cache_timestamp_${url}`, now.toString());
+    } catch (e) {
+      console.warn("Could not cache in sessionStorage:", e);
+    }
+
+    return data;
   } catch (error) {
     console.error("Fetching data failed:", error);
+
+    try {
+      const cachedData = sessionStorage.getItem(`cache_${url}`);
+      if (cachedData) {
+        console.log("Using stale cached data after error");
+        return JSON.parse(cachedData);
+      }
+    } catch (e) {
+      console.error("Error retrieving cached data:", e);
+    }
+
     throw error;
   }
 };
@@ -88,8 +126,53 @@ const STATIC_SOCIAL_LINKS = [
   },
 ];
 
+// Add a helper function to format large numbers in Leaderboard.js
+const formatSupply = (supply, useShortFormat = false) => {
+  if (useShortFormat) {
+    if (supply >= 1_000_000_000) {
+      return `${(supply / 1_000_000_000).toFixed(1)}B`;
+    } else if (supply >= 1_000_000) {
+      return `${(supply / 1_000_000).toFixed(1)}M`;
+    } else if (supply >= 1_000) {
+      return `${(supply / 1_000).toFixed(1)}K`;
+    }
+  }
+
+  // Format with commas for readability when not using short format
+  return supply.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+};
+
+// Add this component within your Leaderboard.js file
+const MaintenanceMessage = ({ error, onRetry }) => {
+  return (
+    <div className="leaderboard-maintenance">
+      <div className="maintenance-icon">🛠️</div>
+      <h3>Leaderboard Temporarily Unavailable</h3>
+      <p>
+        We're experiencing some technical difficulties with our data provider.
+        The leaderboard will be back online shortly.
+      </p>
+      {error && <div className="maintenance-error">{error}</div>}
+      <button className="retry-button" onClick={onRetry}>
+        <span className="retry-icon">🔄</span> Try Again
+      </button>
+    </div>
+  );
+};
+
 export default function LeaderboardClient({ initialData }) {
+  const { showToast } = useToast();
   const { data: session } = useSession();
+
+  const {
+    walletClaim,
+    userHolderData,
+    userHolderIndex,
+    checkHolderPosition,
+    isCheckingClaim,
+    checkWalletClaim,
+  } = useWalletClaim();
+
   const [mounted, setMounted] = useState(false);
   const scrollRef = useRef(null);
   const tableContainerRef = useRef(null);
@@ -101,22 +184,86 @@ export default function LeaderboardClient({ initialData }) {
   const [isAnimating, setIsAnimating] = useState(false);
   const animationTimeoutRef = useRef(null);
 
-  const [userHolderData, setUserHolderData] = useState(null);
-  const [userHolderIndex, setUserHolderIndex] = useState(null);
-  const [userWalletData, setUserWalletData] = useState(null);
   const [claimChecked, setClaimChecked] = useState(false);
-  const [walletDataLoading, setWalletDataLoading] = useState(true);
+  const [walletDataLoading, setWalletDataLoading] = useState(false);
 
-  const { data, error, isLoading } = useSWR("/api/holders", fetcher, {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastRefreshTime, setLastRefreshTime] = useState(0);
+
+  // Add an error state to track API errors
+  const [apiError, setApiError] = useState(null);
+
+  const {
+    data,
+    error,
+    isLoading,
+    mutate: refreshData,
+  } = useSWR("/api/holders", fetcher, {
     fallbackData: { ...DEFAULT_TOKEN_DATA, ...initialData },
-    refreshInterval: 15000, // Refresh every 15 seconds
+    refreshInterval: 15000,
     revalidateOnFocus: true,
     suspense: false,
     keepPreviousData: true,
     shouldRetryOnError: true,
     errorRetryInterval: 5000,
     errorRetryCount: 3,
+    onError: (err) => {
+      console.error("Error fetching holders data:", err);
+      setApiError(err.message || "Failed to load leaderboard data");
+    },
   });
+
+  // Update the handleRefresh function to refresh all data sources
+
+  const handleRefresh = useCallback(async () => {
+    const now = Date.now();
+    const timeSinceLastRefresh = now - lastRefreshTime;
+
+    // Only allow refresh every 10 seconds to prevent API spam
+    if (isRefreshing || timeSinceLastRefresh < 10000) {
+      showToast("Please wait before refreshing again", "info");
+      return;
+    }
+
+    setIsRefreshing(true);
+    setLastRefreshTime(now);
+    setApiError(null); // Clear any previous errors
+
+    try {
+      // 1. Force refresh API data with the refresh=true query parameter
+      await refreshData(async () => {
+        const response = await fetch("/api/holders?refresh=true");
+        if (!response.ok) {
+          throw new Error("Failed to refresh holders data");
+        }
+        return response.json();
+      });
+
+      // 2. If user is logged in, refresh wallet claim data
+      if (session && walletClaim) {
+        await checkHolderPosition(true); // Force refresh holder position
+        await checkWalletClaim(true); // Force refresh wallet claim status
+      }
+
+      // Show success message
+      showToast("Leaderboard data refreshed successfully!", "success");
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+      setApiError(error.message || "Failed to refresh leaderboard data");
+      showToast("Failed to refresh data. Please try again.", "error");
+    } finally {
+      // Delay setting isRefreshing to false to show the spinner for at least 1 second
+      setTimeout(() => setIsRefreshing(false), 1000);
+    }
+  }, [
+    refreshData,
+    lastRefreshTime,
+    showToast,
+    session,
+    walletClaim,
+    checkHolderPosition,
+    checkWalletClaim,
+  ]);
 
   useEffect(() => {
     setMounted(true);
@@ -143,127 +290,42 @@ export default function LeaderboardClient({ initialData }) {
   }, []);
 
   useEffect(() => {
-    if (session?.user?.name) {
-      setWalletDataLoading(true); // Set loading to true when starting the fetch
-
-      async function fetchWalletClaim() {
-        try {
-          const response = await fetch(
-            `/api/check-wallet-claim?twitterUsername=${encodeURIComponent(
-              session.user.name
-            )}`
-          );
-
-          if (!response.ok) throw new Error("Failed to fetch wallet claim");
-
-          const claimData = await response.json();
-
-          if (claimData.hasClaimed && claimData.claim) {
-            setUserWalletData(claimData.claim);
-
-            // Find user's position in full holders list
-            if (data?.holders?.length > 0) {
-              const holderIndex = data.holders.findIndex(
-                (holder) =>
-                  holder.address.toLowerCase() ===
-                  claimData.claim.walletAddress.toLowerCase()
-              );
-
-              if (holderIndex !== -1) {
-                const holderData = data.holders[holderIndex];
-                // Set user holder data with correct rank
-                setUserHolderData({
-                  ...holderData,
-                  rank: holderIndex + 1,
-                });
-              }
-            }
-          }
-          setClaimChecked(true);
-        } catch (error) {
-          console.error("Error fetching wallet claim:", error);
-        } finally {
-          setWalletDataLoading(false); // Set loading to false when fetch completes
-        }
-      }
-
-      fetchWalletClaim();
-    } else {
-      setWalletDataLoading(false); // No session, so no loading needed
+    if (data?.holders?.length > 0) {
+      checkHolderPosition(data.holders);
+      setClaimChecked(true);
     }
-  }, [session?.user?.name, data?.holders]);
-
-  useEffect(() => {
-    if (userWalletData?.walletAddress && data?.holders) {
-      const holderIndex = data.holders.findIndex(
-        (holder) =>
-          holder.address.toLowerCase() ===
-          userWalletData.walletAddress.toLowerCase()
-      );
-
-      if (holderIndex !== -1) {
-        setUserHolderData((prevData) => ({
-          ...prevData,
-          ...data.holders[holderIndex],
-          rank: holderIndex + 1,
-        }));
-      }
-    }
-  }, [data?.holders, userWalletData]);
+  }, [data?.holders, checkHolderPosition]);
 
   useEffect(() => {
     if (!session) {
       setClaimChecked(false);
-      setUserWalletData(null);
-      setUserHolderData(null);
-      setUserHolderIndex(null);
     }
   }, [session]);
 
-  // Update the useEffect for scroll handling
   useEffect(() => {
     const handleScroll = () => {
       if (!tableContainerRef.current) return;
 
-      // Need to select the table header after the container is mounted
-      // Using a more reliable selector
       const tableHeader =
         tableContainerRef.current.querySelector(".table-header");
 
       if (tableHeader) {
-        // Log for debugging
-        console.log("Scroll position:", tableContainerRef.current.scrollTop);
-
-        // Check for vertical scroll with a lower threshold
         if (tableContainerRef.current.scrollTop > 5) {
-          // Add the class
           tableHeader.classList.add("scrolled-vertical");
-          // Debug
-          console.log("Added scrolled-vertical class");
         } else {
-          // Remove the class
           tableHeader.classList.remove("scrolled-vertical");
-          // Debug
-          console.log("Removed scrolled-vertical class");
         }
 
-        // Same for horizontal scroll
         if (tableContainerRef.current.scrollLeft > 5) {
           tableContainerRef.current.classList.add("scrolled");
         } else {
           tableContainerRef.current.classList.remove("scrolled");
         }
-      } else {
-        console.log("Table header not found"); // Debug
       }
     };
 
-    // Add the event listener only when the component is fully mounted
     if (tableContainerRef.current) {
-      console.log("Adding scroll listener"); // Debug
       tableContainerRef.current.addEventListener("scroll", handleScroll);
-
-      // Force an initial check after a short delay
       setTimeout(handleScroll, 100);
     }
 
@@ -272,7 +334,25 @@ export default function LeaderboardClient({ initialData }) {
         tableContainerRef.current.removeEventListener("scroll", handleScroll);
       }
     };
-  }, [mounted]); // Add mounted as a dependency to ensure this runs after mounting
+  }, [mounted]);
+
+  const totalPages = useMemo(() => {
+    return Math.ceil((data?.holders?.length ?? 0) / holdersPerPage);
+  }, [data?.holders?.length, holdersPerPage]);
+
+  useEffect(() => {
+    const savedPage = sessionStorage.getItem("leaderboard_current_page");
+    if (savedPage && parseInt(savedPage) <= totalPages) {
+      setCurrentPage(parseInt(savedPage));
+    }
+
+    return () => {
+      sessionStorage.setItem(
+        "leaderboard_current_page",
+        currentPage.toString()
+      );
+    };
+  }, [currentPage, totalPages]);
 
   const {
     totalSupply = MAX_SUPPLY,
@@ -310,8 +390,6 @@ export default function LeaderboardClient({ initialData }) {
     }
   }, [currentPage]);
 
-  const totalPages = Math.ceil((data?.holders?.length ?? 0) / holdersPerPage);
-
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   const handlePageNavigation = (direction) => {
@@ -335,18 +413,18 @@ export default function LeaderboardClient({ initialData }) {
     );
   }
 
-  if (error) {
+  // Display the maintenance message when API is in maintenance mode or on error
+  if (
+    (data?.maintenanceMode || error || apiError) &&
+    (!data?.holders || data.holders.length === 0)
+  ) {
     return (
-      <div style={{ marginTop: "60px" }} className="leaderboard-container-bg">
+      <div className="leaderboard-container-bg">
         <div className="leaderboard-container">
-          <h2 className="leaderboard-title text-red-500">
-            Error loading holders data
-          </h2>
-          <p>{error.message}</p>
-          <details>
-            <summary>Error Details</summary>
-            <pre>{JSON.stringify(error, null, 2)}</pre>
-          </details>
+          <MaintenanceMessage
+            error={apiError || error?.message || ""}
+            onRetry={handleRefresh}
+          />
         </div>
       </div>
     );
@@ -384,9 +462,9 @@ export default function LeaderboardClient({ initialData }) {
 
       const rankTitle = getRankTitle(holder.rank);
       const isUserWallet =
-        userWalletData &&
+        walletClaim &&
         holder.address.toLowerCase() ===
-          userWalletData.walletAddress.toLowerCase();
+          walletClaim.walletAddress.toLowerCase();
       const walletColor = isUserWallet
         ? generateWalletColor(holder.address)
         : null;
@@ -524,7 +602,12 @@ export default function LeaderboardClient({ initialData }) {
   };
 
   return (
-    <div style={{ marginTop: "60px" }} className="leaderboard-container-bg">
+    <div
+      style={{
+        paddingTop: "68px",
+      }}
+      className="leaderboard-container-bg"
+    >
       <motion.div
         style={{
           overflowX: "hidden",
@@ -533,7 +616,7 @@ export default function LeaderboardClient({ initialData }) {
       >
         {session && (
           <>
-            {walletDataLoading ? (
+            {isCheckingClaim ? (
               <div className="user-wallet-stats loading">
                 <div className="wallet-stats-loading">
                   <div className="loading-shimmer"></div>
@@ -544,20 +627,20 @@ export default function LeaderboardClient({ initialData }) {
                   </div>
                 </div>
               </div>
-            ) : userWalletData && userHolderData ? (
+            ) : walletClaim && userHolderData ? (
               <div className="user-wallet-stats">
                 <div className="user-stats-header">
                   <h3>Your Position</h3>
                   <div className="wallet-address-ld">
-                    {userWalletData.walletAddress.substring(0, 6)}...
-                    {userWalletData.walletAddress.substring(
-                      userWalletData.walletAddress.length - 4
+                    {walletClaim.walletAddress.substring(0, 6)}...
+                    {walletClaim.walletAddress.substring(
+                      walletClaim.walletAddress.length - 4
                     )}
                     <button
                       className="copy-button-ld"
                       onClick={() => {
                         navigator.clipboard.writeText(
-                          userWalletData.walletAddress
+                          walletClaim.walletAddress
                         );
                       }}
                       title="Copy to clipboard"
@@ -601,9 +684,12 @@ export default function LeaderboardClient({ initialData }) {
         <h2 className="leaderboard-title">Top 500 Token Holders</h2>
         <div className="leaderboard-stats">
           <div className="stat-item">
-            <span className="stat-label">Total Supply:</span>
+            <span className="stat-label">Total Supply</span>
             <span className="stat-value">
-              <AnimatedNumber value={totalSupply} duration={2000} /> Tokens
+              <span className="desktop-only">{formatSupply(totalSupply)}</span>
+              <span className="mobile-only">
+                {formatSupply(totalSupply, true)}
+              </span>
             </span>
           </div>
           <div className="stat-item">
@@ -643,7 +729,7 @@ export default function LeaderboardClient({ initialData }) {
               height={48}
               className="token-logo"
               onError={(e) => {
-                e.target.onerror = null; // Prevent infinite loop
+                e.target.onerror = null;
                 e.target.src = defaultTokenLogo.src;
               }}
             />
@@ -735,6 +821,58 @@ export default function LeaderboardClient({ initialData }) {
             </div>
           </div>
         </div>
+
+        {/* <div
+          className="refresh-button-container"
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            margin: "10px 0",
+          }}
+        >
+          <button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="refresh-button"
+            style={{
+              background: "rgba(98, 134, 252, 0.1)",
+              border: "1px solid rgba(98, 134, 252, 0.3)",
+              padding: "8px 16px",
+              borderRadius: "8px",
+              color: "#6286fc",
+              fontWeight: "500",
+              cursor: isRefreshing ? "not-allowed" : "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              transition: "all 0.2s ease",
+            }}
+          >
+            {isRefreshing ? (
+              <>
+                <span
+                  className="spinner"
+                  style={{
+                    display: "inline-block",
+                    width: "16px",
+                    height: "16px",
+                    border: "2px solid rgba(98, 134, 252, 0.3)",
+                    borderTop: "2px solid #6286fc",
+                    borderRadius: "50%",
+                    animation: "spin 1s linear infinite",
+                  }}
+                ></span>
+                Refreshing...
+              </>
+            ) : (
+              <>
+                <span>🔄</span>
+                Refresh Data
+              </>
+            )}
+          </button>
+        </div> */}
+
         <p
           className="data-note"
           style={{
@@ -767,7 +905,7 @@ export default function LeaderboardClient({ initialData }) {
               height: `${Math.min(
                 rowVirtualizer.getTotalSize(),
                 holders.length * 60
-              )}px`, // Limit height to actual content
+              )}px`,
               width: "100%",
               position: "relative",
               minWidth: "800px",
@@ -857,14 +995,13 @@ export default function LeaderboardClient({ initialData }) {
           totalPages={totalPages}
         />
 
-        {/* Add Messages component here */}
-        {mounted && (
+        {/* {mounted && (
           <Messages
             session={session}
-            userWalletData={userWalletData}
+            userWalletData={walletClaim}
             userHolderData={userHolderData}
           />
-        )}
+        )} */}
       </motion.div>
     </div>
   );

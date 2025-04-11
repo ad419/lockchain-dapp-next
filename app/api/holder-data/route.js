@@ -1,205 +1,140 @@
 import { NextResponse } from "next/server";
-import { db } from "../../../app/lib/firebase-admin";
+import { serverCache } from "../../lib/server-cache";
+import { LRUCache } from "lru-cache";
+
+// Create a cache for holder data
+const holderCache = new LRUCache({
+  max: 500, // Cache up to 500 wallet addresses
+  ttl: 1800000, // 30 minutes
+  updateAgeOnGet: true,
+  allowStale: true,
+});
 
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-
-    // Accept both address and walletAddress parameters
-    const address =
-      searchParams.get("address") || searchParams.get("walletAddress");
+    const address = searchParams.get("address");
+    const forceRefresh = searchParams.get("refresh") === "true";
 
     if (!address) {
       return NextResponse.json(
-        {
-          success: false,
-          message: "Wallet address is required",
-        },
+        { error: "Wallet address is required" },
         { status: 400 }
       );
     }
 
-    console.log(`Looking up wallet address: ${address}`);
+    // Normalize address
+    const normalizedAddress = address.toLowerCase();
+    const cacheKey = `holder_${normalizedAddress}`;
 
-    // Fetch current holders data from DEX API
-    const holdersResponse = await fetch(
-      `https://api.dexscreener.com/latest/dex/tokens/0x32481ac9B124bD82944eac67B2EA449797d402D1`,
-      {
-        next: { revalidate: 60 },
-      }
-    );
+    // Check cache first
+    if (!forceRefresh && holderCache.has(cacheKey)) {
+      const cachedData = holderCache.get(cacheKey);
+      console.log(`Cache hit for holder data: ${normalizedAddress}`);
 
-    let tokenPrice = 0;
-    try {
-      const holdersData = await holdersResponse.json();
-      tokenPrice = holdersData?.pairs?.[0]?.priceUsd || 0;
-      console.log(`Token price from API: ${tokenPrice}`);
-    } catch (error) {
-      console.error("Error parsing DEX data:", error);
+      return NextResponse.json({
+        success: true,
+        data: cachedData,
+        cached: true,
+        tokenPrice: await getTokenPrice(),
+        cacheAge: Math.round(
+          (Date.now() - new Date(cachedData._cachedAt).getTime()) / 1000
+        ),
+      });
     }
 
-    // First, check if we have this wallet in walletClaims collection
-    const walletClaimsSnapshot = await db
-      .collection("walletClaims")
-      .where("walletAddress", "==", address)
-      .limit(1)
-      .get();
+    console.log(`Fetching fresh holder data for ${normalizedAddress}`);
 
-    if (walletClaimsSnapshot.empty) {
-      console.log(`No wallet claim found for address: ${address}`);
+    // Fetch from /api/holders and find the specific holder
+    const holdersUrl = new URL("/api/holders", request.url);
+    const holdersResponse = await fetch(holdersUrl.toString());
 
-      // Try case-insensitive search
-      const allWalletClaimsSnapshot = await db.collection("walletClaims").get();
-
-      const matchingClaim = allWalletClaimsSnapshot.docs.find(
-        (doc) =>
-          doc.data().walletAddress.toLowerCase() === address.toLowerCase()
-      );
-
-      if (!matchingClaim) {
-        console.log("No matching wallet claim found (case-insensitive)");
-        return NextResponse.json(
-          {
-            success: false,
-            message: "Wallet not found in claims",
-            tokenPrice,
-          },
-          { status: 404 }
-        );
-      }
-
-      console.log(
-        `Found wallet claim with case-insensitive match: ${
-          matchingClaim.data().walletAddress
-        }`
+    if (!holdersResponse.ok) {
+      throw new Error(
+        `Failed to fetch holders data (${holdersResponse.status})`
       );
     }
 
-    // Now get all token holders from the blockchain data
-    // Your holders collection seems to be missing, so let's use mock data for now
-    // Replace this with actual data once you've set up the holders collection
+    const holdersData = await holdersResponse.json();
 
-    // Mock data for demonstration - in production, retrieve from your database
-    const mockHolders = [
-      {
-        address: address,
-        balance: "10000000000000000000",
-        balance_formatted: 10,
-        percentage: 1,
-        rank: 42,
-        totalHolders: 500,
-      },
-    ];
-
-    // Check if the holders collection exists
-    try {
-      const holdersRef = db.collection("holders");
-      const holdersSnapshot = await holdersRef.limit(1).get();
-
-      if (!holdersSnapshot.empty) {
-        // Collection exists, get real data
-        const fullHoldersSnapshot = await holdersRef
-          .orderBy("balance", "desc")
-          .get();
-
-        const holders = fullHoldersSnapshot.docs.map((doc, index) => ({
-          ...doc.data(),
-          address: doc.id,
-          rank: index + 1,
-        }));
-
-        // Find the holder with matching address
-        const holder = holders.find(
-          (h) => h.address.toLowerCase() === address.toLowerCase()
-        );
-
-        if (holder) {
-          holder.usdValue = holder.balance_formatted * tokenPrice;
-          holder.totalHolders = holders.length;
-
-          console.log(
-            `Found holder data for address: ${address}, rank: ${holder.rank}`
-          );
-          return NextResponse.json({
-            success: true,
-            data: holder,
-            tokenPrice,
-          });
-        }
-      }
-    } catch (error) {
-      console.error("Error checking holders collection:", error);
-    }
-
-    // Fallback to estimate holder data from wallet claims
-    try {
-      // Get the wallet claim again
-      const walletClaimsSnapshot = await db
-        .collection("walletClaims")
-        .where("walletAddress", "==", address)
-        .limit(1)
-        .get();
-
-      if (!walletClaimsSnapshot.empty) {
-        const walletClaim = walletClaimsSnapshot.docs[0].data();
-
-        // Get the user data
-        const userDoc = await db
-          .collection("users")
-          .doc(walletClaim.userId)
-          .get();
-
-        if (userDoc.exists) {
-          const userData = userDoc.data();
-
-          // Create an estimated holder record
-          const estimatedHolder = {
-            address: address,
-            balance_formatted: 0, // We don't know the balance
-            percentage: 0,
-            rank: 0, // We don't know the rank
-            usdValue: 0,
-            totalHolders: 0,
-            firstSeen: walletClaim.claimedAt,
-            lastSeen: walletClaim.claimedAt,
-            social: {
-              name: userData.name || null,
-              twitter: userData.twitterUsername || null,
-              profileImage: userData.image || null,
-              showProfile: walletClaim.showProfile !== false,
-            },
-          };
-
-          console.log(`Created estimated holder data for address: ${address}`);
-          return NextResponse.json({
-            success: true,
-            data: estimatedHolder,
-            tokenPrice,
-            estimated: true,
-          });
-        }
-      }
-    } catch (error) {
-      console.error("Error creating estimated holder data:", error);
-    }
-
-    // If we get here, we couldn't find or create holder data
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Unable to fetch or create holder data",
-        tokenPrice,
-      },
-      { status: 404 }
+    // Find the holder in the list
+    const holder = holdersData.holders?.find(
+      (h) => h.address?.toLowerCase() === normalizedAddress
     );
+
+    // Format holder data or use minimal data if not found
+    const holderData = holder
+      ? {
+          rank: holder.rank || 0,
+          balance_formatted: holder.balance_formatted || "0",
+          percentage: holder.percentage || "0",
+          usdValue: holder.usdValue || "0",
+          firstSeen: holder.firstSeen || new Date().toISOString(),
+          lastSeen: holder.lastSeen || new Date().toISOString(),
+          totalHolders: holdersData.holders?.length || 0,
+          _cachedAt: new Date().toISOString(),
+        }
+      : {
+          rank: 0,
+          balance_formatted: "0",
+          percentage: "0",
+          usdValue: "0",
+          firstSeen: new Date().toISOString(),
+          lastSeen: new Date().toISOString(),
+          totalHolders: holdersData.holders?.length || 0,
+          _cachedAt: new Date().toISOString(),
+        };
+
+    // Cache the data
+    holderCache.set(cacheKey, holderData);
+
+    return NextResponse.json({
+      success: true,
+      data: holderData,
+      tokenPrice: holdersData.tokenPrice || 0,
+    });
   } catch (error) {
-    console.error("Error in holder data API:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Internal server error: " + error.message,
+    console.error("Error fetching holder data:", error);
+
+    // Return a helpful error object
+    return NextResponse.json({
+      success: false,
+      data: {
+        rank: 0,
+        balance_formatted: "0",
+        percentage: "0",
+        usdValue: "0",
+        firstSeen: new Date().toISOString(),
+        lastSeen: new Date().toISOString(),
+        totalHolders: 0,
       },
-      { status: 500 }
+      message: error.message,
+    });
+  }
+}
+
+// Helper function to get token price
+async function getTokenPrice() {
+  try {
+    // Try to get cached price
+    if (global.tokenPrice && global.tokenPriceUpdated > Date.now() - 300000) {
+      return global.tokenPrice; // Return cached price if less than 5 minutes old
+    }
+
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL || ""}/api/holders`
     );
+    if (!response.ok) return 0;
+
+    const data = await response.json();
+
+    // Cache the price
+    global.tokenPrice = data.tokenPrice || 0;
+    global.tokenPriceUpdated = Date.now();
+
+    return global.tokenPrice;
+  } catch (error) {
+    console.error("Error fetching token price:", error);
+    return 0;
   }
 }

@@ -147,8 +147,12 @@ const Message = forwardRef(
 
     const handleUserClick = (e) => {
       e.stopPropagation();
-      // Instead of setting local state, call parent handler
-      onShowArchive(msg);
+      // Show user profile/archive when clicking on a message
+      onShowArchive({
+        ...msg,
+        profileImage: profileImage, // Use the updated profile image
+        rank: msg.rank, // Keep track of rank if available
+      });
     };
 
     // Use the most up-to-date profile image if it's the current user's message
@@ -156,11 +160,6 @@ const Message = forwardRef(
       isOwnMessage && userWalletData?.profileImage
         ? userWalletData.profileImage
         : msg.profileImage || "/default-avatar.png";
-
-    console.log(
-      "Message component rendered with profileImage:",
-      userWalletData
-    );
 
     return (
       <motion.div
@@ -422,53 +421,95 @@ export default function Messages({ session, userWalletData, userHolderData }) {
     return () => window.removeEventListener("keydown", handleKeyPress);
   }, [showInput]);
 
+  // Update the EventSource setup with better error handling
   useEffect(() => {
+    let retryCount = 0;
+    const MAX_RETRIES = 5;
+    const RETRY_DELAYS = [1000, 2000, 5000, 10000, 15000]; // Progressive backoff
+
     const setupEventSource = () => {
-      console.log("Setting up EventSource...");
+      console.log("Setting up EventSource connection...");
+
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
+
       const eventSource = new EventSource("/api/messages/stream");
       eventSourceRef.current = eventSource;
 
-      eventSource.onopen = () => console.log("SSE Connected");
+      // Handle connection open
+      eventSource.onopen = () => {
+        console.log("SSE connection established");
+        retryCount = 0; // Reset retry count on successful connection
+      };
 
+      // Handle messages
       eventSource.onmessage = (event) => {
         try {
+          if (event.data.startsWith(":")) {
+            // This is a comment/heartbeat, ignore it
+            return;
+          }
+
           const data = JSON.parse(event.data);
           if (data.messages) {
-            // Ensure consistent ordering by timestamp first, then by ID
-            const sortedMessages = [...data.messages].sort((a, b) => {
-              // First sort by timestamp
-              const timeA = new Date(a.timestamp).getTime();
-              const timeB = new Date(b.timestamp).getTime();
+            const sortedMessages = [...data.messages]
+              .sort((a, b) => {
+                // Sort by timestamp (newest first)
+                const timeA = new Date(a.timestamp).getTime();
+                const timeB = new Date(b.timestamp).getTime();
 
-              // If timestamps are equal (rare but possible), use message ID as secondary sort
-              if (timeA === timeB) {
-                return b.id.localeCompare(a.id); // Reverse ID comparison
-              }
+                if (timeA === timeB) {
+                  return a.id < b.id ? -1 : 1; // Use ID as tiebreaker
+                }
 
-              return timeB - timeA; // CHANGED: Sort by descending time (newest first)
-            });
+                return timeB - timeA;
+              })
+              .slice(0, MAX_VISIBLE_MESSAGES);
 
-            // Take just the first MAX_VISIBLE_MESSAGES, since we're already sorting newest first
-            const latestMessages = sortedMessages.slice(
-              0,
-              MAX_VISIBLE_MESSAGES
-            );
-            setMessages(latestMessages);
+            setMessages(sortedMessages);
           }
         } catch (error) {
-          console.error("Parse error:", error);
+          console.error("Error parsing SSE message:", error);
         }
       };
 
+      // Handle errors with retry logic
       eventSource.onerror = (error) => {
-        console.error("SSE Error:", error);
+        console.error("SSE connection error:", error);
         eventSource.close();
-        setTimeout(setupEventSource, 3000);
+
+        if (retryCount < MAX_RETRIES) {
+          const delay = RETRY_DELAYS[retryCount] || 15000;
+          console.log(
+            `Retrying connection in ${delay}ms (attempt ${
+              retryCount + 1
+            }/${MAX_RETRIES})`
+          );
+
+          setTimeout(() => {
+            retryCount++;
+            setupEventSource();
+          }, delay);
+        } else {
+          console.error(
+            `Max retries (${MAX_RETRIES}) reached, giving up on live updates`
+          );
+          // Maybe show an error to the user or implement a manual "reconnect" button
+        }
       };
     };
 
     setupEventSource();
-    return () => eventSourceRef.current?.close();
+
+    // Clean up on unmount
+    return () => {
+      if (eventSourceRef.current) {
+        console.log("Closing SSE connection");
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+    };
   }, []);
 
   // Fix for cooldown timer in Messages.jsx
@@ -904,13 +945,45 @@ export default function Messages({ session, userWalletData, userHolderData }) {
   const [archiveVisible, setArchiveVisible] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState(null);
 
-  // Add handler for showing the archive
-  const handleShowArchive = (message) => {
+  // Update handleShowArchive function in Messages.jsx
+  const handleShowArchive = async (message) => {
+    // Find the rank from the message if it exists
+    const messageWalletAddress = message.walletAddress?.toLowerCase();
+
+    // Try to determine the correct rank to show
+    let messageRank = null;
+
+    // If it's the current user, use their rank from userHolderData
+    if (messageWalletAddress === userWalletData?.walletAddress?.toLowerCase()) {
+      messageRank = userRank;
+    } else {
+      // For other users, check if we can get their rank from the holders data
+      // This assumes you have access to the holders data from the Leaderboard
+      try {
+        // Try to fetch the user's holder data from the API
+        const response = await fetch(
+          `/api/holder-data?address=${messageWalletAddress}`
+        );
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          messageRank = data.data?.rank || null;
+        }
+      } catch (error) {
+        console.error("Error fetching holder data for message user:", error);
+      }
+    }
+
+    // Set the message with the right profile image and rank
     setSelectedMessage({
       ...message,
-      // Ensure walletAddress is never undefined
-      walletAddress: message.walletAddress || null,
+      profileImage:
+        message.walletAddress === userWalletData?.walletAddress
+          ? userWalletData.profileImage || message.profileImage
+          : message.profileImage,
+      rank: messageRank,
     });
+
     setArchiveVisible(true);
   };
 
@@ -1497,13 +1570,8 @@ export default function Messages({ session, userWalletData, userHolderData }) {
           onClose={handleCloseArchive}
           username={selectedMessage.user}
           walletAddress={selectedMessage.walletAddress}
-          // Use the current profile image from userWalletData if it's the current user's message
-          profileImage={
-            selectedMessage.walletAddress === userWalletData?.walletAddress
-              ? userWalletData.profileImage || selectedMessage.profileImage
-              : selectedMessage.profileImage
-          }
-          rank={userRank}
+          profileImage={selectedMessage.profileImage}
+          rank={selectedMessage.rank} // Pass the rank from selectedMessage
         />
       )}
     </>

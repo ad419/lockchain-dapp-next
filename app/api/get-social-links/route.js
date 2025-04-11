@@ -6,8 +6,6 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const walletAddress = searchParams.get("walletAddress");
 
-    console.log("Checking wallet address:", walletAddress);
-
     if (!walletAddress) {
       return NextResponse.json(
         { error: "Wallet address is required" },
@@ -21,15 +19,11 @@ export async function GET(request) {
       .where("walletAddress", "==", walletAddress.toLowerCase())
       .get();
 
-    console.log("Claim docs found:", claimDoc.size);
-
     if (claimDoc.empty) {
-      console.log("No claim found for wallet:", walletAddress);
       return NextResponse.json({ socials: null });
     }
 
     const claimData = claimDoc.docs[0].data();
-    console.log("Claim data:", claimData);
 
     // Then get the user data using userId
     const userDoc = await db.collection("users").doc(claimData.userId).get();
@@ -40,7 +34,6 @@ export async function GET(request) {
     }
 
     const userData = userDoc.data();
-    console.log("User data:", userData);
 
     // Combine and return the data
     const socials = {

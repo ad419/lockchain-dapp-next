@@ -10,8 +10,8 @@ import Header from "./components/Header";
 import { useState, useEffect } from "react";
 import { SessionProvider } from "next-auth/react";
 import { ToastProvider } from "./context/ToastContext";
-
-// const inter = Inter({ subsets: ["latin"] });
+import { WalletClaimProvider } from "./context/WalletClaimContext"; // Add this import
+import { DataCacheProvider } from "./context/DataCacheContext";
 
 export default function RootLayout({ children }) {
   const [mounted, setMounted] = useState(false);
@@ -65,26 +65,26 @@ export default function RootLayout({ children }) {
         />
         <link href="/assets/plugins/web-fonts/plugin.css" rel="stylesheet" />
         <link href="/assets/css/style.css" rel="stylesheet" />
-        <link
+        {/* <link
           href="/assets/plugins/select2/css/select2.min.css"
           rel="stylesheet"
-        />
+        /> */}
         <link
           href="/assets/plugins/multipleselect/multiple-select.css"
           rel="stylesheet"
         />
-        <link
+        {/* <link
           href="/assets/plugins/datatable/css/dataTables.bootstrap5.css"
           rel="stylesheet"
-        />
-        <link
+        /> */}
+        {/* <link
           href="/assets/plugins/datatable/css/buttons.bootstrap5.min.css"
           rel="stylesheet"
-        />
-        <link
+        /> */}
+        {/* <link
           href="/assets/plugins/datatable/css/responsive.bootstrap5.css"
           rel="stylesheet"
-        />
+        /> */}
         <link href="/assets/switcher/css/switcher.css" rel="stylesheet" />
         <link href="/assets/switcher/demo.css" rel="stylesheet" />
         <meta httpEquiv="imagetoolbar" content="no" />
@@ -107,8 +107,12 @@ export default function RootLayout({ children }) {
             <WagmiConfig config={wagmiConfig}>
               <ContextProvider>
                 <ToastProvider>
-                  {mounted && <Header />}
-                  {children}
+                  <WalletClaimProvider>
+                    <DataCacheProvider>
+                      {mounted && <Header />}
+                      {children}
+                    </DataCacheProvider>
+                  </WalletClaimProvider>
                 </ToastProvider>
               </ContextProvider>
             </WagmiConfig>
