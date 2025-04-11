@@ -11,7 +11,7 @@ async function getProfileData(username) {
       `${
         process.env.NEXT_PUBLIC_API_URL || ""
       }/user-profile?username=${encodeURIComponent(username)}`,
-      { next: { revalidate: 60 * 10 } } // Cache for 10 minutes
+      { next: { revalidate: 3600 } } // Cache for 10 minutes
     );
 
     if (!res.ok) return null;
