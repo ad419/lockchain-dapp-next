@@ -354,7 +354,7 @@ export const WalletClaimProvider = ({ children }) => {
     }
   }, [walletClaim, showProfile, username]);
 
-  // Function to claim wallet
+  // Function to claim wallet - update this function
   const claimWallet = useCallback(async () => {
     if (!isConnected || !address || !username) {
       return {
@@ -380,45 +380,74 @@ export const WalletClaimProvider = ({ children }) => {
         throw new Error(error.error || "Failed to claim wallet");
       }
 
-      const data = await response.json();
+      const { success, claim } = await response.json();
 
-      if (data.success) {
+      if (success) {
+        // Update state and cache
         setHasClaimedWallet(true);
-        setWalletClaim(data.claim);
-        setShowProfile(true); // Default to visible
+        setWalletClaim(claim);
+        setShowProfile(claim.showProfile !== false);
 
-        // Update cache
-        const cacheKey = `claim_${username.toLowerCase()}`;
-        claimCache.set(cacheKey, {
-          hasClaimed: true,
-          claim: data.claim,
-        });
+        // Set up listener for the new claim
+        setupFirestoreListener(claim.id);
 
-        // Update visibility cache
-        if (data.claim?.walletAddress) {
-          visibilityCache.set(`visibility_${data.claim.walletAddress}`, {
-            showProfile: true,
-            lastUpdated: Date.now(),
+        // Store in session storage for immediate access on other pages
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem(
+            `walletClaim_${username}`,
+            JSON.stringify({
+              hasClaimed: true,
+              claim,
+              timestamp: Date.now(),
+            })
+          );
+        }
+
+        // Immediately fetch holder position instead of waiting for next page load
+        const holderData = await checkHolderPosition(true);
+
+        // If no data is returned yet (too soon after claim), set a timer to check again
+        if (!holderData || !holderData.rank) {
+          // Wait 5 seconds and try again once
+          setTimeout(async () => {
+            await checkHolderPosition(true);
+          }, 5000);
+        }
+
+        // Invalidate cache on server to ensure fresh data on next request
+        try {
+          await fetch(`/api/check-wallet-claim?username=${username}`, {
+            method: "PATCH",
           });
+
+          // Also invalidate the holders cache to update leaderboard
+          await fetch(`/api/holders?refresh=true`, {
+            cache: "no-store",
+            headers: {
+              "x-force-refresh": "true",
+            },
+          });
+        } catch (invalidateError) {
+          console.error("Error invalidating server cache:", invalidateError);
         }
 
-        // Set up Firestore listener for the newly claimed wallet
-        if (data.claim && data.claim.id) {
-          setupFirestoreListener(data.claim.id);
-        }
+        return { success: true, claim };
+      } else {
+        throw new Error("Failed to claim wallet");
       }
-
-      return data;
     } catch (error) {
       console.error("Error claiming wallet:", error);
-      return {
-        success: false,
-        error: error.message || "Failed to claim wallet",
-      };
+      return { success: false, error: error.message };
     } finally {
       setIsClaiming(false);
     }
-  }, [isConnected, address, username, setupFirestoreListener]);
+  }, [
+    isConnected,
+    address,
+    username,
+    setupFirestoreListener,
+    checkHolderPosition,
+  ]);
 
   // Function to check holder position
   const checkHolderPosition = useCallback(
