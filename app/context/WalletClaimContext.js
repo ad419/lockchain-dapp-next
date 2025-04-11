@@ -44,6 +44,13 @@ export const WalletClaimProvider = ({ children }) => {
   const { data: session } = useSession();
   const { address, isConnected } = useAccount();
 
+  // Add a ref to track if initial check has been done
+  const initialCheckDoneRef = useRef(false);
+  const initialCheckTimerRef = useRef(null);
+
+  // Add this state to track initial loading
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+
   // States
   const [hasClaimedWallet, setHasClaimedWallet] = useState(false);
   const [walletClaim, setWalletClaim] = useState(null);
@@ -53,6 +60,7 @@ export const WalletClaimProvider = ({ children }) => {
   const [userHolderIndex, setUserHolderIndex] = useState(null);
   const [showProfile, setShowProfile] = useState(true); // Default to true
   const [isToggling, setIsToggling] = useState(false);
+  const [lastRefreshTime, setLastRefreshTime] = useState(0);
 
   // Ref for Firestore listener
   const unsubscribeRef = useRef(null);
@@ -67,6 +75,7 @@ export const WalletClaimProvider = ({ children }) => {
     (claimId) => {
       // Clean up existing listener
       if (unsubscribeRef.current) {
+        console.log("Cleaning up existing Firestore listener");
         unsubscribeRef.current();
         unsubscribeRef.current = null;
       }
@@ -74,11 +83,25 @@ export const WalletClaimProvider = ({ children }) => {
       if (!claimId || typeof window === "undefined") return;
 
       try {
-        // Import Firebase client-side only
-        import("firebase/firestore").then(
-          ({ getFirestore, doc, onSnapshot }) => {
-            import("firebase/app").then(
-              ({ initializeApp, getApps, getApp }) => {
+        // Add error tracking
+        let retryCount = 0;
+        const maxRetries = 3;
+        let retryTimeout = null;
+
+        const setupListener = () => {
+          // Clear any existing timeout
+          if (retryTimeout) {
+            clearTimeout(retryTimeout);
+            retryTimeout = null;
+          }
+
+          // Import Firebase client-side only
+          Promise.all([import("firebase/firestore"), import("firebase/app")])
+            .then(([firestore, firebase]) => {
+              const { getFirestore, doc, onSnapshot } = firestore;
+              const { initializeApp, getApps, getApp } = firebase;
+
+              try {
                 // Initialize Firebase if needed
                 const firebaseConfig = {
                   apiKey: "AIzaSyBvdIVxvUb3uqpubOvkhPTdEro8aaqbKuI",
@@ -89,23 +112,41 @@ export const WalletClaimProvider = ({ children }) => {
                   appId: "1:747664160474:web:202fea05b4ed105631d7e3",
                 };
 
-                const app = getApps().length
-                  ? getApp()
-                  : initializeApp(firebaseConfig);
+                // Important: Check if Firebase is already initialized to avoid duplicate apps
+                let app;
+                try {
+                  app = getApps().length
+                    ? getApp()
+                    : initializeApp(firebaseConfig);
+                } catch (initError) {
+                  console.error("Firebase initialization error:", initError);
+                  app = getApps()[0] || initializeApp(firebaseConfig);
+                }
+
+                // Initialize Firestore with explicit settings
                 const firestore = getFirestore(app);
 
                 console.log(
-                  "Setting up real-time listener for claim:",
-                  claimId
+                  `Setting up Firestore listener for claim: ${claimId} (attempt ${
+                    retryCount + 1
+                  }/${maxRetries})`
                 );
+
+                // Create document reference with explicit path
+                const docRef = doc(firestore, "walletClaims", claimId);
+
+                // Set up listener with error handling
                 const unsubscribe = onSnapshot(
-                  doc(firestore, "walletClaims", claimId),
+                  docRef,
                   (docSnapshot) => {
+                    // Success path - reset retry count
+                    retryCount = 0;
+
                     if (docSnapshot.exists()) {
                       const updatedData = docSnapshot.data();
                       console.log("Real-time update received:", updatedData);
 
-                      // Update the local state and cache immediately
+                      // Update the local state
                       setWalletClaim((prev) => ({
                         ...prev,
                         ...updatedData,
@@ -115,147 +156,330 @@ export const WalletClaimProvider = ({ children }) => {
                       // Update visibility state specifically
                       setShowProfile(updatedData.showProfile !== false);
 
-                      // Update cache with fresh data
-                      if (username) {
-                        const cacheKey = `claim_${username.toLowerCase()}`;
-                        if (claimCache.has(cacheKey)) {
-                          const cached = claimCache.get(cacheKey);
-                          const updatedClaim = {
-                            ...cached.claim,
-                            ...updatedData,
-                          };
-
-                          claimCache.set(cacheKey, {
-                            hasClaimed: true,
-                            claim: updatedClaim,
-                          });
-
-                          // Special cache for visibility status with shorter TTL
-                          visibilityCache.set(
-                            `visibility_${updatedClaim.walletAddress}`,
-                            {
-                              showProfile: updatedData.showProfile !== false,
-                              lastUpdated: Date.now(),
-                            }
+                      // Update session storage for persistence
+                      if (username && typeof window !== "undefined") {
+                        try {
+                          const existingData = sessionStorage.getItem(
+                            `walletClaim_${username}`
+                          );
+                          if (existingData) {
+                            const parsed = JSON.parse(existingData);
+                            sessionStorage.setItem(
+                              `walletClaim_${username}`,
+                              JSON.stringify({
+                                ...parsed,
+                                claim: {
+                                  ...parsed.claim,
+                                  ...updatedData,
+                                },
+                                timestamp: Date.now(),
+                              })
+                            );
+                          }
+                        } catch (storageErr) {
+                          console.error(
+                            "Session storage update error:",
+                            storageErr
                           );
                         }
                       }
                     }
                   },
                   (error) => {
-                    console.error("Firestore listener error:", error);
+                    console.error(
+                      `Firestore listener error (attempt ${
+                        retryCount + 1
+                      }/${maxRetries}):`,
+                      error
+                    );
+
+                    // Clean up the failed listener
+                    if (unsubscribeRef.current) {
+                      unsubscribeRef.current();
+                      unsubscribeRef.current = null;
+                    }
+
+                    // Retry logic with exponential backoff
+                    if (retryCount < maxRetries) {
+                      const backoffTime = Math.min(
+                        1000 * Math.pow(2, retryCount),
+                        10000
+                      );
+                      console.log(`Retrying in ${backoffTime}ms...`);
+
+                      retryCount++;
+                      retryTimeout = setTimeout(setupListener, backoffTime);
+                    } else {
+                      console.error(
+                        `Max retry attempts (${maxRetries}) reached. Giving up on Firestore listener.`
+                      );
+                    }
                   }
                 );
 
                 // Save the unsubscribe function
                 unsubscribeRef.current = unsubscribe;
+              } catch (setupError) {
+                console.error("Error in Firestore listener setup:", setupError);
+
+                // Retry logic
+                if (retryCount < maxRetries) {
+                  const backoffTime = Math.min(
+                    1000 * Math.pow(2, retryCount),
+                    10000
+                  );
+                  console.log(`Setup error - retrying in ${backoffTime}ms...`);
+
+                  retryCount++;
+                  retryTimeout = setTimeout(setupListener, backoffTime);
+                }
               }
-            );
+            })
+            .catch((importError) => {
+              console.error("Error importing Firebase modules:", importError);
+            });
+        };
+
+        // Initial setup
+        setupListener();
+
+        // Return a cleanup function that includes the timeout
+        return () => {
+          if (retryTimeout) {
+            clearTimeout(retryTimeout);
           }
-        );
+          if (unsubscribeRef.current) {
+            unsubscribeRef.current();
+            unsubscribeRef.current = null;
+          }
+        };
       } catch (error) {
-        console.error("Error setting up Firestore listener:", error);
+        console.error("Top-level error setting up Firestore listener:", error);
       }
     },
     [username]
   );
 
-  // Function to check wallet claim status
+  // Use session storage to maintain state across page refreshes
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      // Check if we have cached claim data in sessionStorage
+      const cachedWalletClaim = sessionStorage.getItem(
+        `walletClaim_${username}`
+      );
+
+      if (cachedWalletClaim) {
+        try {
+          const parsedClaim = JSON.parse(cachedWalletClaim);
+          if (parsedClaim && Date.now() - parsedClaim.timestamp < 300000) {
+            // 5 minutes
+            console.log("Using session storage cached wallet claim");
+            setHasClaimedWallet(parsedClaim.hasClaimed);
+            setWalletClaim(parsedClaim.claim);
+            if (parsedClaim.claim) {
+              setShowProfile(parsedClaim.claim.showProfile !== false);
+            }
+            // We still want to validate with the server but don't need to wait
+            initialCheckDoneRef.current = true;
+          }
+        } catch (e) {
+          console.error("Error parsing cached wallet claim:", e);
+        }
+      }
+    }
+  }, [username]);
+
+  // Function to check wallet claim status with retry logic
   const checkWalletClaim = useCallback(
     async (forceRefresh = false) => {
       if (!username) {
+        setIsInitialLoading(false);
         return false;
       }
 
-      const cacheKey = `claim_${username.toLowerCase()}`;
+      // Skip additional checks if not forced and we checked recently
+      if (!forceRefresh && Date.now() - lastRefreshTime < 10000) {
+        console.log("Skipping refresh - too soon since last check");
+        setIsInitialLoading(false);
+        return hasClaimedWallet;
+      }
 
-      // Return cached result unless forced refresh
-      if (!forceRefresh && claimCache.has(cacheKey)) {
-        console.log("Using cached wallet claim for:", username);
-        const cachedData = claimCache.get(cacheKey);
-        setHasClaimedWallet(cachedData.hasClaimed);
-        setWalletClaim(cachedData.claim);
+      // Update timestamp before the request
+      setLastRefreshTime(Date.now());
 
-        // Set visibility from cached claim
-        if (cachedData.claim?.walletAddress) {
-          // Check visibility-specific cache first (more up-to-date)
-          const visibilityCacheKey = `visibility_${cachedData.claim.walletAddress}`;
-          if (visibilityCache.has(visibilityCacheKey)) {
-            const visibilityData = visibilityCache.get(visibilityCacheKey);
-            setShowProfile(visibilityData.showProfile);
-          } else {
-            setShowProfile(cachedData.claim.showProfile !== false);
+      // For retry logic
+      let attempts = 0;
+      const maxAttempts = 3;
+
+      const attemptCheck = async () => {
+        try {
+          setIsCheckingClaim(true);
+
+          // Always check session storage first for immediate UI feedback
+          if (typeof window !== "undefined") {
+            const cachedValue = sessionStorage.getItem(
+              `walletClaim_${username}`
+            );
+
+            if (!forceRefresh && cachedValue) {
+              try {
+                const parsedCache = JSON.parse(cachedValue);
+                const cacheAge = Date.now() - parsedCache.timestamp;
+
+                if (cacheAge < 300000) {
+                  // 5 minutes
+                  console.log(`Using session storage cache for ${username}`);
+                  setHasClaimedWallet(parsedCache.hasClaimed);
+                  setWalletClaim(parsedCache.claim);
+
+                  if (parsedCache.claim) {
+                    setShowProfile(parsedCache.claim.showProfile !== false);
+
+                    // Still set up Firestore listener with the cached claim ID
+                    if (parsedCache.claim.id) {
+                      setupFirestoreListener(parsedCache.claim.id);
+                    }
+                  }
+
+                  // Even with cache hit, we'll proceed with the API call in background
+                  // but we'll return early for better UX
+                  setIsInitialLoading(false);
+
+                  // Make API call in background without awaiting
+                  fetch(
+                    `/api/check-wallet-claim?twitterUsername=${encodeURIComponent(
+                      username
+                    )}&cacheBuster=${Date.now()}`,
+                    {
+                      headers: {
+                        "x-request-id": `${Date.now()}-${Math.random()
+                          .toString(36)
+                          .substring(2, 10)}`,
+                      },
+                      cache: "no-store",
+                    }
+                  ).catch((err) =>
+                    console.warn("Background refresh error:", err)
+                  );
+
+                  return parsedCache.hasClaimed;
+                }
+              } catch (e) {
+                console.error("Error parsing cached wallet claim:", e);
+              }
+            }
           }
+
+          // Generate a unique request ID to prevent duplicate calls
+          const requestId = `${Date.now()}-${Math.random()
+            .toString(36)
+            .substring(2, 10)}`;
+
+          console.log(
+            `Making API request for wallet claim: ${username} (attempt ${
+              attempts + 1
+            }/${maxAttempts})`
+          );
+
+          const response = await fetch(
+            `/api/check-wallet-claim?twitterUsername=${encodeURIComponent(
+              username
+            )}&cacheBuster=${Date.now()}`,
+            {
+              headers: {
+                "x-request-id": requestId,
+              },
+              cache: "no-store",
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error(`Failed to check wallet claim: ${response.status}`);
+          }
+
+          const data = await response.json();
+          console.log("Wallet claim data response:", data);
+
+          // Update state with the retrieved data
+          setHasClaimedWallet(data.hasClaimed);
+          setWalletClaim(data.claim);
+
+          // Set visibility state
+          if (data.claim) {
+            setShowProfile(data.claim.showProfile !== false);
+
+            // Set up Firestore listener for real-time updates
+            if (data.claim.id) {
+              setupFirestoreListener(data.claim.id);
+            }
+          }
+
+          // Save in session storage
+          if (typeof window !== "undefined") {
+            sessionStorage.setItem(
+              `walletClaim_${username}`,
+              JSON.stringify({
+                hasClaimed: data.hasClaimed,
+                claim: data.claim,
+                timestamp: Date.now(),
+              })
+            );
+          }
+
+          setIsInitialLoading(false);
+          return data.hasClaimed;
+        } catch (error) {
+          console.error(
+            `Error checking wallet claim (attempt ${
+              attempts + 1
+            }/${maxAttempts}):`,
+            error
+          );
+
+          // Retry logic with exponential backoff
+          attempts++;
+          if (attempts < maxAttempts) {
+            const backoffTime = Math.min(1000 * Math.pow(2, attempts), 8000);
+            console.log(`Retrying in ${backoffTime}ms...`);
+
+            await new Promise((resolve) => setTimeout(resolve, backoffTime));
+            return attemptCheck(); // Recursive retry
+          }
+
+          // Fall back to session storage on all attempts failed
+          if (typeof window !== "undefined") {
+            const cachedValue = sessionStorage.getItem(
+              `walletClaim_${username}`
+            );
+            if (cachedValue) {
+              try {
+                const parsedCache = JSON.parse(cachedValue);
+                console.log("Using stale session storage cache as fallback");
+                setHasClaimedWallet(parsedCache.hasClaimed);
+                setWalletClaim(parsedCache.claim);
+
+                if (parsedCache.claim) {
+                  setShowProfile(parsedCache.claim.showProfile !== false);
+                }
+
+                setIsInitialLoading(false);
+                return parsedCache.hasClaimed;
+              } catch (e) {
+                console.error("Error parsing cached wallet claim:", e);
+              }
+            }
+          }
+
+          setIsInitialLoading(false);
+          return hasClaimedWallet; // Return current state as fallback
+        } finally {
+          setIsCheckingClaim(false);
         }
+      };
 
-        // Even with cached data, set up listener if we have a claim ID
-        if (cachedData.claim?.id && !unsubscribeRef.current) {
-          setupFirestoreListener(cachedData.claim.id);
-        }
-
-        return cachedData.hasClaimed;
-      }
-
-      try {
-        setIsCheckingClaim(true);
-        console.log("Checking wallet claim for:", username);
-
-        const response = await fetch(
-          `/api/check-wallet-claim?twitterUsername=${encodeURIComponent(
-            username
-          )}`
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to check wallet claim");
-        }
-
-        const data = await response.json();
-
-        // Update state with the retrieved data
-        setHasClaimedWallet(data.hasClaimed);
-        setWalletClaim(data.claim);
-
-        // Set visibility state
-        if (data.claim) {
-          setShowProfile(data.claim.showProfile !== false);
-        }
-
-        // Update cache with structured data
-        claimCache.set(cacheKey, {
-          hasClaimed: data.hasClaimed,
-          claim: data.claim,
-        });
-
-        // Also update visibility cache if we have a claim
-        if (data.claim?.walletAddress) {
-          visibilityCache.set(`visibility_${data.claim.walletAddress}`, {
-            showProfile: data.claim.showProfile !== false,
-            lastUpdated: Date.now(),
-          });
-        }
-
-        // Set up Firestore listener for the claimed wallet
-        if (data.hasClaimed && data.claim?.id) {
-          setupFirestoreListener(data.claim.id);
-        }
-
-        return data.hasClaimed;
-      } catch (error) {
-        console.error("Error checking wallet claim:", error);
-
-        // Try to use stale cache data in case of error
-        if (claimCache.has(cacheKey, { allowStale: true })) {
-          const staleData = claimCache.get(cacheKey, { allowStale: true });
-          return staleData.hasClaimed;
-        }
-
-        return false;
-      } finally {
-        setIsCheckingClaim(false);
-      }
+      return attemptCheck();
     },
-    [username, setupFirestoreListener]
+    [username, hasClaimedWallet, lastRefreshTime, setupFirestoreListener]
   );
 
   // Function to toggle profile visibility with optimistic updates
@@ -347,7 +571,7 @@ export const WalletClaimProvider = ({ children }) => {
     }
   }, [walletClaim, showProfile, username]);
 
-  // Function to claim wallet
+  // Function to claim wallet - update this function
   const claimWallet = useCallback(async () => {
     if (!isConnected || !address || !username) {
       return {
@@ -373,45 +597,80 @@ export const WalletClaimProvider = ({ children }) => {
         throw new Error(error.error || "Failed to claim wallet");
       }
 
-      const data = await response.json();
+      const { success, claim } = await response.json();
 
-      if (data.success) {
+      if (success) {
+        // Update state
         setHasClaimedWallet(true);
-        setWalletClaim(data.claim);
-        setShowProfile(true); // Default to visible
+        setWalletClaim(claim);
+        setShowProfile(claim.showProfile !== false);
 
-        // Update cache
-        const cacheKey = `claim_${username.toLowerCase()}`;
-        claimCache.set(cacheKey, {
-          hasClaimed: true,
-          claim: data.claim,
-        });
-
-        // Update visibility cache
-        if (data.claim?.walletAddress) {
-          visibilityCache.set(`visibility_${data.claim.walletAddress}`, {
-            showProfile: true,
-            lastUpdated: Date.now(),
-          });
+        // Save in session storage for persistence across page reloads
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem(
+            `walletClaim_${username}`,
+            JSON.stringify({
+              hasClaimed: true,
+              claim,
+              timestamp: Date.now(),
+            })
+          );
         }
 
-        // Set up Firestore listener for the newly claimed wallet
-        if (data.claim && data.claim.id) {
-          setupFirestoreListener(data.claim.id);
+        // Set up listener for the new claim - with error handling
+        if (claim?.id) {
+          try {
+            setupFirestoreListener(claim.id);
+          } catch (listenerError) {
+            console.error(
+              "Error setting up listener after claim:",
+              listenerError
+            );
+            // Don't fail the whole operation if just the listener fails
+          }
         }
+
+        // Schedule a delayed check for holder position
+        setTimeout(() => {
+          checkHolderPosition(true).catch(console.error);
+        }, 3000);
+
+        // Try to invalidate caches in the background
+        try {
+          fetch(`/api/check-wallet-claim?username=${username}`, {
+            method: "PATCH",
+            headers: {
+              "Cache-Control": "no-cache",
+              Pragma: "no-cache",
+            },
+          }).catch(() => {}); // Ignore errors from cache invalidation
+
+          fetch("/api/holders?refresh=true", {
+            cache: "no-store",
+            headers: { "x-force-refresh": "true" },
+          }).catch(() => {}); // Ignore errors from cache invalidation
+        } catch (cacheError) {
+          // Just log but don't prevent success
+          console.warn("Cache invalidation error:", cacheError);
+        }
+
+        return { success: true, claim };
+      } else {
+        throw new Error("Failed to claim wallet");
       }
-
-      return data;
     } catch (error) {
       console.error("Error claiming wallet:", error);
-      return {
-        success: false,
-        error: error.message || "Failed to claim wallet",
-      };
+      return { success: false, error: error.message };
     } finally {
       setIsClaiming(false);
     }
-  }, [isConnected, address, username, setupFirestoreListener]);
+  }, [
+    isConnected,
+    address,
+    username,
+    setupFirestoreListener,
+    checkHolderPosition,
+  ]);
 
   // Function to check holder position
   const checkHolderPosition = useCallback(
@@ -537,6 +796,19 @@ export const WalletClaimProvider = ({ children }) => {
       }
     };
   }, []);
+
+  // Check initial claim status only once when session changes
+  useEffect(() => {
+    if (session && username && !initialCheckDoneRef.current) {
+      initialCheckDoneRef.current = true;
+      checkWalletClaim(false);
+    }
+  }, [session, username]);
+
+  // Reset the initialCheck flag when session changes
+  useEffect(() => {
+    initialCheckDoneRef.current = false;
+  }, [session?.user?.id]);
 
   // Check claim status when session changes
   useEffect(() => {
