@@ -1,13 +1,15 @@
 import { useState, useRef, useEffect } from "react";
 
-export default function Tooltip({ content }) {
-  const triggerRef = useRef(null);
+function Tooltip({ text, children, position = "top" }) {
+  // Add safety check for undefined or null text
+  const tooltipText = text || "";
 
   return (
-    <div className="tooltip-container" ref={triggerRef}>
-      <div className="rank-title" title={content}>
-        {content.length > 15 ? content.slice(0, 15) + "..." : content}
-      </div>
+    <div className="tooltip-container">
+      {children}
+      <span className={`tooltip-text tooltip-${position}`}>{tooltipText}</span>
     </div>
   );
 }
+
+export default Tooltip;

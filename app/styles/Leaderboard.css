@@ -1846,3 +1846,568 @@
     transform: rotate(360deg);
   }
 }
+
+/* Add these styles for updated holders */
+
+.balance-updated {
+  animation: highlight-balance 4s ease-out;
+}
+
+@keyframes highlight-balance {
+  0%, 100% {
+    background: transparent;
+  }
+  20%, 80% {
+    background: linear-gradient(90deg, rgba(98, 134, 252, 0.15), rgba(98, 134, 252, 0.05));
+  }
+}
+
+.live-mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  padding: 6px 10px;
+  background: rgba(98, 134, 252, 0.1);
+  border-radius: 20px;
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 20px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+  border-radius: 20px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+  background-color: #6286fc;
+}
+
+input:checked + .toggle-slider:before {
+  transform: translateX(20px);
+}
+
+.toggle-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #6286fc;
+}
+
+/* Live indicator pulse */
+.live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 10px;
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #4caf50;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
+  }
+  
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(76, 175, 80, 0);
+  }
+  
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
+  }
+}
+
+.ld-refresh-button {
+  background: rgba(98, 134, 252, 0.2);
+  color: white;
+  border: 1px solid rgba(98, 134, 252, 0.4);
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 7px;
+}
+
+.refresh-hint {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 5px;
+}
+
+/* Add to your Leaderboard.css file */
+.live-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #f03e3e;
+  margin-left: 8px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(240, 62, 62, 0.7);
+  }
+  
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 5px rgba(240, 62, 62, 0);
+  }
+  
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(240, 62, 62, 0);
+  }
+}
+
+.api-calls {
+  font-size: 0.8rem;
+  opacity: 0.7;
+  margin-left: 5px;
+}
+
+.live-indicator {
+  display: flex;
+  align-items: center;
+  margin-left: 8px;
+}
+
+.live-mode-active {
+  background-color: #f03e3e;
+  box-shadow: 0 0 10px rgba(240, 62, 62, 0.5);
+}
+
+/* Add to your Leaderboard.css */
+.live-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #f03e3e;
+  margin-left: 8px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(240, 62, 62, 0.7);
+  }
+  
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 5px rgba(240, 62, 62, 0);
+  }
+  
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(240, 62, 62, 0);
+  }
+}
+
+.api-calls {
+  font-size: 0.8rem;
+  opacity: 0.7;
+  margin-left: 5px;
+}
+
+.live-indicator {
+  display: flex;
+  align-items: center;
+  margin-left: 8px;
+}
+
+.live-mode-active {
+  background-color: #f03e3e;
+  box-shadow: 0 0 10px rgba(240, 62, 62, 0.5);
+}
+
+/* Add these styles if they're missing in your Leaderboard.css */
+
+.table-row {
+  background-color: rgba(30, 36, 49, 0.5);
+}
+
+.table-row:hover {
+  background-color: rgba(47, 53, 66, 0.8);
+}
+
+.table-row.current-wallet {
+  background-color: rgba(98, 134, 252, 0.1);
+  border-left: 3px solid #6286fc;
+}
+
+.table-row.updated-row {
+  animation: highlight-row 2s ease;
+}
+
+@keyframes highlight-row {
+  0% {
+    background-color: rgba(98, 134, 252, 0.3);
+  }
+  100% {
+    background-color: rgba(30, 36, 49, 0.5);
+  }
+}
+
+.row-rank, .header-rank {
+  flex: 0.5;
+  display: flex;
+  align-items: center;
+}
+
+.row-wallet, .header-wallet {
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+}
+
+.row-amount, .header-amount {
+  flex: 1;
+  text-align: right;
+}
+
+.row-value, .header-value {
+  flex: 1;
+  text-align: right;
+}
+
+.row-percentage, .header-percentage {
+  flex: 1;
+  text-align: right;
+}
+
+.wallet-address {
+  display: flex;
+  align-items: center;
+  font-family: monospace;
+  margin-bottom: 2px;
+}
+
+.wallet-social {
+  display: flex;
+  align-items: center;
+  font-size: 0.85rem;
+  color: #aaa;
+}
+
+.social-name {
+  margin-right: 8px;
+}
+
+.social-link {
+  color: #1DA1F2;
+  text-decoration: none;
+  margin-left: 6px;
+}
+
+.verified-badge {
+  color: #1DA1F2;
+  margin-right: 5px;
+  font-weight: bold;
+}
+
+.copy-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 5px;
+  font-size: 0.85rem;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.copy-button:hover {
+  opacity: 1;
+}
+
+.rank-number {
+  font-weight: bold;
+}
+
+.rank-badge {
+  margin-left: 5px;
+  font-size: 1rem;
+}
+
+.wallet-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  position: absolute;
+  left: 5px;
+  margin-top: 8px;
+}
+
+.table-header {
+  display: flex;
+  padding: 12px 15px;
+  background-color: rgba(19, 25, 36, 0.95);
+  font-weight: bold;
+  border-bottom: 2px solid rgba(98, 134, 252, 0.5);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: box-shadow 0.3s ease;
+}
+
+.table-header.scrolled-vertical {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Add these styles to your CSS file */
+
+.live-mode-toggle {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  justify-content: center;
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 24px;
+  margin-right: 10px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #444;
+  transition: 0.4s;
+  border-radius: 24px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+  background-color: #6286fc;
+}
+
+input:disabled + .toggle-slider {
+  background-color: #666;
+  cursor: not-allowed;
+}
+
+input:checked + .toggle-slider:before {
+  transform: translateX(26px);
+}
+
+.toggle-label {
+  font-size: 0.9rem;
+}
+
+.ld-refresh-button-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 15px;
+  margin-bottom: 20px;
+}
+
+.ld-refresh-button {
+  background-color: #2a2f3b;
+  border: none;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.ld-refresh-button:hover {
+  background-color: #3a4152;
+}
+
+.ld-refresh-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ld-refresh-button.live-mode-active {
+  background-color: #6286fc;
+  box-shadow: 0 0 10px rgba(98, 134, 252, 0.5);
+}
+
+.ld-refresh-button .spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.update-flash {
+  animation: flash 1.5s ease;
+}
+
+.refresh-hint {
+  font-size: 0.8rem;
+  color: #999;
+  margin-top: 5px;
+  display: flex;
+  align-items: center;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #6286fc;
+  border-radius: 50%;
+  margin-right: 5px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes flash {
+  0%, 100% {
+    background-color: #2a2f3b;
+  }
+  50% {
+    background-color: #6286fc;
+  }
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Simplified CSS for live mode */
+.live-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #6286fc;
+  border-radius: 50%;
+  margin-right: 5px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.4; }
+  100% { opacity: 1; }
+}
+
+.ld-refresh-button.live-mode-active {
+  background-color: #6286fc;
+  box-shadow: 0 0 10px rgba(98, 134, 252, 0.5);
+}
+
+.live-cooldown-warning {
+  font-size: 0.7rem;
+  color: #999;
+  margin-left: 8px;
+}
+
+/* Add to your Leaderboard.css */
+.cooldown-indicator {
+  display: flex;
+  align-items: center;
+  margin-left: 8px;
+  color: #f97316; /* Orange color for warning */
+}
+
+.cooldown-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #f97316;
+  margin-right: 5px;
+  animation: pulse 1s infinite;
+}
+
+.cooldown-text {
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.toggle-switch input:disabled + .toggle-slider {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

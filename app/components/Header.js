@@ -51,6 +51,7 @@ export default function Header() {
   } = useWalletClaim();
 
   console.log(hasClaimedWallet);
+  const { clearCache } = useWalletClaim();
 
   useEffect(() => {
     // Only initialize web3 provider
@@ -139,7 +140,10 @@ export default function Header() {
     try {
       const result = await contextClaimWallet();
       if (result.success) {
-        showToast("Wallet claimed successfully!", "success");
+        showToast(
+          "Wallet claimed successfully! Please wait until everything will be initialized",
+          "success"
+        );
       } else {
         showToast(result.error || "Failed to claim wallet", "error");
       }
@@ -161,6 +165,14 @@ export default function Header() {
   };
 
   const handleLogout = async () => {
+    clearCache();
+    if (session?.user) {
+      // Optional: Clear specific wallet cache if connected
+      const walletParam = address ? `&wallet=${address}` : "";
+      await fetch(`/api/clear-cache?type=walletClaim${walletParam}`, {
+        method: "POST",
+      });
+    }
     try {
       await signOut({
         callbackUrl: window.location.origin,

@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route";
-import { db } from "../../../app/lib/firebase-admin";
+import { db } from "../../lib/firebase-admin";
 import { Timestamp } from "firebase-admin/firestore";
+import { redisCache } from "../../lib/redis";
 
 export async function POST(request) {
   try {
@@ -61,9 +62,58 @@ export async function POST(request) {
       twitterUsername: normalizedTwitterUsername,
       claimedAt: Timestamp.now(),
       userId: session.user.id,
+      showProfile: true, // Default to visible
     };
 
     const newClaim = await walletClaimsRef.add(claimData);
+
+    // After successful claim, invalidate all relevant caches
+    try {
+      console.log(
+        `Invalidating caches for new wallet claim: ${normalizedWalletAddress}`
+      );
+
+      // 1. Invalidate the specific social data cache for this address
+      if (redisCache) {
+        await redisCache.invalidate(`social:${normalizedWalletAddress}`);
+      }
+
+      // 2. Update the last modified timestamp to trigger updates for all users
+      await redisCache.updateLastModified();
+
+      // 3. Refresh the social data in Redis
+      try {
+        // Get user data
+        const userDoc = await db.collection("users").doc(session.user.id).get();
+        const userData = userDoc.data() || {};
+
+        // Create social data
+        const socialData = {
+          twitter:
+            userData.username ||
+            userData.twitterUsername ||
+            normalizedTwitterUsername,
+          profileImage: userData.profileImage || userData.image,
+          name:
+            userData.name ||
+            userData.twitterUsername ||
+            normalizedTwitterUsername,
+          verified: userData.emailVerified || false,
+          showProfile: true,
+        };
+
+        // Store in Redis
+        if (redisCache) {
+          await redisCache.setSocialData(normalizedWalletAddress, socialData);
+        }
+
+        console.log(`✅ Social data cached for ${normalizedWalletAddress}`);
+      } catch (socialError) {
+        console.error("Error caching social data:", socialError);
+      }
+    } catch (cacheError) {
+      console.error("Failed to invalidate caches:", cacheError);
+    }
 
     return NextResponse.json({
       success: true,
