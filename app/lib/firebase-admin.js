@@ -42,3 +42,29 @@ if (!dbInstance) {
 }
 
 export const db = dbInstance;
+
+/**
+ * Initializes the global chat document in Firestore if it doesn't exist
+ */
+export async function initializeGlobalChat() {
+  try {
+    const chatRef = db.collection("chat").doc("global");
+    const doc = await chatRef.get();
+
+    if (!doc.exists) {
+      await chatRef.set({
+        messages: [],
+        lastUpdated: new Date(),
+        messageCount: 0,
+      });
+      console.log("Created global chat document");
+    }
+    return true;
+  } catch (error) {
+    console.error("Error initializing global chat document:", error);
+    return false;
+  }
+}
+
+// Call this function when your app starts
+// You can add this to your API route that handles messages

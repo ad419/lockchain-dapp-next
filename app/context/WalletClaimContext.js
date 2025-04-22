@@ -14,6 +14,17 @@ import { LRUCache } from "lru-cache";
 // Add this import at the top with your other imports
 import { mutate as mutateGlobal } from "swr";
 
+// Add these imports at the top of the file
+import {
+  doc,
+  onSnapshot,
+  collection,
+  query,
+  where,
+  getDocs,
+} from "firebase/firestore";
+import { db } from "../lib/firebase"; // Import the existing db instance
+
 // Create context
 const WalletClaimContext = createContext(null);
 
@@ -91,85 +102,60 @@ export function WalletClaimProvider({ children }) {
       if (!claimId || typeof window === "undefined") return;
 
       try {
-        // Import Firebase client-side only
-        import("firebase/firestore").then(
-          ({ getFirestore, doc, onSnapshot }) => {
-            import("firebase/app").then(
-              ({ initializeApp, getApps, getApp }) => {
-                // Initialize Firebase if needed
-                const firebaseConfig = {
-                  apiKey: "AIzaSyBvdIVxvUb3uqpubOvkhPTdEro8aaqbKuI",
-                  authDomain: "lockchain-tickets-3eb4d.firebaseapp.com",
-                  projectId: "lockchain-tickets-3eb4d",
-                  storageBucket: "lockchain-tickets-3eb4d.firebasestorage.app",
-                  messagingSenderId: "747664160474",
-                  appId: "1:747664160474:web:202fea05b4ed105631d7e3",
-                };
+        console.log("Setting up real-time listener for claim:", claimId);
 
-                const app = getApps().length
-                  ? getApp()
-                  : initializeApp(firebaseConfig);
-                const firestore = getFirestore(app);
+        // Use the imported db instance directly
+        const unsubscribe = onSnapshot(
+          doc(db, "walletClaims", claimId),
+          (docSnapshot) => {
+            if (docSnapshot.exists()) {
+              const updatedData = docSnapshot.data();
+              console.log("Real-time update received:", updatedData);
 
-                console.log(
-                  "Setting up real-time listener for claim:",
-                  claimId
-                );
-                const unsubscribe = onSnapshot(
-                  doc(firestore, "walletClaims", claimId),
-                  (docSnapshot) => {
-                    if (docSnapshot.exists()) {
-                      const updatedData = docSnapshot.data();
-                      console.log("Real-time update received:", updatedData);
+              // Update the local state and cache immediately
+              setWalletClaim((prev) => ({
+                ...prev,
+                ...updatedData,
+                id: docSnapshot.id,
+              }));
 
-                      // Update the local state and cache immediately
-                      setWalletClaim((prev) => ({
-                        ...prev,
-                        ...updatedData,
-                        id: docSnapshot.id,
-                      }));
+              // Update visibility state specifically
+              setShowProfile(updatedData.showProfile !== false);
 
-                      // Update visibility state specifically
-                      setShowProfile(updatedData.showProfile !== false);
+              // Update cache with fresh data
+              if (username) {
+                const cacheKey = `claim_${username.toLowerCase()}`;
+                if (claimCache.has(cacheKey)) {
+                  const cached = claimCache.get(cacheKey);
+                  const updatedClaim = {
+                    ...cached.claim,
+                    ...updatedData,
+                  };
 
-                      // Update cache with fresh data
-                      if (username) {
-                        const cacheKey = `claim_${username.toLowerCase()}`;
-                        if (claimCache.has(cacheKey)) {
-                          const cached = claimCache.get(cacheKey);
-                          const updatedClaim = {
-                            ...cached.claim,
-                            ...updatedData,
-                          };
+                  claimCache.set(cacheKey, {
+                    hasClaimed: true,
+                    claim: updatedClaim,
+                  });
 
-                          claimCache.set(cacheKey, {
-                            hasClaimed: true,
-                            claim: updatedClaim,
-                          });
-
-                          // Special cache for visibility status with shorter TTL
-                          visibilityCache.set(
-                            `visibility_${updatedClaim.walletAddress}`,
-                            {
-                              showProfile: updatedData.showProfile !== false,
-                              lastUpdated: Date.now(),
-                            }
-                          );
-                        }
-                      }
+                  // Special cache for visibility status with shorter TTL
+                  visibilityCache.set(
+                    `visibility_${updatedClaim.walletAddress}`,
+                    {
+                      showProfile: updatedData.showProfile !== false,
+                      lastUpdated: Date.now(),
                     }
-                  },
-                  (error) => {
-                    console.error("Firestore listener error:", error);
-                  }
-                );
-
-                // Save the unsubscribe function
-                unsubscribeRef.current = unsubscribe;
+                  );
+                }
               }
-            );
+            }
+          },
+          (error) => {
+            console.error("Firestore listener error:", error);
           }
         );
+
+        // Save the unsubscribe function
+        unsubscribeRef.current = unsubscribe;
       } catch (error) {
         console.error("Error setting up Firestore listener:", error);
       }
@@ -596,16 +582,15 @@ export function WalletClaimProvider({ children }) {
         return results;
       }
 
-      // Batch into chunks of 10
+      // Batch into chunks of 10 (Firestore limit for 'in' queries)
       const chunkSize = 10;
       for (let i = 0; i < uncachedAddresses.length; i += chunkSize) {
         const chunk = uncachedAddresses.slice(i, i + chunkSize);
 
         // Create Firestore query with 'in' operator
-        const walletsSnapshot = await db
-          .collection("walletClaims")
-          .where("walletAddress", "in", chunk)
-          .get();
+        const walletsRef = collection(db, "walletClaims");
+        const q = query(walletsRef, where("walletAddress", "in", chunk));
+        const walletsSnapshot = await getDocs(q);
 
         // Process results
         walletsSnapshot.forEach((doc) => {
@@ -662,6 +647,38 @@ export function WalletClaimProvider({ children }) {
     setHolderPosition(null);
   }, []);
 
+  // Add this function to your WalletClaimContext.js
+  const clearRedisCache = useCallback(async () => {
+    if (walletClaim?.walletAddress) {
+      try {
+        console.log(
+          "Clearing Redis cache for wallet:",
+          walletClaim.walletAddress
+        );
+
+        // Make API call to clear Redis cache for this specific wallet
+        const response = await fetch(`/api/clear-cache`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            type: "social",
+            walletAddress: walletClaim.walletAddress,
+          }),
+        });
+
+        if (!response.ok) {
+          console.warn("Failed to clear Redis cache:", await response.text());
+        } else {
+          console.log("Redis cache cleared successfully");
+        }
+      } catch (error) {
+        console.error("Error clearing Redis cache:", error);
+      }
+    }
+  }, [walletClaim?.walletAddress]);
+
   // Clean up listener when component unmounts
   useEffect(() => {
     return () => {
@@ -709,6 +726,24 @@ export function WalletClaimProvider({ children }) {
     previousSessionRef.current = session;
   }, [session, clearCache]);
 
+  // Add clearRedisCache to the cleanup process in your sign-out handling
+  // Modify your sign-out effect
+  useEffect(() => {
+    // If previously had a session but now doesn't (signed out)
+    if (previousSessionRef.current && !session) {
+      console.log("🔄 Session ended - clearing all caches");
+
+      // First clear the client-side cache
+      clearCache();
+
+      // Then clear the Redis cache
+      clearRedisCache();
+    }
+
+    // Update the ref with current session value
+    previousSessionRef.current = session;
+  }, [session, clearCache, clearRedisCache]);
+
   // Add this effect to your WalletClaimProvider
 
   // Handle session changes
@@ -741,14 +776,15 @@ export function WalletClaimProvider({ children }) {
     userHolderData,
     userHolderIndex,
     showProfile,
-    holderPosition, // Add this line
-    isCheckingPosition, // Add this line
+    holderPosition,
+    isCheckingPosition,
     checkWalletClaim,
     claimWallet,
     checkHolderPosition,
     toggleProfileVisibility,
     batchCheckWalletClaims,
-    clearCache, // Add this line too
+    clearCache,
+    clearRedisCache, // Add this line
   };
 
   return (

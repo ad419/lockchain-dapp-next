@@ -3,10 +3,6 @@ import { db } from "../../lib/firebase-admin";
 
 export const dynamic = "force-dynamic";
 
-// Simple in-memory cache
-const userMessagesCache = new Map();
-const CACHE_TTL = 60000; // 1 minute
-
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -19,50 +15,29 @@ export async function GET(request) {
       );
     }
 
-    // Check cache first
-    const cacheKey = `messages_${walletAddress}`;
-    const cached = userMessagesCache.get(cacheKey);
-    if (cached && cached.timestamp > Date.now() - CACHE_TTL) {
-      return NextResponse.json({ messages: cached.data, fromCache: true });
+    // Get the global chat document
+    const docRef = db.collection("chat").doc("global");
+    const doc = await docRef.get();
+
+    if (!doc.exists) {
+      return NextResponse.json({ messages: [] });
     }
 
-    // Fetch from Firestore with limit
-    const messagesRef = db.collection("messages");
-    const snapshot = await messagesRef
-      .where("walletAddress", "==", walletAddress)
-      .orderBy("timestamp", "desc")
-      .limit(50)
-      .get();
+    const data = doc.data();
 
-    const messages = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-      timestamp: doc.data().timestamp?.toDate?.() || new Date(),
-    }));
+    // Filter messages by the requested wallet address
+    const userMessages = (data.messages || [])
+      .filter((msg) => msg.walletAddress?.toLowerCase() === walletAddress)
+      .map((msg) => ({
+        ...msg,
+        timestamp: msg.timestamp?.toDate?.() || new Date(msg.timestamp),
+      }));
 
-    // Update cache
-    userMessagesCache.set(cacheKey, {
-      data: messages,
-      timestamp: Date.now(),
-    });
-
-    return NextResponse.json({ messages });
+    return NextResponse.json({ messages: userMessages });
   } catch (error) {
-    console.error("Error fetching user messages:", error);
-
-    // Try to return cached data even if expired
-    const cacheKey = `messages_${walletAddress}`;
-    const cached = userMessagesCache.get(cacheKey);
-    if (cached) {
-      return NextResponse.json({
-        messages: cached.data,
-        fromCache: true,
-        cacheAge: Math.floor((Date.now() - cached.timestamp) / 4000),
-      });
-    }
-
+    console.error(`Error fetching messages for ${walletAddress}:`, error);
     return NextResponse.json(
-      { error: "Failed to fetch messages" },
+      { error: "Failed to fetch user messages" },
       { status: 500 }
     );
   }

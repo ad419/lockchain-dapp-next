@@ -220,6 +220,8 @@ export default function LeaderboardClient({ initialData }) {
   const previousHoldersRef = useRef(null);
   const [updateDetected, setUpdateDetected] = useState(false);
   const [liveModeCooldown, setLiveModeCooldown] = useState(false);
+  // Add this line near the top of your component where you define other state variables
+  const [userWalletData, setUserWalletData] = useState(null);
 
   // Replace your existing liveMode state with this:
   const [liveMode, setLiveMode] = useState(() => {
@@ -563,6 +565,21 @@ export default function LeaderboardClient({ initialData }) {
       console.log("⚫ Live mode disabled");
     }
   }, [liveMode]);
+
+  // Add this effect to update userWalletData when walletClaim changes
+  useEffect(() => {
+    if (walletClaim) {
+      // Create a userWalletData object from the walletClaim
+      setUserWalletData({
+        walletAddress: walletClaim.walletAddress,
+        userId: walletClaim.userId,
+        profileImage: walletClaim.profileImage || session?.user?.image,
+        username: walletClaim.twitterUsername || session?.user?.name,
+      });
+    } else {
+      setUserWalletData(null);
+    }
+  }, [walletClaim, session]);
 
   // Optimize this useEffect to avoid unnecessary work with a better map approach
   useEffect(() => {
@@ -1558,6 +1575,22 @@ export default function LeaderboardClient({ initialData }) {
               </button>
             </div>
           </Modal>
+
+          {mounted && (
+            <Messages
+              session={session}
+              userWalletData={
+                walletClaim
+                  ? {
+                      walletAddress: walletClaim.walletAddress,
+                      username: session?.user?.name,
+                      profileImage: session?.user?.image,
+                    }
+                  : null
+              }
+              userHolderData={userHolderData}
+            />
+          )}
         </motion.div>
       </div>
     );

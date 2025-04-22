@@ -1,10 +1,16 @@
 "use client";
-
-import { useState, useEffect, useRef, forwardRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  forwardRef,
+  useCallback,
+} from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import SimpleEmojiPicker from "./SimpleEmojiPicker";
 import SimpleMobileEmojiPicker from "./SimpleMobileEmojiPicker";
 import { BsEmojiSmile } from "react-icons/bs";
+import { useToast } from "../context/ToastContext";
 import {
   MdFormatColorText,
   MdFormatColorFill,
@@ -21,56 +27,125 @@ import {
 } from "react-icons/io5";
 import MessageArchive from "./MessageArchive";
 import "../styles/MessageArchive.css";
+import debounce from "lodash.debounce";
+// Firebase imports
+import {
+  collection,
+  onSnapshot,
+  query,
+  orderBy,
+  limit,
+  getDocs,
+  where, // Make sure 'where' is imported
+} from "firebase/firestore";
+import { db } from "../lib/firebase"; // Make sure this points to your client-side Firebase config
 
 const MAX_VISIBLE_MESSAGES = 14;
-const COOLDOWN_TIME = 30000;
+const COOLDOWN_TIME = 30000; // 30 seconds
 
-// Update MESSAGE_THEMES with more creative themes
+// toastify function
+
+// Constants for Themes, Fonts, Animations (keep as they were)
 const MESSAGE_THEMES = [
-  { name: "Default", bgColor: "rgba(14, 14, 14, 0.95)", textColor: "#ffffff" },
-  { name: "Blue", bgColor: "#1a237e", textColor: "#ffffff" },
-  { name: "Green", bgColor: "#004d40", textColor: "#ffffff" },
-  { name: "Purple", bgColor: "#4a148c", textColor: "#ffffff" },
-  { name: "Red", bgColor: "#b71c1c", textColor: "#ffffff" },
-  { name: "Gold", bgColor: "#ff6f00", textColor: "#000000" },
-  // Adding gradient themes
+  // Default dark theme - clean and minimal
   {
-    name: "Ocean",
-    gradient: "linear-gradient(135deg, #1a237e, #0288d1)",
+    name: "Default",
+    bgColor: "rgba(14, 14, 14, 0.95)",
     textColor: "#ffffff",
   },
+
+  // Enhanced Bitcoin theme with blockchain graphic pattern
   {
-    name: "Sunset",
-    gradient: "linear-gradient(135deg, #ff6f00, #e53935)",
+    name: "Bitcoin Gold",
+    gradient: "linear-gradient(135deg, #f7931a, #f4ba36, #ffd700)",
+    textColor: "#000000",
+  },
+
+  // Ethereum theme - gradients from the ETH color palette
+  {
+    name: "Ethereum",
+    gradient: "linear-gradient(135deg, #627eea, #3c58c4)",
     textColor: "#ffffff",
   },
+
+  // Cyberpunk theme - neon, futuristic, crypto aesthetic
   {
-    name: "Forest",
-    gradient: "linear-gradient(135deg, #004d40, #689f38)",
+    name: "Cyberpunk",
+    gradient: "linear-gradient(135deg, #ff00ff, #00ffff)",
     textColor: "#ffffff",
   },
+
+  // Dark mode theme with subtle blue accents
   {
-    name: "Cosmic",
-    gradient: "linear-gradient(135deg, #311b92, #7b1fa2)",
+    name: "Night Trader",
+    gradient: "linear-gradient(135deg, #1a1a2e, #16213e)",
+    textColor: "#4da8da",
+  },
+
+  // Blockchain theme - inspired by blockchain visualization
+  {
+    name: "Blockchain",
+    gradient: "linear-gradient(135deg, #0f2027, #203a43, #2c5364)",
+    textColor: "#7affaf",
+  },
+
+  // Modern crypto exchange UI inspired theme
+  {
+    name: "Exchange",
+    bgColor: "#121212",
+    textColor: "#32cb65",
+  },
+
+  // Metaverse-inspired bright theme
+  {
+    name: "Metaverse",
+    gradient: "linear-gradient(135deg, #5433ff, #20bdff, #a5fecb)",
     textColor: "#ffffff",
+  },
+
+  // NFT marketplace inspired theme
+  {
+    name: "NFT Gallery",
+    gradient: "linear-gradient(135deg, #24243e, #302b63, #0f0c29)",
+    textColor: "#f8f8f2",
+  },
+
+  // NEW THEME 1: Solana-inspired theme with vibrant gradients
+  {
+    name: "Solana Wave",
+    gradient: "linear-gradient(135deg, #9945FF, #14F195)",
+    textColor: "#ffffff",
+  },
+
+  // NEW THEME 2: Dark crypto theme with red accents - inspired by bearish market sentiment
+  {
+    name: "Bear Market",
+    gradient: "linear-gradient(135deg, #1a1a1a, #2d2d2d)",
+    textColor: "#ff4545",
+  },
+
+  // NEW THEME 3: DeFi theme with futuristic blue-green hues
+  {
+    name: "DeFi Protocol",
+    gradient: "linear-gradient(135deg, #005C97, #363795, #2CB5E8)",
+    textColor: "#E0F7FA",
   },
 ];
-
-// Add list of premium fonts (for top 10 users)
 const PREMIUM_FONTS = [
   { name: "Default", value: "inherit" },
-  { name: "Arial", value: "Arial, sans-serif" },
-  { name: "Verdana", value: "Verdana, sans-serif" },
-  { name: "Tahoma", value: "Tahoma, sans-serif" },
-  { name: "Trebuchet MS", value: "'Trebuchet MS', sans-serif" },
-  { name: "Georgia", value: "Georgia, serif" },
-  { name: "Courier", value: "'Courier New', monospace" },
-  { name: "Comic Sans", value: "'Comic Sans MS', cursive" },
-  { name: "Impact", value: "Impact, sans-serif" },
-  { name: "Lucida Console", value: "'Lucida Console', monospace" },
+  { name: "Roboto", value: "'Roboto', sans-serif" },
+  { name: "Montserrat", value: "'Montserrat', sans-serif" },
+  { name: "Poppins", value: "'Poppins', sans-serif" },
+  { name: "Playfair Display", value: "'Playfair Display', serif" },
+  { name: "Pacifico", value: "'Pacifico', cursive" },
+  { name: "Fira Code", value: "'Fira Code', monospace" },
+  { name: "Nunito", value: "'Nunito', sans-serif" },
+  { name: "Raleway", value: "'Raleway', sans-serif" },
+  { name: "Dancing Script", value: "'Dancing Script', cursive" },
+  { name: "Oswald", value: "'Oswald', sans-serif" },
+  { name: "Space Grotesk", value: "'Space Grotesk', sans-serif" },
+  { name: "Caveat", value: "'Caveat', cursive" },
 ];
-
-// Add premium animations (for top 100 users only)
 const PREMIUM_ANIMATIONS = [
   { name: "None", value: null },
   { name: "Pulse Glow", value: "pulse" },
@@ -79,27 +154,81 @@ const PREMIUM_ANIMATIONS = [
   { name: "Neon Glow", value: "glow" },
 ];
 
-// Update the Message component to support advanced styling
+// Add this new constant for text effects
+const TEXT_EFFECTS = [
+  { name: "None", value: null },
+  { name: "Shadow", value: "shadow" },
+  { name: "Neon", value: "neon" },
+  { name: "Metallic", value: "metallic" },
+  { name: "Retro", value: "retro" },
+  { name: "Glitch", value: "glitch" },
+  { name: "Holographic", value: "holographic" },
+  { name: "Matrix", value: "matrix" },
+];
+
+// Add this new constant for font sizes
+const FONT_SIZES = [
+  { name: "Default", value: "inherit" },
+  { name: "Small", value: "0.9rem" },
+  { name: "Medium", value: "1rem" },
+  { name: "Large", value: "1.2rem" },
+  { name: "X-Large", value: "1.4rem" },
+];
+
+// Add this new constant
+const FONT_PRESETS = [
+  {
+    name: "Modern",
+    fontFamily: "'Montserrat', sans-serif",
+    fontWeight: "normal",
+    fontSize: "1rem",
+  },
+  {
+    name: "Elegant",
+    fontFamily: "'Playfair Display', serif",
+    fontStyle: "italic",
+    fontSize: "1.1rem",
+  },
+  {
+    name: "Playful",
+    fontFamily: "'Pacifico', cursive",
+    fontSize: "1.2rem",
+  },
+  {
+    name: "Code",
+    fontFamily: "'Fira Code', monospace",
+    fontSize: "0.9rem",
+  },
+  {
+    name: "Handwritten",
+    fontFamily: "'Caveat', cursive",
+    fontSize: "1.3rem",
+  },
+];
+
+// Add a Tooltip component
+const Tooltip = ({ children, text, position = "top" }) => {
+  return (
+    <div className="tooltip-container">
+      {children}
+      <div className={`tooltip ${position}`}>{text}</div>
+    </div>
+  );
+};
+
+// Message Component (keep as it was)
 const Message = forwardRef(
   ({ msg, userWalletData, onDismiss, index, userRank, onShowArchive }, ref) => {
     const isOwnMessage = msg.walletAddress === userWalletData?.walletAddress;
-
-    // Extract custom style if available
     const customStyle = msg.customStyle || {};
+    const canUseCustomStyles = userRank !== null && userRank <= 500;
+    const canUseFonts = userRank !== null && userRank <= 500;
+    const canUseAnimations = userRank !== null && userRank <= 100;
 
-    // Check if user can use custom styles (top 500 holder)
-    const canUseCustomStyles = userRank && userRank <= 500;
-
-    // Check if user can use animations (top 100 holder only)
-    const canUseAnimations = userRank && userRank <= 100;
-
-    // Get default or custom colors - always allow for all users
     const bgColor =
       customStyle.bgColor ||
       (isOwnMessage ? "rgba(98, 134, 252, 0.15)" : "rgba(14, 14, 14, 0.95)");
     const textColor = customStyle.textColor || "#ffffff";
-
-    // Get font styles (only for top 500 users)
     const fontFamily = canUseCustomStyles
       ? customStyle.fontFamily || "inherit"
       : "inherit";
@@ -109,53 +238,44 @@ const Message = forwardRef(
     const fontStyle = canUseCustomStyles
       ? customStyle.fontStyle || "normal"
       : "normal";
-
-    // Get animation type (only for top 100 users)
+    const fontSize = canUseCustomStyles
+      ? customStyle.fontSize || "inherit"
+      : "inherit";
+    const textEffect = canUseAnimations ? customStyle.textEffect || null : null;
     const animationType = canUseAnimations
       ? customStyle.animationType || null
       : null;
 
-    // Create style based on theme type
     let messageStyle = {
       color: textColor,
       backfaceVisibility: "hidden",
       WebkitFontSmoothing: "subpixel-antialiased",
     };
 
-    // Add background - either gradient or solid
     messageStyle.background = customStyle.gradient || bgColor;
-
-    // Add border radius to default style
     messageStyle.borderRadius = "12px";
 
-    // Add box shadow for glow effect
     if (customStyle.glow) {
       messageStyle.boxShadow = `0 0 15px ${customStyle.gradient || bgColor}`;
     }
 
-    // Apply animation class name based on animation type
     let animationClass = "";
-    if (animationType === "pulse") {
-      animationClass = "animate-pulse";
-    } else if (animationType === "gradient") {
-      animationClass = "animate-gradient";
-    } else if (animationType === "rainbow") {
-      animationClass = "animate-rainbow";
-    } else if (animationType === "glow") {
-      animationClass = "animate-glow";
-    }
+    if (animationType === "pulse") animationClass = "animate-pulse";
+    else if (animationType === "gradient") animationClass = "animate-gradient";
+    else if (animationType === "rainbow") animationClass = "animate-rainbow";
+    else if (animationType === "glow") animationClass = "animate-glow";
 
     const handleUserClick = (e) => {
       e.stopPropagation();
-      // Show user profile/archive when clicking on a message
-      onShowArchive({
-        ...msg,
-        profileImage: profileImage, // Use the updated profile image
-        rank: msg.rank, // Keep track of rank if available
-      });
+      if (onShowArchive) {
+        onShowArchive({
+          ...msg,
+          profileImage: profileImage,
+          rank: msg.rank,
+        });
+      }
     };
 
-    // Use the most up-to-date profile image if it's the current user's message
     const profileImage =
       isOwnMessage && userWalletData?.profileImage
         ? userWalletData.profileImage
@@ -171,7 +291,7 @@ const Message = forwardRef(
         animate={{ opacity: 1, x: 0, scale: 1 }}
         exit={{ opacity: 0, x: -100, transition: { duration: 0.2 } }}
         transition={{
-          type: "keyframes",
+          type: "spring",
           stiffness: 50,
           damping: 20,
           delay: index * 0.08,
@@ -204,19 +324,31 @@ const Message = forwardRef(
             @{msg.user}
           </span>
           <p
-            className="message-text"
+            className={`message-text ${textEffect ? textEffect : ""}`}
+            data-text={msg.text} // For glitch effect
             style={{
               color: textColor,
               fontFamily: fontFamily !== "inherit" ? fontFamily : "inherit",
               fontWeight: fontWeight !== "normal" ? fontWeight : "normal",
               fontStyle: fontStyle !== "normal" ? fontStyle : "normal",
+              fontSize: fontSize !== "inherit" ? fontSize : "inherit",
             }}
           >
             {msg.text}
           </p>
-
           {customStyle.sticker && (
-            <div className="message-sticker">{customStyle.sticker}</div>
+            <motion.div
+              className="message-sticker"
+              drag
+              dragConstraints={{
+                top: -50,
+                left: -50,
+                right: 50,
+                bottom: 50,
+              }}
+            >
+              {customStyle.sticker}
+            </motion.div>
           )}
         </div>
         <button
@@ -230,10 +362,9 @@ const Message = forwardRef(
     );
   }
 );
-
 Message.displayName = "Message";
 
-// Keep your existing ChatFab component
+// ChatFab Component (keep as it was)
 const ChatFab = ({
   onClick,
   showInput,
@@ -242,16 +373,15 @@ const ChatFab = ({
   showMessages,
   hasMessages,
 }) => {
-  // Keep your existing implementation
   return (
-    <div className="mobile-chat-controls">
-      {/* Toggle messages button - positioned on left */}
-      {hasMessages && (
+    <div className={`mobile-chat-controls ${showInput ? "input-open" : ""}`}>
+      {hasMessages && !showInput && (
         <motion.button
           className="messages-toggle-mobile"
           onClick={onToggleMessages}
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
+          exit={{ opacity: 0, scale: 0 }}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           aria-label={showMessages ? "Hide messages" : "Show messages"}
@@ -259,11 +389,6 @@ const ChatFab = ({
           <span className="fab-icon">{showMessages ? "👁️" : "👓"}</span>
         </motion.button>
       )}
-
-      {/* Spacer div to push chat button to right */}
-      <div style={{ flex: 1 }}></div>
-
-      {/* Chat button - positioned on right */}
       <motion.button
         className="chat-fab"
         onClick={onClick}
@@ -289,19 +414,53 @@ const ChatFab = ({
   );
 };
 
-// Update the main Messages component to include rank data
-export default function Messages({ session, userWalletData, userHolderData }) {
-  // Add this to get the user's rank
-  const userRank = userHolderData?.rank || null;
+const StyleSuggestions = ({ suggestions, onSelectSuggestion, onClose }) => {
+  return (
+    <motion.div
+      className="style-suggestions-panel"
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+    >
+      <div className="suggestions-header">
+        <h4>AI Style Suggestions</h4>
+        <button onClick={onClose} className="close-button">
+          ×
+        </button>
+      </div>
+      <div className="suggestions-list">
+        {suggestions.map((suggestion, index) => (
+          <div
+            key={`suggestion-${index}`}
+            className="style-suggestion"
+            onClick={() => onSelectSuggestion(suggestion.style)}
+          >
+            <MessagePreview
+              style={suggestion.style}
+              username={suggestion.previewName || "you"}
+              text={suggestion.previewText || "This is a suggested style"}
+            />
+            <div className="suggestion-info">
+              <h5>{suggestion.name}</h5>
+              <p>{suggestion.description}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  );
+};
 
-  // Keep all your existing state
+// Main Messages Component
+export default function Messages({ session, userWalletData, userHolderData }) {
+  // Existing state
+  const userRank = userHolderData?.rank || null;
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState("");
   const [cooldown, setCooldown] = useState(false);
   const [cooldownTime, setCooldownTime] = useState(0);
   const [showInput, setShowInput] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const eventSourceRef = useRef(null);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -309,13 +468,11 @@ export default function Messages({ session, userWalletData, userHolderData }) {
   const [lastSeenMessageId, setLastSeenMessageId] = useState(null);
   const [showMessages, setShowMessages] = useState(true);
 
-  // Add new state for message customization
+  // Customization state
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [customStyle, setCustomStyle] = useState({});
   const [showStyleOptions, setShowStyleOptions] = useState(false);
   const [activeStyleTab, setActiveStyleTab] = useState("themes");
-
-  // Add new state for custom themes
   const [customThemes, setCustomThemes] = useState([]);
   const [isEditingCustomTheme, setIsEditingCustomTheme] = useState(false);
   const [customThemeColors, setCustomThemeColors] = useState({
@@ -326,26 +483,67 @@ export default function Messages({ session, userWalletData, userHolderData }) {
     gradientStart: "#1a237e",
     gradientEnd: "#0288d1",
   });
-
-  // Add these state variables to your Messages component
   const [editingThemeId, setEditingThemeId] = useState(null);
-
-  // Add a previewStyle state to track temporary changes during theme editing
   const [previewStyle, setPreviewStyle] = useState({});
 
-  // Save and load message style preferences from localStorage
+  // Connection & Fetching State
+  const [lastMessageLoad, setLastMessageLoad] = useState(0);
+  const [connectionStatus, setConnectionStatus] = useState("connecting");
+  const connectionRetries = useRef(0);
+  const unsubscribeRef = useRef(null); // Still useful for listener cleanup potentially
+  const [isTabVisible, setIsTabVisible] = useState(true);
+
+  const { showToast } = useToast();
+
+  // *** NEW STATE FOR OPTIMIZED LISTENER ***
+  const [latestInitialTimestamp, setLatestInitialTimestamp] = useState(null);
+
+  // Add to your Messages component state
+  const [textEffect, setTextEffect] = useState(null);
+  const [fontSize, setFontSize] = useState("inherit");
+
+  // Add first-time user guide
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
   useEffect(() => {
-    // Load saved style preferences
+    const hasSeenOnboarding = localStorage.getItem("hasSeenChatOnboarding");
+    if (!hasSeenOnboarding && session) {
+      setShowOnboarding(true);
+    }
+  }, [session]);
+
+  const completeOnboarding = () => {
+    localStorage.setItem("hasSeenChatOnboarding", "true");
+    setShowOnboarding(false);
+  };
+
+  // Add these state variables to your Messages component
+  const [showStyleSuggestions, setShowStyleSuggestions] = useState(false);
+  const [styleSuggestions, setStyleSuggestions] = useState([]);
+  const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
+
+  // --- Effects ---
+
+  // Load/Save style preferences from localStorage
+  useEffect(() => {
     if (session?.user?.id) {
       try {
         const savedStyle = localStorage.getItem(
           `messageStyle_${session.user.id}`
         );
         if (savedStyle) {
-          setCustomStyle(JSON.parse(savedStyle));
+          const parsedStyle = JSON.parse(savedStyle);
+          setCustomStyle(parsedStyle);
+        }
+        const savedThemes = localStorage.getItem(
+          `customThemes_${session.user.id}`
+        );
+        if (savedThemes) {
+          const parsedThemes = JSON.parse(savedThemes);
+          setCustomThemes(parsedThemes);
         }
       } catch (error) {
-        console.error("Error loading style preferences:", error);
+        console.error("Error loading styles from localStorage:", error);
       }
     }
   }, [session?.user?.id]);
@@ -364,48 +562,22 @@ export default function Messages({ session, userWalletData, userHolderData }) {
     }
   }, [customStyle, session?.user?.id]);
 
-  // Add this effect to load custom themes from localStorage
+  // Save custom themes when they change
   useEffect(() => {
-    if (session?.user?.id) {
+    if (session?.user?.id && customThemes.length > 0) {
+      // Save even if only one theme exists
       try {
-        const savedThemes = localStorage.getItem(
-          `customThemes_${session.user.id}`
+        localStorage.setItem(
+          `customThemes_${session.user.id}`,
+          JSON.stringify(customThemes)
         );
-        if (savedThemes) {
-          setCustomThemes(JSON.parse(savedThemes));
-        }
       } catch (error) {
-        console.error("Error loading custom themes:", error);
+        console.error("Error saving custom themes:", error);
       }
     }
-  }, [session?.user?.id]);
+  }, [customThemes, session?.user?.id]);
 
-  // In the useEffect hook that loads from localStorage
-  useEffect(() => {
-    if (session?.user?.id) {
-      try {
-        const savedStyle = localStorage.getItem(
-          `messageStyle_${session.user.id}`
-        );
-        if (savedStyle) {
-          const parsedStyle = JSON.parse(savedStyle);
-          setCustomStyle(parsedStyle);
-        }
-
-        const savedThemes = localStorage.getItem(
-          `customThemes_${session.user.id}`
-        );
-        if (savedThemes) {
-          const parsedThemes = JSON.parse(savedThemes);
-          setCustomThemes(parsedThemes);
-        }
-      } catch (error) {
-        console.error("Error loading styles from localStorage:", error);
-      }
-    }
-  }, [session?.user?.id]);
-
-  // Keep all your other existing effect hooks
+  // Keyboard shortcut (Ctrl/Cmd + M)
   useEffect(() => {
     const handleKeyPress = (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "m") {
@@ -416,124 +588,66 @@ export default function Messages({ session, userWalletData, userHolderData }) {
         }
       }
     };
-
     window.addEventListener("keydown", handleKeyPress);
     return () => window.removeEventListener("keydown", handleKeyPress);
   }, [showInput]);
 
-  // Update the EventSource setup with better error handling
+  // Add keyboard shortcuts for power users
   useEffect(() => {
-    let retryCount = 0;
-    const MAX_RETRIES = 5;
-    const RETRY_DELAYS = [1000, 2000, 5000, 10000, 15000]; // Progressive backoff
+    const handleKeyboardShortcuts = (e) => {
+      // Ctrl/Cmd + M already used for toggling chat
 
-    const setupEventSource = () => {
-      console.log("Setting up EventSource connection...");
-
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
+      // Ctrl/Cmd + E for emoji picker
+      if ((e.ctrlKey || e.metaKey) && e.key === "e" && showInput) {
+        e.preventDefault();
+        setShowEmojiPicker((prev) => !prev);
       }
 
-      const eventSource = new EventSource("/api/messages/stream");
-      eventSourceRef.current = eventSource;
+      // Ctrl/Cmd + T for theme options
+      if ((e.ctrlKey || e.metaKey) && e.key === "t" && showInput) {
+        e.preventDefault();
+        setShowStyleOptions((prev) => !prev);
+        setActiveStyleTab("themes");
+      }
 
-      // Handle connection open
-      eventSource.onopen = () => {
-        console.log("SSE connection established");
-        retryCount = 0; // Reset retry count on successful connection
-      };
-
-      // Handle messages
-      eventSource.onmessage = (event) => {
-        try {
-          if (event.data.startsWith(":")) {
-            // This is a comment/heartbeat, ignore it
-            return;
-          }
-
-          const data = JSON.parse(event.data);
-          if (data.messages) {
-            const sortedMessages = [...data.messages]
-              .sort((a, b) => {
-                // Sort by timestamp (newest first)
-                const timeA = new Date(a.timestamp).getTime();
-                const timeB = new Date(b.timestamp).getTime();
-
-                if (timeA === timeB) {
-                  return a.id < b.id ? -1 : 1; // Use ID as tiebreaker
-                }
-
-                return timeB - timeA;
-              })
-              .slice(0, MAX_VISIBLE_MESSAGES);
-
-            setMessages(sortedMessages);
-          }
-        } catch (error) {
-          console.error("Error parsing SSE message:", error);
+      // Escape key to close panels
+      if (e.key === "Escape") {
+        if (showEmojiPicker) {
+          setShowEmojiPicker(false);
+          return;
         }
-      };
-
-      // Handle errors with retry logic
-      eventSource.onerror = (error) => {
-        console.error("SSE connection error:", error);
-        eventSource.close();
-
-        if (retryCount < MAX_RETRIES) {
-          const delay = RETRY_DELAYS[retryCount] || 15000;
-          console.log(
-            `Retrying connection in ${delay}ms (attempt ${
-              retryCount + 1
-            }/${MAX_RETRIES})`
-          );
-
-          setTimeout(() => {
-            retryCount++;
-            setupEventSource();
-          }, delay);
-        } else {
-          console.error(
-            `Max retries (${MAX_RETRIES}) reached, giving up on live updates`
-          );
-          // Maybe show an error to the user or implement a manual "reconnect" button
+        if (showStyleOptions) {
+          setShowStyleOptions(false);
+          return;
         }
-      };
-    };
-
-    setupEventSource();
-
-    // Clean up on unmount
-    return () => {
-      if (eventSourceRef.current) {
-        console.log("Closing SSE connection");
-        eventSourceRef.current.close();
-        eventSourceRef.current = null;
+        if (showInput) {
+          setShowInput(false);
+        }
       }
     };
-  }, []);
 
-  // Fix for cooldown timer in Messages.jsx
+    window.addEventListener("keydown", handleKeyboardShortcuts);
+    return () => window.removeEventListener("keydown", handleKeyboardShortcuts);
+  }, [showInput, showEmojiPicker, showStyleOptions]);
+
+  // Cooldown timer logic
   useEffect(() => {
+    let timer;
     if (cooldown && cooldownTime > 0) {
-      const timer = setTimeout(() => {
-        if (cooldownTime <= 1) {
-          // When we reach 1 second or less, clear the cooldown completely
-          setCooldownTime(0);
-          setCooldown(false);
-        } else {
-          // Otherwise, continue the countdown
-          setCooldownTime((prevTime) => prevTime - 1);
-        }
+      timer = setTimeout(() => {
+        setCooldownTime((prevTime) => Math.max(0, prevTime - 1));
       }, 1000);
-
-      return () => clearTimeout(timer);
+    } else if (cooldown && cooldownTime === 0) {
+      setCooldown(false); // Ensure cooldown boolean is reset
     }
+    return () => clearTimeout(timer);
   }, [cooldown, cooldownTime]);
 
-  // Add device detection
+  // Device detection (Mobile/Desktop)
   useEffect(() => {
     const checkDevice = () => {
-      setIsMobile(window.innerWidth <= 768);
+      const isMobileDevice = window.innerWidth <= 768;
+      setIsMobile(isMobileDevice);
     };
 
     checkDevice();
@@ -541,146 +655,342 @@ export default function Messages({ session, userWalletData, userHolderData }) {
     return () => window.removeEventListener("resize", checkDevice);
   }, []);
 
-  // Track new messages
+  // Track new message count when input is closed
   useEffect(() => {
     if (messages.length > 0 && !showInput) {
-      const newestMessageId = messages[messages.length - 1].id;
-
+      const newestMessageId = messages[0]?.id; // Assuming messages are sorted desc
       if (lastSeenMessageId && lastSeenMessageId !== newestMessageId) {
-        // Count new messages since last seen
         const lastSeenIndex = messages.findIndex(
           (msg) => msg.id === lastSeenMessageId
         );
         if (lastSeenIndex !== -1) {
-          setNewMessageCount(messages.length - lastSeenIndex - 1);
+          // Count messages newer than the last seen one
+          setNewMessageCount(lastSeenIndex); // Index is the count of newer items
         } else {
-          setNewMessageCount((prev) => prev + 1);
+          // If last seen not found (purged?), estimate based on length diff or reset
+          setNewMessageCount(
+            messages.length > MAX_VISIBLE_MESSAGES
+              ? MAX_VISIBLE_MESSAGES
+              : messages.length
+          ); // Max count or total count
         }
-      } else if (!lastSeenMessageId) {
-        setLastSeenMessageId(newestMessageId);
       }
     }
-  }, [messages, lastSeenMessageId, showInput]);
+    // Set initial last seen ID when messages first load or input closes
+    if (messages.length > 0 && !lastSeenMessageId) {
+      setLastSeenMessageId(messages[0].id);
+    }
+  }, [messages, showInput, lastSeenMessageId]);
 
-  // Reset counter when chat is opened
+  // Reset new message counter when chat input is opened
   useEffect(() => {
     if (showInput && messages.length > 0) {
-      setLastSeenMessageId(messages[messages.length - 1].id);
+      setLastSeenMessageId(messages[0]?.id); // Mark the latest as seen
       setNewMessageCount(0);
     }
   }, [showInput, messages]);
 
-  // Update toggle function for show/hide messages
-  const toggleMessages = () => {
-    setShowMessages((prev) => !prev);
-  };
-
-  // Update the auto-dismiss effect for staggered dismissal
+  // Auto-dismiss messages on mobile (Staggered)
   useEffect(() => {
+    // Clear previous timers if messages change or isMobile status changes
+    const timers = [];
     if (isMobile && messages.length > 0) {
-      // Staggered auto-dismiss
-      const timers = messages.map((msg, index) => {
-        // Stagger dismissals by 1 second for each message
-        return setTimeout(() => {
+      messages.forEach((msg, index) => {
+        // Example: Dismiss older messages faster, newer ones slower
+        // Or just a simple stagger like before:
+        const delay = 30000 + index * 1000; // Base 30s + 1s stagger per message
+        const timer = setTimeout(() => {
           dismissMessage(msg.id);
-        }, 30000 + index * 1000); // Base 30s + stagger
+        }, delay);
+        timers.push(timer);
       });
-
-      return () => {
-        timers.forEach((timer) => clearTimeout(timer));
-      };
     }
+    // Cleanup function to clear all scheduled timers
+    return () => {
+      timers.forEach(clearTimeout);
+    };
+    // Rerun if messages array *reference* changes or isMobile changes
   }, [messages, isMobile]);
 
-  // Update sendMessage function to fix cooldown while preserving styles
+  // Tab visibility handling (Optional: Could pause listener if needed)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsTabVisible(document.visibilityState === "visible");
+      if (document.visibilityState === "hidden") {
+        // Optional: Could unsubscribe here to save reads when tab is hidden
+        // if (unsubscribeRef.current) {
+        //     console.log("Tab hidden, pausing listener.");
+        //     unsubscribeRef.current();
+        //     unsubscribeRef.current = null;
+        // }
+      } else {
+        // Optional: If unsubscribed, need to re-subscribe here
+        // console.log("Tab visible, ensuring listener is active.");
+        // Need to trigger the main fetching useEffect again, maybe by resetting timestamp
+        // setLatestInitialTimestamp(null); // This would trigger refetch
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, []); // No dependencies needed here
+
+  // *** OPTIMIZED Firestore Message Fetching Effect ***
+  useEffect(() => {
+    if (!session) {
+      setMessages([]); // Clear messages if logged out
+      setLatestInitialTimestamp(null); // Reset timestamp
+      return;
+    }
+
+    console.log("Setting up Firestore message fetching strategy");
+    setConnectionStatus("connecting");
+
+    let isMounted = true; // Track mount status for async operations
+    let unsubscribeListener = null; // Local unsubscribe variable
+
+    const messagesRef = collection(db, "messages");
+    const baseQuery = query(messagesRef, orderBy("timestamp", "desc"));
+
+    // 1. Fetch initial batch
+    const fetchInitialMessages = async () => {
+      console.log("Fetching initial messages...");
+      try {
+        const initialQuery = query(baseQuery, limit(MAX_VISIBLE_MESSAGES));
+        const snapshot = await getDocs(initialQuery);
+        if (!isMounted) return; // Don't update state if unmounted
+
+        const initialMessages = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+          timestamp:
+            doc.data().timestamp?.toDate?.() || new Date(doc.data().timestamp),
+        }));
+
+        setMessages(initialMessages);
+        setConnectionStatus("connected");
+        connectionRetries.current = 0;
+        setLastMessageLoad(Date.now());
+
+        const latestTs =
+          initialMessages.length > 0
+            ? initialMessages[0].timestamp instanceof Date
+              ? initialMessages[0].timestamp
+              : new Date(initialMessages[0].timestamp)
+            : new Date(0); // Use epoch if no messages
+
+        setLatestInitialTimestamp(latestTs); // Trigger listener setup
+        console.log("Initial messages loaded. Newest timestamp:", latestTs);
+      } catch (error) {
+        console.error("Error fetching initial messages:", error);
+        if (!isMounted) return;
+        setConnectionStatus("disconnected");
+        // Implement more robust retry logic if needed
+      }
+    };
+
+    // 2. Setup listener for new messages
+    const setupNewMessagesListener = (lastKnownTimestamp) => {
+      if (!lastKnownTimestamp || !isMounted) {
+        console.log(
+          "Conditions not met for setting up listener (Timestamp/Mount status)."
+        );
+        return; // Don't set up listener yet
+      }
+
+      console.log(
+        "Setting up Firestore real-time listener for *new* messages after:",
+        lastKnownTimestamp
+      );
+      const newMessagesQuery = query(
+        baseQuery,
+        where("timestamp", ">", lastKnownTimestamp)
+      );
+
+      unsubscribeListener = onSnapshot(
+        // Assign to local variable
+        newMessagesQuery,
+        (snapshot) => {
+          if (!isMounted) return;
+          if (!snapshot.empty) {
+            const newMessages = snapshot.docs
+              .map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+                timestamp:
+                  doc.data().timestamp?.toDate?.() ||
+                  new Date(doc.data().timestamp),
+              }))
+              .sort((a, b) => b.timestamp - a.timestamp); // Ensure descending order
+
+            console.log(`Received ${newMessages.length} new message(s)`);
+            if (newMessages.length > 0) {
+              setMessages((prevMessages) => {
+                const existingIds = new Set(prevMessages.map((msg) => msg.id));
+                const uniqueNewMessages = newMessages.filter(
+                  (msg) => !existingIds.has(msg.id)
+                );
+                if (uniqueNewMessages.length === 0) return prevMessages;
+
+                const combined = [...uniqueNewMessages, ...prevMessages];
+                const sorted = combined.sort(
+                  (a, b) => b.timestamp - a.timestamp
+                );
+                return sorted.slice(0, MAX_VISIBLE_MESSAGES);
+              });
+
+              // Update the latest timestamp using the newest message received
+              const newestTimestampInUpdate =
+                newMessages[0].timestamp instanceof Date
+                  ? newMessages[0].timestamp
+                  : new Date(newMessages[0].timestamp);
+              setLatestInitialTimestamp(newestTimestampInUpdate); // Update state to reflect latest known time
+            }
+          }
+          setConnectionStatus("connected");
+          connectionRetries.current = 0;
+        },
+        (error) => {
+          console.error("Error in Firestore *new* messages listener:", error);
+          if (!isMounted) return;
+          connectionRetries.current++;
+          if (connectionRetries.current > 3) {
+            setConnectionStatus("disconnected");
+          } else {
+            setConnectionStatus("reconnecting");
+            // Optional: Add delay before retrying? Maybe handled by `retryConnection` call externally.
+          }
+        }
+      );
+    };
+
+    // --- Execution Logic ---
+    if (latestInitialTimestamp === null) {
+      // If timestamp is null (initial load or after logout/retry), fetch initial messages.
+      fetchInitialMessages();
+    } else {
+      // If timestamp is set, set up the listener for new messages.
+      setupNewMessagesListener(latestInitialTimestamp);
+    }
+
+    // Cleanup function
+    return () => {
+      console.log("Cleaning up Firestore message listener effect");
+      isMounted = false; // Mark as unmounted
+      if (unsubscribeListener) {
+        console.log("Unsubscribing from listener.");
+        unsubscribeListener();
+      }
+      unsubscribeListener = null;
+    };
+
+    // Dependencies: session (login/logout), latestInitialTimestamp (triggers listener setup after initial fetch or updates)
+  }, [session, latestInitialTimestamp]);
+
+  // --- Functions ---
+
+  // Send Message
   const sendMessage = async (e) => {
     e.preventDefault();
-    if (!message.trim() || cooldown || isSubmitting) return;
+    if (!message.trim() || cooldown || isSubmitting || !session) return;
 
     setIsSubmitting(true);
 
+    // Show pending animation in the preview
+    const pendingStyle = { ...customStyle, sending: true };
+    setCustomStyle(pendingStyle);
+
     try {
-      // Get the latest profile image from the userWalletData or session
       const currentProfileImage =
         userWalletData?.profileImage || session?.user?.image;
-
-      // Create a message object with conditional customization based on user rank
       const messageData = {
         text: message.trim(),
         walletAddress: userWalletData?.walletAddress,
-        user: session.user.name,
+        user: session.user.name || userWalletData?.username || "Anonymous", // Add fallback name
         profileImage: currentProfileImage,
+        customStyle: customStyle, // Include custom styles
+        timestamp: new Date(), // Use client-side timestamp (Firestore server timestamp is better for consistency if possible via backend)
+        // Add rank if available - useful for backend rules/filtering
+        rank: userRank,
       };
 
-      // Apply style customization based on user rank tiers
-      if (userRank && userRank <= 500) {
-        // Top 500 holders can use basic custom styles (colors, stickers)
-        messageData.customStyle = {
-          bgColor: customStyle.bgColor,
-          gradient: customStyle.gradient,
-          textColor: customStyle.textColor,
-          sticker: customStyle.sticker,
-        };
-
-        // Additional customization for top 100 holders (animations)
-        if (userRank <= 100) {
-          messageData.customStyle.animationType = customStyle.animationType;
-        }
-
-        // Top tier customization for top 10 holders (fonts, advanced styling)
-        if (userRank <= 10) {
-          messageData.customStyle.fontFamily = customStyle.fontFamily;
-          messageData.customStyle.fontWeight = customStyle.fontWeight;
-          messageData.customStyle.fontStyle = customStyle.fontStyle;
-        }
-      }
-
-      const response = await fetch("/api/messages/stream", {
+      // POST to your API endpoint which handles adding to Firestore
+      const response = await fetch("/api/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(messageData),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to send message");
+        const errorData = await response
+          .json()
+          .catch(() => ({ message: "Unknown error" }));
+        throw new Error(
+          `Failed to send message: ${errorData.message || response.statusText}`
+        );
       }
 
-      setMessage("");
-      // Set cooldown state directly rather than using interval in this function
+      setMessage(""); // Clear input on success
+      setShowEmojiPicker(false); // Hide emoji picker
+      // Reset preview style if it was being used for theme editing? No, keep style.
+      // Set cooldown
       setCooldown(true);
-      setCooldownTime(COOLDOWN_TIME / 1000);
-
-      // Clear the new message notification
-      setNewMessageCount(0);
-      setLastSeenMessageId(messages.length > 0 ? messages[0].id : null);
-
-      // Let the useEffect handle the countdown instead
+      setCooldownTime(COOLDOWN_TIME / 1000); // Set cooldown in seconds
     } catch (error) {
       console.error("Error sending message:", error);
+      // Show user-friendly error (replace alert with a toast notification if available)
+      alert(`Error: ${error.message || "Could not send message."}`);
     } finally {
       setIsSubmitting(false);
+      setCustomStyle({ ...customStyle, sending: false });
     }
   };
 
-  // Add these handlers for customization
+  // Dismiss a message visually (client-side only)
+  const dismissMessage = useCallback((id) => {
+    setMessages((prev) => prev.filter((msg) => msg.id !== id));
+  }, []); // No dependencies needed if setMessages is stable
+
+  // Toggle message visibility
+  const toggleMessages = () => {
+    setShowMessages((prev) => !prev);
+  };
+
+  // --- Customization Handlers ---
+
+  // Add haptic feedback for mobile users (if supported)
+  const triggerHapticFeedback = () => {
+    if (isMobile && window.navigator && window.navigator.vibrate) {
+      window.navigator.vibrate(50); // Short vibration
+    }
+  };
+
+  // Select Emoji (for sticker)
   const handleSelectEmoji = (emoji) => {
-    setCustomStyle((prev) => ({
-      ...prev,
-      sticker: emoji,
-    }));
+    triggerHapticFeedback();
+    // Update message input directly if input is focused, otherwise add as sticker
+    if (document.activeElement === inputRef.current) {
+      setMessage((prev) => prev + emoji);
+    } else {
+      // Add as a sticker style (if implementing stickers)
+      // setCustomStyle((prev) => ({ ...prev, sticker: emoji }));
+      console.log(
+        "Emoji selected, but input not focused. Implement sticker logic if needed."
+      );
+    }
     setShowEmojiPicker(false);
   };
 
-  // Modify handleSelectTheme function for clarity
+  // Select Theme
   const handleSelectTheme = (theme) => {
+    triggerHapticFeedback();
     const newStyle = {
+      // Preserve existing non-theme styles like font, animation? Decide based on UX.
       ...customStyle,
       textColor: theme.textColor,
-      // Store the selected theme's identifier
+      // Store an identifier if needed, e.g., for knowing which theme is selected
       selectedThemeId: theme.id || `preset-${theme.name}`,
     };
-
-    // Add either gradient or bgColor, not both
     if (theme.gradient) {
       newStyle.gradient = theme.gradient;
       delete newStyle.bgColor;
@@ -688,339 +998,621 @@ export default function Messages({ session, userWalletData, userHolderData }) {
       newStyle.bgColor = theme.bgColor;
       delete newStyle.gradient;
     }
-
     setCustomStyle(newStyle);
+    // Apply preview instantly if editing
+    if (isEditingCustomTheme) {
+      updatePreviewFromThemeColors({ ...customThemeColors, ...newStyle });
+    }
   };
 
+  // Reset Style to Default
   const handleResetStyle = () => {
     setCustomStyle({});
-    localStorage.removeItem(`messageStyle_${session?.user?.id}`);
+    setPreviewStyle({}); // Reset preview too
+    if (session?.user?.id) {
+      localStorage.removeItem(`messageStyle_${session.user.id}`);
+    }
   };
 
-  // Improve the extractGradientColors function to properly parse gradients
-  const extractGradientColors = (gradientString) => {
-    if (!gradientString) return ["#1a237e", "#0288d1"];
-
-    // Try different regex patterns to match various gradient formats
-    const linearGradientPattern =
-      /linear-gradient\(\s*([^,]+),\s*([^,]+),\s*([^)]+)\)/;
-    const simpleGradientPattern = /linear-gradient\(\s*([^,]+),\s*([^)]+)\)/;
-
-    let matches = gradientString.match(linearGradientPattern);
-
-    if (matches && matches.length >= 4) {
-      // This handles linear-gradient(angle, color1, color2)
-      return [matches[2].trim(), matches[3].trim()];
-    }
-
-    matches = gradientString.match(simpleGradientPattern);
-
-    if (matches && matches.length >= 3) {
-      // This handles simpler gradient formats
-      return [matches[1].trim(), matches[2].trim()];
-    }
-
-    // Default fallback colors if parsing fails
-    return ["#1a237e", "#0288d1"];
-  };
-
-  // Update the openThemeEditor function to set preview style
+  // Open Theme Editor
   const openThemeEditor = (theme = null) => {
     if (theme) {
-      // We're modifying an existing theme
-      setEditingThemeId(theme.id || `preset-${theme.name}`);
-
-      // Extract colors properly
-      let gradientStart = "#1a237e";
-      let gradientEnd = "#0288d1";
-      let bgColor = theme.bgColor || "#151515";
-      let textColor = theme.textColor || "#ffffff";
-      let useGradient = !!theme.gradient;
-
+      // Edit existing theme (create a copy)
+      setEditingThemeId(theme.id || `preset-${theme.name}`); // Keep track if it was based on a preset/custom
+      const useGradient = !!theme.gradient;
+      let gradientStart = "#1a237e",
+        gradientEnd = "#0288d1";
       if (useGradient && theme.gradient) {
-        const extractedColors = extractGradientColors(theme.gradient);
-        gradientStart = extractedColors[0];
-        gradientEnd = extractedColors[1];
+        const colors = extractGradientColors(theme.gradient);
+        gradientStart = colors[0];
+        gradientEnd = colors[1];
       }
-
-      // Set initial values based on existing theme
       const themeColors = {
-        name: `${theme.name} (Copy)`,
-        textColor,
-        useGradient,
-        gradientStart,
-        gradientEnd,
-        bgColor,
+        name: `${theme.name} (Copy)`, // Suggest a copy name
+        textColor: theme.textColor || "#ffffff",
+        useGradient: useGradient,
+        gradientStart: gradientStart,
+        gradientEnd: gradientEnd,
+        bgColor: theme.bgColor || "#151515",
       };
-
       setCustomThemeColors(themeColors);
-
-      // Create preview style from the theme being edited
-      updatePreviewFromThemeColors(themeColors);
+      updatePreviewFromThemeColors(themeColors); // Set initial preview
     } else {
-      // We're creating a brand new theme
-      setEditingThemeId(null);
+      // Create new theme
+      setEditingThemeId(null); // No ID means new theme
       const defaultColors = {
-        name: "My Theme",
+        name: "My Custom Theme",
         bgColor: "#151515",
         textColor: "#ffffff",
         useGradient: false,
         gradientStart: "#1a237e",
         gradientEnd: "#0288d1",
       };
-
       setCustomThemeColors(defaultColors);
-
-      // Create preview style for new theme
-      updatePreviewFromThemeColors(defaultColors);
+      updatePreviewFromThemeColors(defaultColors); // Set initial preview
     }
-
     setIsEditingCustomTheme(true);
+    setActiveStyleTab("themes"); // Switch tab to themes
+    setShowStyleOptions(true); // Ensure panel is open
   };
 
-  // Helper function to update preview style from theme colors
+  // Helper to update preview style based on theme editor colors
   const updatePreviewFromThemeColors = (themeColors) => {
-    const newPreviewStyle = {
-      ...customStyle, // Keep other style properties like fonts, etc.
+    const newPreview = {
+      ...customStyle, // Start with base style
       textColor: themeColors.textColor,
+      // Preserve text effects and animations from current style
+      textEffect: customStyle.textEffect || null,
+      animationType: customStyle.animationType,
+      fontSize: customStyle.fontSize || "inherit",
     };
-
     if (themeColors.useGradient) {
-      newPreviewStyle.gradient = `linear-gradient(135deg, ${themeColors.gradientStart}, ${themeColors.gradientEnd})`;
-      delete newPreviewStyle.bgColor; // Remove bgColor if using gradient
+      newPreview.gradient = `linear-gradient(135deg, ${themeColors.gradientStart}, ${themeColors.gradientEnd})`;
+      delete newPreview.bgColor;
     } else {
-      newPreviewStyle.bgColor = themeColors.bgColor;
-      delete newPreviewStyle.gradient; // Remove gradient if using bgColor
+      newPreview.bgColor = themeColors.bgColor;
+      delete newPreview.gradient;
     }
-
-    setPreviewStyle(newPreviewStyle);
+    setPreviewStyle(newPreview); // Update the separate preview state
   };
 
-  // Update customThemeColors setter to also update preview style
-  const updateCustomThemeColors = (updatedColors) => {
-    setCustomThemeColors(updatedColors);
-    updatePreviewFromThemeColors(updatedColors);
-  };
+  // Update theme editor colors AND preview
+  const updateCustomThemeColors = useCallback(
+    (updatedColors) => {
+      const newColors = { ...customThemeColors, ...updatedColors };
+      setCustomThemeColors(newColors);
+      updatePreviewFromThemeColors(newColors); // Update preview whenever editor changes
+    },
+    [customThemeColors, customStyle]
+  ); // Include dependencies
 
-  // Update the saveCustomTheme function
+  // Save Custom Theme
   const saveCustomTheme = () => {
-    const themeId = editingThemeId || Date.now().toString();
-
+    const themeId = editingThemeId || `custom-${Date.now()}`; // Generate ID for new themes
     const newTheme = {
       id: themeId,
-      name: customThemeColors.name || "Custom Theme",
+      name: customThemeColors.name.trim() || "Custom Theme", // Use trimmed name or default
       textColor: customThemeColors.textColor,
       ...(customThemeColors.useGradient
         ? {
             gradient: `linear-gradient(135deg, ${customThemeColors.gradientStart}, ${customThemeColors.gradientEnd})`,
           }
-        : {
-            bgColor: customThemeColors.bgColor,
-          }),
+        : { bgColor: customThemeColors.bgColor }),
+      isCustom: true, // Mark as custom
     };
 
     let updatedThemes;
+    const existingIndex = customThemes.findIndex(
+      (t) => t.id === editingThemeId
+    );
 
-    if (editingThemeId) {
-      // If editing, replace the existing theme
-      updatedThemes = customThemes.map((theme) =>
-        theme.id === editingThemeId ? newTheme : theme
-      );
+    if (existingIndex > -1) {
+      // Replace existing theme if ID matched
+      updatedThemes = [...customThemes];
+      updatedThemes[existingIndex] = newTheme;
     } else {
-      // Otherwise add a new theme
+      // Add as new theme
       updatedThemes = [...customThemes, newTheme];
     }
 
-    setCustomThemes(updatedThemes);
+    setCustomThemes(updatedThemes); // Update state
+    handleSelectTheme(newTheme); // Apply the newly saved/edited theme immediately
 
-    // Save to localStorage
-    if (session?.user?.id) {
-      try {
-        localStorage.setItem(
-          `customThemes_${session.user.id}`,
-          JSON.stringify(updatedThemes)
-        );
-      } catch (error) {
-        console.error("Error saving custom themes:", error);
-      }
-    }
-
-    // Apply the new theme immediately and ensure it's marked as selected
-    handleSelectTheme(newTheme);
-
-    // Reset state
-    setIsEditingCustomTheme(false);
-    setEditingThemeId(null);
-    setPreviewStyle({});
-  };
-
-  // Add this function to delete a custom theme
-  const deleteCustomTheme = (themeId) => {
-    const themeToDelete = customThemes.find((theme) => theme.id === themeId);
-    const updatedThemes = customThemes.filter((theme) => theme.id !== themeId);
-    setCustomThemes(updatedThemes);
-
-    // Save updated themes to localStorage
-    if (session?.user?.id) {
-      try {
-        localStorage.setItem(
-          `customThemes_${session.user.id}`,
-          JSON.stringify(updatedThemes)
-        );
-      } catch (error) {
-        console.error("Error saving custom themes:", error);
-      }
-    }
-
-    // Reset style if deleted theme was active
-    if (themeToDelete) {
-      const wasSelected =
-        (themeToDelete.gradient &&
-          themeToDelete.gradient === customStyle.gradient) ||
-        (themeToDelete.bgColor &&
-          themeToDelete.bgColor === customStyle.bgColor);
-
-      if (wasSelected) {
-        setCustomStyle({});
-        // Save empty style to localStorage
-        if (session?.user?.id) {
-          try {
-            localStorage.setItem(
-              `messageStyle_${session.user.id}`,
-              JSON.stringify({})
-            );
-          } catch (error) {
-            console.error("Error saving message style:", error);
-          }
-        }
-      }
-    }
-  };
-
-  // Cancel edit function to reset preview
-  const cancelThemeEditing = () => {
+    // Reset editing state
     setIsEditingCustomTheme(false);
     setEditingThemeId(null);
     setPreviewStyle({}); // Clear preview style
   };
 
-  // Keep the rest of your component's logic
-  const dismissMessage = (id) => {
-    setMessages((prev) => prev.filter((msg) => msg.id !== id));
+  // Delete Custom Theme
+  const deleteCustomTheme = (themeIdToDelete) => {
+    const themeToDelete = customThemes.find(
+      (theme) => theme.id === themeIdToDelete
+    );
+    if (!themeToDelete) return; // Theme not found
+
+    const updatedThemes = customThemes.filter(
+      (theme) => theme.id !== themeIdToDelete
+    );
+    setCustomThemes(updatedThemes);
+
+    // If the deleted theme was the currently active one, reset to default style
+    const isActiveTheme =
+      customStyle.selectedThemeId === themeIdToDelete ||
+      (themeToDelete.gradient &&
+        themeToDelete.gradient === customStyle.gradient) ||
+      (themeToDelete.bgColor && themeToDelete.bgColor === customStyle.bgColor);
+
+    if (isActiveTheme) {
+      handleResetStyle(); // Reset to default look
+    }
   };
 
-  const toggleChatInput = () => {
-    setShowInput((prev) => {
-      const newState = !prev;
+  // Helper to extract gradient colors (keep as it was or improve regex)
+  const extractGradientColors = (gradientString) => {
+    if (!gradientString) return ["#1a237e", "#0288d1"];
+    const colorStopRegex = /#(?:[0-9a-fA-F]{3}){1,2}|rgba?\([^)]+\)/g;
+    const colors = gradientString.match(colorStopRegex);
+    if (colors && colors.length >= 2) {
+      return [colors[0], colors[colors.length - 1]]; // Return first and last color found
+    }
+    return ["#1a237e", "#0288d1"]; // Fallback
+  };
 
-      if (newState) {
-        setShowMessages(true);
+  // *** Simplified retryConnection using the new state ***
+  const retryConnection = () => {
+    console.log("Attempting to reconnect to Firestore by re-triggering fetch.");
+    setConnectionStatus("reconnecting");
+    // Resetting the timestamp to null will cause the main useEffect to run
+    // its initial fetch logic again, effectively retrying the connection.
+    setLatestInitialTimestamp(null);
+  };
 
-        if (!isMobile) {
-          setTimeout(() => {
-            const viewportHeight = window.innerHeight;
-            const scrollTarget = Math.max(
-              0,
-              window.scrollY + viewportHeight / 2 - 150
-            );
-            window.scrollTo({
-              top: scrollTarget,
-              behavior: "smooth",
-            });
-          }, 150);
-        }
-
-        setTimeout(() => {
-          if (inputRef.current) {
-            inputRef.current.focus();
-          }
-        }, 200);
-      }
-
-      return newState;
+  // Add this function in your component
+  const cancelThemeEditing = () => {
+    setIsEditingCustomTheme(false);
+    setEditingThemeId(null);
+    setPreviewStyle({}); // Clear the preview style
+    // Option to reset customThemeColors to default if needed
+    setCustomThemeColors({
+      name: "My Theme",
+      bgColor: "#151515",
+      textColor: "#ffffff",
+      useGradient: false,
+      gradientStart: "#1a237e",
+      gradientEnd: "#0288d1",
     });
   };
 
-  // Add state for the archive modal
-  const [archiveVisible, setArchiveVisible] = useState(false);
-  const [selectedMessage, setSelectedMessage] = useState(null);
+  // Add this state at the top of your Messages component
+  const [isMounted, setIsMounted] = useState(false);
 
-  // Update handleShowArchive function in Messages.jsx
-  const handleShowArchive = async (message) => {
-    // Find the rank from the message if it exists
-    const messageWalletAddress = message.walletAddress?.toLowerCase();
+  // Add this useEffect to detect client-side rendering
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
-    // Try to determine the correct rank to show
-    let messageRank = null;
+  // Update your toggleInput function
+  const toggleInput = () => {
+    const newValue = !showInput;
+    setShowInput(newValue);
 
-    // If it's the current user, use their rank from userHolderData
-    if (messageWalletAddress === userWalletData?.walletAddress?.toLowerCase()) {
-      messageRank = userRank;
-    } else {
-      // For other users, check if we can get their rank from the holders data
-      // This assumes you have access to the holders data from the Leaderboard
+    // If opening input, automatically hide messages
+    if (newValue) {
+      setShowMessages(false);
+    }
+  };
+
+  // Add this function in your component
+  const applyMatrixEffect = (element) => {
+    if (!element || !element.textContent) return;
+
+    const text = element.textContent;
+    element.textContent = "";
+
+    [...text].forEach((char, i) => {
+      const span = document.createElement("span");
+      span.textContent = char;
+      span.style.setProperty("--i", i);
+      element.appendChild(span);
+    });
+  };
+
+  // Use useEffect to apply this after rendering
+  useEffect(() => {
+    // Find all matrix-styled elements and apply the effect
+    const matrixElements = document.querySelectorAll(
+      ".message-text.matrix, .preview-message.matrix"
+    );
+    matrixElements.forEach(applyMatrixEffect);
+  }, [customStyle.textEffect, previewStyle.textEffect]); // Add previewStyle dependency
+
+  const handleGetStyleSuggestions = async () => {
+    if (!message.trim()) {
+      showToast("Please enter a message first", "info");
+      return;
+    }
+
+    // Show the style options panel if it's not already visible
+    if (!showStyleOptions) {
+      setShowStyleOptions(true);
+    }
+
+    // Switch to the suggestions tab
+    setActiveStyleTab("suggestions");
+
+    // Start generating suggestions
+    setIsGeneratingSuggestions(true);
+
+    // Generate basic suggestions immediately
+    const basicSuggestions = generateBasicSuggestions();
+    setStyleSuggestions(basicSuggestions);
+
+    try {
+      // Then try to get AI-powered suggestions
+      const aiSuggestions = await generateAISuggestions();
+
+      // Combine basic and AI suggestions, removing duplicates
+      const combinedSuggestions = [
+        ...aiSuggestions,
+        ...basicSuggestions.slice(0, 2),
+      ];
+
+      setStyleSuggestions(combinedSuggestions);
+    } catch (error) {
+      console.error("Error generating AI suggestions:", error);
+      // We already have basic suggestions displaying, so no need for a fallback
+    } finally {
+      setIsGeneratingSuggestions(false);
+    }
+  };
+
+  // Function to generate basic suggestions based on predefined combinations
+  const generateBasicSuggestions = () => {
+    // Start with predefined style combinations
+    const predefinedSuggestions = [
+      {
+        name: "Modern Crypto",
+        description: "Clean, professional look with a modern font",
+        style: {
+          gradient: "linear-gradient(135deg, #627eea, #3c58c4)",
+          textColor: "#ffffff",
+          fontFamily: "'Montserrat', sans-serif",
+          fontWeight: "bold",
+        },
+        previewText: message || "A professional crypto message",
+      },
+      {
+        name: "Night Trader",
+        description: "Dark theme with neon accents for serious traders",
+        style: {
+          gradient: "linear-gradient(135deg, #1a1a2e, #16213e)",
+          textColor: "#4da8da",
+          fontFamily: "'Space Grotesk', sans-serif",
+          textEffect: "neon",
+        },
+        previewText: message || "Market analysis insights",
+      },
+      // ... other basic suggestions ...
+    ];
+
+    // Analyze message and add dynamic themes
+    if (message.trim()) {
       try {
-        // Try to fetch the user's holder data from the API
-        const response = await fetch(
-          `/api/holder-data?address=${messageWalletAddress}`
-        );
-        const data = await response.json();
+        const messageAnalysis = {
+          sentiment: getSentimentScore(message),
+          contentType: detectContentType(message),
+        };
 
-        if (response.ok && data.success) {
-          messageRank = data.data?.rank || null;
-        }
+        // Generate dynamic themes based on message analysis
+        const dynamicThemes = generateDynamicThemes(messageAnalysis);
+
+        // Return with dynamic themes first
+        return [...dynamicThemes, ...predefinedSuggestions];
       } catch (error) {
-        console.error("Error fetching holder data for message user:", error);
+        console.error("Error generating dynamic themes:", error);
       }
     }
 
-    // Set the message with the right profile image and rank
-    setSelectedMessage({
-      ...message,
-      profileImage:
-        message.walletAddress === userWalletData?.walletAddress
-          ? userWalletData.profileImage || message.profileImage
-          : message.profileImage,
-      rank: messageRank,
-    });
-
-    setArchiveVisible(true);
+    return predefinedSuggestions;
   };
 
-  const handleCloseArchive = () => {
-    setArchiveVisible(false);
-    setSelectedMessage(null);
-  };
+  // Enhanced AI-powered suggestion generator
+  const generateAISuggestions = async () => {
+    const messageText = message.trim();
+    if (!messageText) return [];
 
-  // Add renderSendButton function
-  const renderSendButton = () => {
-    if (cooldown) {
-      return (
-        <button
-          className="send-button"
-          disabled={true}
-          aria-label="Send message"
-        >
-          {cooldownTime > 0 ? `Wait ${cooldownTime}s` : "Send"}
-        </button>
+    try {
+      // Begin analyzing message content
+      const messageAnalysis = {
+        length: messageText.length,
+        words: messageText.split(/\s+/).length,
+        hasEmojis: /[\p{Emoji}]/u.test(messageText),
+        hasQuestion: /\?/.test(messageText),
+        hasExclamation: /!/.test(messageText),
+        allCaps:
+          messageText === messageText.toUpperCase() && messageText.length > 3,
+        containsCodeSnippet:
+          /^```[\s\S]*```$/.test(messageText) ||
+          /function\s*\(/.test(messageText) ||
+          /{[\s\S]*}/.test(messageText) ||
+          /\bconst\b|\blet\b|\bvar\b/.test(messageText),
+        containsLink: /https?:\/\/[^\s]+/.test(messageText),
+        // Sentiment analysis using keyword approach
+        sentiment: getSentimentScore(messageText),
+        // Content type detection
+        contentType: detectContentType(messageText),
+      };
+
+      // Generate dynamic themes first (available immediately)
+      const dynamicThemes = generateDynamicThemes(messageAnalysis);
+
+      // Get user's style preferences history
+      const stylePreferences = analyzeUserStylePreferences();
+
+      // Prepare data for the AI
+      const requestData = {
+        message: messageText,
+        analysis: messageAnalysis,
+        currentStyle: customStyle,
+        userPreferences: stylePreferences,
+        userThemes: customThemes,
+        userRank: userRank,
+        defaultThemes: MESSAGE_THEMES,
+      };
+
+      // Call the API endpoint
+      const response = await fetch("/api/style-suggestions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestData),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to get AI suggestions");
+      }
+
+      const data = await response.json();
+
+      // Process and enhance the API suggestions
+      const enhancedApiSuggestions = data.suggestions.map((suggestion) => {
+        // Calculate score based on match quality
+        const score = calculateMatchScore(suggestion, messageAnalysis);
+
+        return {
+          ...suggestion,
+          matchScore: score,
+          previewText: message || suggestion.previewText,
+        };
+      });
+
+      // Combine dynamically generated themes with API suggestions
+      const allSuggestions = [
+        ...dynamicThemes, // Put dynamic themes first as they're always highly relevant
+        ...enhancedApiSuggestions,
+      ];
+
+      // Sort by match score and return
+      return allSuggestions.sort((a, b) => b.matchScore - a.matchScore);
+    } catch (error) {
+      console.error("Error getting AI suggestions:", error);
+      // Even if API call fails, return dynamic themes
+      return generateDynamicThemes(
+        getSentimentScore(messageText),
+        detectContentType(messageText)
       );
     }
-
-    return (
-      <button
-        className="send-button"
-        disabled={!message.trim() || isSubmitting}
-        aria-label="Send message"
-        onClick={sendMessage}
-      >
-        {isSubmitting ? "Sending..." : "Send"}
-      </button>
-    );
   };
 
-  // Pass userRank to the Message component
+  // Helper function for basic sentiment analysis
+  const getSentimentScore = (text) => {
+    // These lists can be expanded for better analysis
+    const positiveWords = [
+      "good",
+      "great",
+      "awesome",
+      "excellent",
+      "amazing",
+      "love",
+      "happy",
+      "excited",
+      "bullish",
+      "gain",
+      "profit",
+      "up",
+      "high",
+      "success",
+      "win",
+      "congratulations",
+      "celebrate",
+      "best",
+      "perfect",
+      "brilliant",
+    ];
+
+    const negativeWords = [
+      "bad",
+      "terrible",
+      "awful",
+      "hate",
+      "sad",
+      "disappointed",
+      "bearish",
+      "loss",
+      "crash",
+      "down",
+      "low",
+      "fail",
+      "poor",
+      "worst",
+      "horrible",
+      "problem",
+      "issue",
+      "warning",
+      "risk",
+      "danger",
+    ];
+
+    const questionWords = [
+      "what",
+      "how",
+      "why",
+      "when",
+      "where",
+      "who",
+      "which",
+    ];
+
+    const textLower = text.toLowerCase();
+    const words = textLower.match(/\b(\w+)\b/g) || [];
+
+    let score = 0;
+    let positiveMatches = 0;
+    let negativeMatches = 0;
+    let questionMatches = 0;
+
+    words.forEach((word) => {
+      if (positiveWords.includes(word)) positiveMatches++;
+      if (negativeWords.includes(word)) negativeMatches++;
+      if (questionWords.includes(word)) questionMatches++;
+    });
+
+    // Calculate weighted score (-1 to +1)
+    score = (positiveMatches - negativeMatches) / Math.max(words.length, 1);
+
+    return {
+      score: score,
+      isPositive: score > 0.1,
+      isNegative: score < -0.1,
+      isNeutral: Math.abs(score) <= 0.1,
+      isQuestion: questionMatches > 0 || text.includes("?"),
+      positiveMatches,
+      negativeMatches,
+    };
+  };
+
+  // Helper function to detect content type
+  const detectContentType = (text) => {
+    // Pattern matching for different content types
+    const patterns = {
+      announcement:
+        /(announce|introducing|release|launched|new|update|upgrade)/i,
+      question: /\?|what|how|why|when|where|who|which/i,
+      trading: /(chart|price|market|buy|sell|trade|support|resistance|trend)/i,
+      technical:
+        /(code|function|api|technical|implementation|class|algorithm)/i,
+      celebration:
+        /(congrats|congratulations|achievement|milestone|success|win|celebrate)/i,
+      warning: /(caution|warning|alert|careful|attention|beware|risk)/i,
+    };
+
+    // Score each category
+    const scores = {};
+    for (const [category, pattern] of Object.entries(patterns)) {
+      const matches = (text.match(pattern) || []).length;
+      scores[category] = matches;
+    }
+
+    // Find the highest scoring category
+    let highestCategory = "general";
+    let highestScore = 0;
+
+    for (const [category, score] of Object.entries(scores)) {
+      if (score > highestScore) {
+        highestScore = score;
+        highestCategory = category;
+      }
+    }
+
+    return {
+      primaryType: highestCategory,
+      scores: scores,
+    };
+  };
+
+  // Helper function to analyze user style preferences
+  const analyzeUserStylePreferences = () => {
+    // This would ideally be more sophisticated and persistent across sessions
+    const preferences = {
+      favoriteColors: [],
+      favoriteTextColors: [],
+      favoriteFonts: [],
+      usesGradients: false,
+      usesAnimations: false,
+      usesTextEffects: false,
+      darkThemePreference: false,
+    };
+
+    // Analyze current style
+    if (customStyle) {
+      if (customStyle.gradient) {
+        preferences.usesGradients = true;
+        const colors = extractGradientColors(customStyle.gradient);
+        preferences.favoriteColors.push(...colors);
+      } else if (customStyle.bgColor) {
+        preferences.favoriteColors.push(customStyle.bgColor);
+      }
+
+      if (customStyle.textColor) {
+        preferences.favoriteTextColors.push(customStyle.textColor);
+      }
+
+      if (customStyle.fontFamily) {
+        preferences.favoriteFonts.push(customStyle.fontFamily);
+      }
+
+      if (customStyle.animationType) {
+        preferences.usesAnimations = true;
+      }
+
+      if (customStyle.textEffect) {
+        preferences.usesTextEffects = true;
+      }
+
+      // Check for dark theme preference
+      if (
+        customStyle.bgColor &&
+        (customStyle.bgColor.includes("rgba(") ||
+          customStyle.bgColor.includes("#"))
+      ) {
+        // Very simple check - better would use color parsing
+        const isDark =
+          customStyle.bgColor.includes("rgba(1") ||
+          customStyle.bgColor.includes("#0") ||
+          customStyle.bgColor.includes("#1") ||
+          customStyle.bgColor.includes("#2");
+        preferences.darkThemePreference = isDark;
+      }
+    }
+
+    // Analyze custom themes
+    if (customThemes && customThemes.length > 0) {
+      customThemes.forEach((theme) => {
+        if (theme.gradient) {
+          preferences.usesGradients = true;
+          const colors = extractGradientColors(theme.gradient);
+          preferences.favoriteColors.push(...colors);
+        } else if (theme.bgColor) {
+          preferences.favoriteColors.push(theme.bgColor);
+        }
+
+        if (theme.textColor) {
+          preferences.favoriteTextColors.push(theme.textColor);
+        }
+      });
+    }
+
+    return preferences;
+  };
+
+  // --- Render ---
+  const canUseCustomStyles = userRank !== null && userRank <= 500;
+  const canUseFonts = userRank !== null && userRank <= 500; // Example rank check
+  const canUseAnimations = userRank !== null && userRank <= 100; // Example rank check
+
   return (
     <>
+      {/* Messages Display Area */}
       <AnimatePresence>
         {showMessages && (
           <motion.div
@@ -1036,10 +1628,9 @@ export default function Messages({ session, userWalletData, userHolderData }) {
                   key={msg.id}
                   msg={msg}
                   userWalletData={userWalletData}
-                  userRank={userRank} // Pass the rank data
+                  userRank={userRank}
                   onDismiss={dismissMessage}
                   index={index}
-                  onShowArchive={handleShowArchive} // Add this prop
                 />
               ))}
             </AnimatePresence>
@@ -1047,53 +1638,71 @@ export default function Messages({ session, userWalletData, userHolderData }) {
         )}
       </AnimatePresence>
 
-      {/* Keep message toggle button */}
-      {!isMobile && session && (
-        <button
-          className="messages-toggle"
-          onClick={toggleMessages}
-          aria-label={showMessages ? "Hide messages" : "Show messages"}
-        >
-          {showMessages ? "Hide" : "Show"} Messages
-        </button>
+      {/* Connection Status Indicator */}
+      {connectionStatus !== "connected" && (
+        <div className="connection-status-indicator">
+          {connectionStatus === "connecting" && "Connecting..."}
+          {connectionStatus === "reconnecting" && "Reconnecting..."}
+          {connectionStatus === "disconnected" && (
+            <>
+              Disconnected.{" "}
+              <button onClick={retryConnection} className="retry-button">
+                Retry
+              </button>
+            </>
+          )}
+        </div>
       )}
 
-      {/* Mobile Chat FAB */}
-      {isMobile && session && (
-        <ChatFab
-          onClick={toggleChatInput}
-          showInput={showInput}
-          messageCount={newMessageCount}
-          onToggleMessages={toggleMessages}
-          showMessages={showMessages}
-          hasMessages={messages.length > 0}
-        />
-      )}
-
-      {/* Chat Input with Style Options */}
+      {/* TODO: Add MessageArchive Modal display logic here */}
       <AnimatePresence>
         {showInput && session && (
           <motion.div
             className={`chat-input-overlay ${isMobile ? "mobile" : ""}`}
-            initial={{ opacity: 0, y: isMobile ? 100 : 0 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: isMobile ? 100 : 0 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
           >
             <div className="chat-input-container">
               <div className="chat-input-header">
                 <span>Send Message</span>
                 <div className="style-buttons">
-                  <button
-                    className="style-toggle-button"
-                    onClick={() => setShowStyleOptions(!showStyleOptions)}
-                    title="Message Style"
+                  {/* <Tooltip text="Get AI style suggestions" position="bottom"> */}
+                  {/* <button
+                      className="style-toggle-button suggestion-btn"
+                      onClick={handleGetStyleSuggestions}
+                      title="AI Style Suggestions"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        width="24"
+                        height="24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M9 3.5V2M14.5 4L15.5 2.5M19 8l1.5-1M4 8l-1-1M7.5 14.5c0 1.5 1 4.5 5 4.5s5-3 5-4.5c0-2-2.5-2.5-2.5-5 0-1.5-1-2.5-2.5-2.5s-2.5 1-2.5 2.5c0 2.5-2.5 3-2.5 5z" />
+                      </svg>
+                    </button>
+                  </Tooltip> */}
+                  <Tooltip
+                    text="Ctrl+T: Change message style"
+                    position="bottom"
                   >
-                    <MdFormatColorFill />
-                  </button>
+                    <button
+                      className="style-toggle-button"
+                      onClick={() => setShowStyleOptions(!showStyleOptions)}
+                      title="Message Style"
+                    >
+                      <MdFormatColorFill />
+                    </button>
+                  </Tooltip>
                   <button
                     className="style-toggle-button"
                     onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                    title="Add Sticker"
+                    title="Add Emoji"
                   >
                     <BsEmojiSmile />
                   </button>
@@ -1106,11 +1715,101 @@ export default function Messages({ session, userWalletData, userHolderData }) {
                 </div>
               </div>
 
-              {/* Style Options Dropdown */}
+              {/* Input Form */}
+              <form onSubmit={sendMessage} className="chat-input-form">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder={
+                    cooldown
+                      ? `Wait ${cooldownTime > 0 ? cooldownTime : 0}s...`
+                      : "Type your message..."
+                  }
+                  disabled={cooldown}
+                  className="chat-input"
+                  maxLength={100}
+                />
+
+                {/* Enhanced AI Style Suggestion Button */}
+                {message.trim().length > 0 && (
+                  <button
+                    type="button"
+                    className={`style-suggestion-btn ${
+                      isGeneratingSuggestions ? "generating" : ""
+                    }`}
+                    onClick={handleGetStyleSuggestions}
+                    title="Get AI style suggestions"
+                    disabled={
+                      isSubmitting || cooldown || isGeneratingSuggestions
+                    }
+                  >
+                    <span className="suggestion-btn-icon">
+                      {isGeneratingSuggestions ? (
+                        <div className="suggestion-spinner"></div>
+                      ) : (
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          width="18"
+                          height="18"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M9 3.5V2M14.5 4L15.5 2.5M19 8l1.5-1M4 8l-1-1M7.5 14.5c0 1.5 1 4.5 5 4.5s5-3 5-4.5c0-2-2.5-2.5-2.5-5 0-1.5-1-2.5-2.5-2.5s-2.5 1-2.5 2.5c0 2.5-2.5 3-2.5 5z" />
+                        </svg>
+                      )}
+                    </span>
+                    <span className="suggestion-btn-text">
+                      {isGeneratingSuggestions ? "Analyzing..." : "Style"}
+                    </span>
+                  </button>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={!message.trim() || isSubmitting || cooldown}
+                  className="send-button"
+                >
+                  {isSubmitting ? "Sending..." : "Send"}
+                </button>
+              </form>
+
+              {/* User Rank Indicator */}
+              {userRank && (
+                <div className="user-rank-indicator">
+                  {userRank <= 500 ? (
+                    <div className="premium-user-badge">
+                      Premium Messaging Enabled (Rank: #{userRank})
+                    </div>
+                  ) : (
+                    <div className="standard-user-badge">
+                      Standard Messaging (Rank: #{userRank})
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Style Options Panel */}
               {showStyleOptions && (
                 <div className="style-options-dropdown">
                   <div className="style-options-header">
                     <div className="style-options-tabs">
+                      {/* <button
+                        className={`style-tab ${
+                          activeStyleTab === "suggestions" ? "active" : ""
+                        }`}
+                        onClick={() => {
+                          setActiveStyleTab("suggestions");
+                          if (activeStyleTab !== "suggestions") {
+                            handleGetStyleSuggestions(); // Auto-load suggestions when tab is selected
+                          }
+                        }}
+                      >
+                        <span className="tab-icon">💡</span> Suggestions
+                      </button> */}
                       <button
                         className={`style-tab ${
                           activeStyleTab === "themes" ? "active" : ""
@@ -1119,29 +1818,39 @@ export default function Messages({ session, userWalletData, userHolderData }) {
                       >
                         Themes
                       </button>
-                      {userRank && userRank <= 500 && (
-                        <button
-                          className={`style-tab ${
-                            activeStyleTab === "fonts" ? "active" : ""
-                          }`}
-                          onClick={() => setActiveStyleTab("fonts")}
-                        >
-                          Fonts
-                        </button>
-                      )}
-                      {userRank && userRank <= 100 && (
-                        <button
-                          className={`style-tab ${
-                            activeStyleTab === "animations" ? "active" : ""
-                          }`}
-                          onClick={() => setActiveStyleTab("animations")}
-                        >
-                          Animations
-                        </button>
-                      )}
+                      {/* Other existing tabs */}
+                      <button
+                        className={`style-tab ${
+                          activeStyleTab === "fonts" ? "active" : ""
+                        }`}
+                        onClick={() =>
+                          canUseFonts && setActiveStyleTab("fonts")
+                        }
+                        title={
+                          !canUseFonts
+                            ? "Requires Top 500 Holder Status"
+                            : "Font Options"
+                        }
+                      >
+                        Fonts
+                      </button>
+                      <button
+                        className={`style-tab ${
+                          activeStyleTab === "animations" ? "active" : ""
+                        }`}
+                        onClick={() =>
+                          canUseAnimations && setActiveStyleTab("animations")
+                        }
+                        title={
+                          !canUseAnimations
+                            ? "Requires Top 100 Holder Status"
+                            : "Animation Options"
+                        }
+                      >
+                        Animations
+                      </button>
                     </div>
 
-                    {/* Add reset button in the header */}
                     {Object.keys(customStyle).length > 0 && (
                       <button
                         className="reset-all-styles"
@@ -1153,94 +1862,95 @@ export default function Messages({ session, userWalletData, userHolderData }) {
                     )}
                   </div>
 
-                  {/* Update the themes section to include edit buttons */}
+                  {/* Themes Section */}
                   {activeStyleTab === "themes" && (
                     <>
-                      <h4>Color Themes</h4>
-                      <div className="theme-grid">
-                        {MESSAGE_THEMES.map((theme, index) => (
-                          <div
-                            key={`preset-${index}`}
-                            className={`theme-option ${
-                              customStyle.selectedThemeId ===
-                              `preset-${theme.name}`
-                                ? "selected"
-                                : ""
-                            }`}
-                            style={{
-                              background: theme.gradient || theme.bgColor,
-                              color: theme.textColor,
-                            }}
-                            onClick={() => handleSelectTheme(theme)}
-                          >
-                            <span className="theme-name">{theme.name}</span>
+                      {!isEditingCustomTheme ? (
+                        <>
+                          <h4>Color Themes</h4>
+                          <div className="theme-grid">
+                            {MESSAGE_THEMES.map((theme, index) => (
+                              <div
+                                key={`preset-${index}`}
+                                className={`theme-option ${
+                                  customStyle.selectedThemeId ===
+                                  `preset-${theme.name}`
+                                    ? "selected"
+                                    : ""
+                                }`}
+                                style={{
+                                  background: theme.gradient || theme.bgColor,
+                                  color: theme.textColor,
+                                }}
+                                onClick={() => handleSelectTheme(theme)}
+                              >
+                                <span className="theme-name">{theme.name}</span>
+                                <button
+                                  className="edit-theme-btn"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openThemeEditor(theme);
+                                  }}
+                                  title="Customize theme"
+                                >
+                                  <MdModeEdit />
+                                </button>
+                              </div>
+                            ))}
+
+                            {/* Custom themes */}
+                            {customThemes.map((theme) => (
+                              <div
+                                key={`custom-${theme.id}`}
+                                className={`theme-option custom-theme ${
+                                  customStyle.selectedThemeId === theme.id
+                                    ? "selected"
+                                    : ""
+                                }`}
+                                style={{
+                                  background: theme.gradient || theme.bgColor,
+                                  color: theme.textColor,
+                                }}
+                                onClick={() => handleSelectTheme(theme)}
+                              >
+                                <button
+                                  className="delete-theme-btn"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteCustomTheme(theme.id);
+                                  }}
+                                  title="Delete theme"
+                                >
+                                  <IoTrashOutline />
+                                </button>
+
+                                <span className="theme-name">{theme.name}</span>
+
+                                <button
+                                  className="edit-theme-btn"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openThemeEditor(theme);
+                                  }}
+                                  title="Customize theme"
+                                >
+                                  <MdModeEdit />
+                                </button>
+                              </div>
+                            ))}
+
+                            {/* Add button for creating new theme */}
                             <button
-                              className="edit-theme-btn"
-                              onClick={(e) => {
-                                e.stopPropagation(); // Prevent theme selection when clicking edit
-                                openThemeEditor(theme);
-                              }}
-                              title="Customize theme"
+                              className="create-theme-btn"
+                              onClick={() => openThemeEditor()}
+                              title="Create custom theme"
                             >
-                              <MdModeEdit />
+                              <IoAddCircleOutline />
+                              <span>Create Theme</span>
                             </button>
                           </div>
-                        ))}
-
-                        {/* Custom themes */}
-                        {customThemes.map((theme) => (
-                          <div
-                            key={`custom-${theme.id}`}
-                            className={`theme-option custom-theme ${
-                              customStyle.selectedThemeId === theme.id
-                                ? "selected"
-                                : ""
-                            }`}
-                            style={{
-                              background: theme.gradient || theme.bgColor,
-                              color: theme.textColor,
-                            }}
-                            onClick={() => handleSelectTheme(theme)}
-                          >
-                            <button
-                              className="delete-theme-btn"
-                              onClick={(e) => {
-                                e.stopPropagation(); // Prevent theme selection when clicking delete
-                                deleteCustomTheme(theme.id);
-                              }}
-                              title="Delete theme"
-                            >
-                              <IoTrashOutline />
-                            </button>
-
-                            <span className="theme-name">{theme.name}</span>
-
-                            <button
-                              className="edit-theme-btn"
-                              onClick={(e) => {
-                                e.stopPropagation(); // Prevent theme selection when clicking edit
-                                openThemeEditor(theme);
-                              }}
-                              title="Customize theme"
-                            >
-                              <MdModeEdit />
-                            </button>
-                          </div>
-                        ))}
-
-                        {/* Add button for creating new theme */}
-                        <button
-                          className="create-theme-btn"
-                          onClick={() => openThemeEditor()}
-                          title="Create custom theme"
-                        >
-                          <IoAddCircleOutline />
-                          <span>Create Theme</span>
-                        </button>
-                      </div>
-
-                      {/* Custom theme creator/editor */}
-                      {isEditingCustomTheme && (
+                        </>
+                      ) : (
                         <div className="custom-theme-editor">
                           <h4>
                             {editingThemeId
@@ -1256,7 +1966,6 @@ export default function Messages({ session, userWalletData, userHolderData }) {
                           )}
 
                           <div className="theme-editor-form">
-                            {/* Update input handlers to use the new updateCustomThemeColors function */}
                             <div className="theme-name-input">
                               <label>Theme Name</label>
                               <input
@@ -1274,7 +1983,6 @@ export default function Messages({ session, userWalletData, userHolderData }) {
                             </div>
 
                             <div className="custom-theme-form">
-                              {/* Update ColorPicker onChange handlers */}
                               <label>
                                 Text Color:
                                 <ColorPicker
@@ -1288,7 +1996,6 @@ export default function Messages({ session, userWalletData, userHolderData }) {
                                 />
                               </label>
 
-                              {/* Update gradient toggle */}
                               <label>
                                 Use Gradient:
                                 <input
@@ -1304,7 +2011,6 @@ export default function Messages({ session, userWalletData, userHolderData }) {
                                 />
                               </label>
 
-                              {/* Update gradient color pickers */}
                               {customThemeColors.useGradient ? (
                                 <>
                                   <label>
@@ -1347,7 +2053,6 @@ export default function Messages({ session, userWalletData, userHolderData }) {
                                 </label>
                               )}
 
-                              {/* Update buttons */}
                               <div className="custom-theme-buttons">
                                 <button onClick={saveCustomTheme}>
                                   <IoSaveOutline /> Save Theme
@@ -1363,104 +2068,363 @@ export default function Messages({ session, userWalletData, userHolderData }) {
                     </>
                   )}
 
-                  {/* Keep the fonts and animations tabs the same */}
-                  {activeStyleTab === "fonts" &&
-                    userRank &&
-                    userRank <= 500 && (
-                      <div className="premium-options">
-                        <h4>Premium Font Style (Top 500 Holder)</h4>
-                        <div className="font-selector">
+                  {/* Fonts Section */}
+                  {activeStyleTab === "fonts" && canUseFonts && (
+                    <div className="premium-options">
+                      <h4>Premium Font Style (Top 500 Holder)</h4>
+                      <div className="font-selector">
+                        <select
+                          value={customStyle.fontFamily || "inherit"}
+                          onChange={(e) =>
+                            setCustomStyle((prev) => ({
+                              ...prev,
+                              fontFamily: e.target.value,
+                            }))
+                          }
+                          className="font-select-dropdown"
+                        >
+                          {PREMIUM_FONTS.map((font) => (
+                            <option
+                              key={font.value}
+                              value={font.value}
+                              style={{ fontFamily: font.value }}
+                            >
+                              {font.name}
+                            </option>
+                          ))}
+                        </select>
+
+                        <div className="font-style-options">
+                          <label>
+                            <input
+                              type="checkbox"
+                              checked={customStyle.fontWeight === "bold"}
+                              onChange={() =>
+                                setCustomStyle((prev) => ({
+                                  ...prev,
+                                  fontWeight:
+                                    prev.fontWeight === "bold"
+                                      ? "normal"
+                                      : "bold",
+                                }))
+                              }
+                            />
+                            Bold
+                          </label>
+
+                          <label>
+                            <input
+                              type="checkbox"
+                              checked={customStyle.fontStyle === "italic"}
+                              onChange={() =>
+                                setCustomStyle((prev) => ({
+                                  ...prev,
+                                  fontStyle:
+                                    prev.fontStyle === "italic"
+                                      ? "normal"
+                                      : "italic",
+                                }))
+                              }
+                            />
+                            Italic
+                          </label>
+                        </div>
+
+                        <div className="font-size-selector">
+                          <label
+                            style={{
+                              color: "#ffffff",
+                            }}
+                          >
+                            Font Size:
+                          </label>
                           <select
-                            value={customStyle.fontFamily || "inherit"}
+                            value={customStyle.fontSize || "inherit"}
                             onChange={(e) =>
                               setCustomStyle((prev) => ({
                                 ...prev,
-                                fontFamily: e.target.value,
+                                fontSize: e.target.value,
                               }))
                             }
                             className="font-select-dropdown"
                           >
-                            {PREMIUM_FONTS.map((font) => (
-                              <option
-                                key={font.value}
-                                value={font.value}
-                                style={{ fontFamily: font.value }}
-                              >
-                                {font.name}
+                            {FONT_SIZES.map((size) => (
+                              <option key={size.value} value={size.value}>
+                                {size.name}
                               </option>
                             ))}
                           </select>
-
-                          {/* Remove the redundant font examples div */}
-
-                          <div className="font-style-options">
-                            <label>
-                              <input
-                                type="checkbox"
-                                checked={customStyle.fontWeight === "bold"}
-                                onChange={() =>
-                                  setCustomStyle((prev) => ({
-                                    ...prev,
-                                    fontWeight:
-                                      prev.fontWeight === "bold"
-                                        ? "normal"
-                                        : "bold",
-                                  }))
-                                }
-                              />
-                              Bold
-                            </label>
-
-                            <label>
-                              <input
-                                type="checkbox"
-                                checked={customStyle.fontStyle === "italic"}
-                                onChange={() =>
-                                  setCustomStyle((prev) => ({
-                                    ...prev,
-                                    fontStyle:
-                                      prev.fontStyle === "italic"
-                                        ? "normal"
-                                        : "italic",
-                                  }))
-                                }
-                              />
-                              Italic
-                            </label>
-                          </div>
                         </div>
                       </div>
-                    )}
 
-                  {activeStyleTab === "animations" &&
-                    userRank &&
-                    userRank <= 100 && (
+                      {/* Add the UI component */}
+                      <div className="font-presets">
+                        <h4>Font Presets</h4>
+                        <div className="preset-buttons">
+                          {FONT_PRESETS.map((preset) => (
+                            <button
+                              key={preset.name}
+                              className="font-preset-button"
+                              style={{ fontFamily: preset.fontFamily }}
+                              onClick={() =>
+                                setCustomStyle((prev) => ({
+                                  ...prev,
+                                  fontFamily: preset.fontFamily,
+                                  fontWeight: preset.fontWeight || "normal",
+                                  fontStyle: preset.fontStyle || "normal",
+                                  fontSize: preset.fontSize || "inherit",
+                                }))
+                              }
+                            >
+                              {preset.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Animations Section */}
+                  {activeStyleTab === "animations" && canUseAnimations && (
+                    <div className="premium-options elite-options">
+                      <h4>Premium Animations (Top 100 Holder)</h4>
+                      <div className="animation-selector">
+                        {PREMIUM_ANIMATIONS.map((animation) => (
+                          <div
+                            key={animation.value || "none"}
+                            className={`animation-option ${
+                              customStyle.animationType === animation.value
+                                ? "selected"
+                                : ""
+                            }`}
+                            onClick={() =>
+                              setCustomStyle((prev) => {
+                                // Clear animation if "None" is selected
+                                if (animation.value === null) {
+                                  const newStyle = { ...prev };
+                                  delete newStyle.animationType;
+                                  return newStyle;
+                                }
+                                return {
+                                  ...prev,
+                                  animationType: animation.value,
+                                };
+                              })
+                            }
+                          >
+                            {animation.name}
+                          </div>
+                        ))}
+                      </div>
+
                       <div className="premium-options elite-options">
-                        <h4>Premium Animations (Top 100 Holder)</h4>
-                        <div className="animation-selector">
-                          {PREMIUM_ANIMATIONS.map((animation) => (
+                        <h4>Premium Text Effects (Top 100 Holder)</h4>
+                        <div className="effect-selector">
+                          {TEXT_EFFECTS.map((effect) => (
                             <div
-                              key={animation.value || "none"}
-                              className={`animation-option ${
-                                customStyle.animationType === animation.value
+                              key={effect.value || "none"}
+                              className={`effect-option ${
+                                customStyle.textEffect === effect.value
                                   ? "selected"
                                   : ""
                               }`}
                               onClick={() =>
                                 setCustomStyle((prev) => ({
                                   ...prev,
-                                  animationType: animation.value,
+                                  textEffect: effect.value,
                                 }))
                               }
                             >
-                              {animation.name}
+                              {effect.name}
                             </div>
                           ))}
                         </div>
                       </div>
-                    )}
+                    </div>
+                  )}
 
-                  {/* Always show the preview */}
+                  {/* Suggestions Section */}
+                  {activeStyleTab === "suggestions" && (
+                    <div className="style-suggestions-tab">
+                      <h4>AI Style Recommendations</h4>
+
+                      {isGeneratingSuggestions ? (
+                        <div className="suggestions-loading">
+                          <div className="suggestions-spinner"></div>
+                          <p>
+                            Analyzing your message and generating personalized
+                            style suggestions...
+                          </p>
+                        </div>
+                      ) : (
+                        <>
+                          {message.trim() === "" ? (
+                            <div className="suggestions-placeholder">
+                              <p>Type a message to get AI style suggestions</p>
+                              <small>
+                                The AI will analyze your message content and
+                                suggest matching styles
+                              </small>
+                            </div>
+                          ) : (
+                            <>
+                              {styleSuggestions.length > 0 ? (
+                                <>
+                                  <div className="suggestions-header-info">
+                                    <p>
+                                      AI generated {styleSuggestions.length}{" "}
+                                      style suggestions for your message
+                                    </p>
+                                  </div>
+
+                                  <div className="style-suggestions-grid">
+                                    {styleSuggestions.map(
+                                      (suggestion, index) => (
+                                        <div
+                                          key={`suggestion-${index}`}
+                                          className={`style-suggestion-card ${
+                                            suggestion.isGenerated
+                                              ? "generated-suggestion"
+                                              : ""
+                                          }`}
+                                          onClick={() => {
+                                            // Apply the style
+                                            setCustomStyle({
+                                              ...customStyle,
+                                              ...suggestion.style,
+                                            });
+
+                                            // Show success animation
+                                            const card = document.querySelector(
+                                              `[data-suggestion-id="${index}"]`
+                                            );
+                                            if (card) {
+                                              card.classList.add(
+                                                "suggestion-applied"
+                                              );
+                                              setTimeout(() => {
+                                                card.classList.remove(
+                                                  "suggestion-applied"
+                                                );
+                                              }, 1000);
+                                            }
+
+                                            // Show toast message
+                                            showToast(
+                                              `Applied "${suggestion.name}" style`,
+                                              "success"
+                                            );
+                                          }}
+                                          data-suggestion-id={index}
+                                        >
+                                          {suggestion.isGenerated && (
+                                            <div className="generated-tag">
+                                              <span className="generated-icon">
+                                                ✨
+                                              </span>{" "}
+                                              Generated Now
+                                            </div>
+                                          )}
+
+                                          <div className="suggestion-match-score">
+                                            <span className="match-label">
+                                              Match
+                                            </span>
+                                            <div className="match-meter">
+                                              <div
+                                                className={`match-fill ${getMatchScoreClass(
+                                                  suggestion.matchScore
+                                                )}`}
+                                                style={{
+                                                  width: `${
+                                                    suggestion.matchScore
+                                                      ? Math.round(
+                                                          suggestion.matchScore *
+                                                            100
+                                                        )
+                                                      : 80
+                                                  }%`,
+                                                }}
+                                              ></div>
+                                            </div>
+                                            <span className="match-percentage">
+                                              {formatMatchPercentage(
+                                                suggestion.matchScore
+                                              )}
+                                            </span>
+                                          </div>
+
+                                          <MessagePreview
+                                            style={suggestion.style}
+                                            username={
+                                              session?.user?.name || "you"
+                                            }
+                                            text={
+                                              message || suggestion.previewText
+                                            }
+                                            userImage={
+                                              userWalletData?.profileImage ||
+                                              session?.user?.image
+                                            }
+                                          />
+
+                                          <div className="suggestion-card-info">
+                                            <h5>{suggestion.name}</h5>
+                                            <p>{suggestion.description}</p>
+                                            {suggestion.basedOn && (
+                                              <span className="suggestion-tag">
+                                                Based on: {suggestion.basedOn}
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
+                                      )
+                                    )}
+                                  </div>
+                                </>
+                              ) : (
+                                <div className="no-suggestions">
+                                  <p>
+                                    No style suggestions available for this
+                                    message
+                                  </p>
+                                  <small>
+                                    Try entering a different message or using
+                                    the basic themes
+                                  </small>
+                                </div>
+                              )}
+                            </>
+                          )}
+
+                          <div className="suggestions-actions">
+                            <button
+                              className="refresh-suggestions-btn"
+                              onClick={handleGetStyleSuggestions}
+                              disabled={
+                                isGeneratingSuggestions || message.trim() === ""
+                              }
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                              >
+                                <path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16" />
+                              </svg>
+                              Refresh Suggestions
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Message Preview */}
                   <div className="message-preview-wrapper">
                     <h4 className="preview-title">Live Preview</h4>
                     <MessagePreview
@@ -1473,17 +2437,18 @@ export default function Messages({ session, userWalletData, userHolderData }) {
                       username={session?.user?.name}
                       text={message || "This is how your message will look"}
                       userImage={
-                        session?.user?.image || session?.user?.profileImage
+                        userWalletData?.profileImage ||
+                        session?.user?.image ||
+                        "/default-avatar.png"
                       }
                     />
                   </div>
                 </div>
               )}
 
-              {/* Custom Theme Editor */}
-
-              {/* Emoji Picker - Optimized for Mobile and Desktop */}
-              {showEmojiPicker && (
+              {/* Fix for the handleSelectEmoji function */}
+              {/* Update the Emoji picker handler */}
+              {showEmojiPicker && isMounted && (
                 <>
                   {isMobile ? (
                     <div className="mobile-emoji-picker-wrapper">
@@ -1494,30 +2459,48 @@ export default function Messages({ session, userWalletData, userHolderData }) {
                       <div className="mobile-emoji-picker-container">
                         <div className="mobile-emoji-picker-header">
                           <h4>Select Emoji</h4>
+                          <button
+                            onClick={() => setShowEmojiPicker(false)}
+                            className="close-button"
+                          >
+                            ×
+                          </button>
                         </div>
                         <SimpleMobileEmojiPicker
-                          onSelect={handleSelectEmoji}
+                          onSelect={(emoji) => {
+                            setCustomStyle((prev) => ({
+                              ...prev,
+                              sticker: emoji,
+                            }));
+                            setShowEmojiPicker(false);
+                          }}
                           onClose={() => setShowEmojiPicker(false)}
                         />
                       </div>
                     </div>
                   ) : (
-                    <div
-                      className="desktop-emoji-picker-wrapper"
-                      style={{ zIndex: 999999 }}
-                    >
+                    <div className="desktop-emoji-picker-wrapper">
                       <DraggableComponent
                         initialPosition={{
-                          x: Math.min(
-                            window.innerWidth - 350,
-                            Math.max(20, window.innerWidth / 2 - 160)
-                          ),
+                          x: isMounted
+                            ? Math.min(
+                                window.innerWidth - 350,
+                                Math.max(20, window.innerWidth / 2 - 160)
+                              )
+                            : 0,
                           y: 50,
                         }}
                         onClose={() => setShowEmojiPicker(false)}
                       >
                         <SimpleEmojiPicker
-                          onSelect={handleSelectEmoji}
+                          onSelect={(emoji) => {
+                            if (isMounted) triggerHapticFeedback();
+                            setCustomStyle((prev) => ({
+                              ...prev,
+                              sticker: emoji,
+                            }));
+                            setShowEmojiPicker(false);
+                          }}
                           onClose={() => setShowEmojiPicker(false)}
                         />
                       </DraggableComponent>
@@ -1525,55 +2508,411 @@ export default function Messages({ session, userWalletData, userHolderData }) {
                   )}
                 </>
               )}
-
-              <form onSubmit={sendMessage} className="chat-input-form">
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder={
-                    cooldown
-                      ? `Wait ${cooldownTime > 0 ? cooldownTime : 0}s...`
-                      : "Type your message..."
-                  }
-                  disabled={cooldown}
-                  className="chat-input"
-                  maxLength={100}
-                />
-                {renderSendButton()}
-              </form>
-
-              {/* Add this right below the chat input form */}
-              {userRank && (
-                <div className="user-rank-indicator">
-                  {userRank <= 500 ? (
-                    <div className="premium-user-badge">
-                      Premium Messaging Enabled (Rank: #{userRank})
-                    </div>
-                  ) : (
-                    <div className="standard-user-badge">
-                      Standard Messaging (Rank: #{userRank})
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Render MessageArchive at the root level */}
-      {selectedMessage && (
-        <MessageArchive
-          isOpen={archiveVisible}
-          onClose={handleCloseArchive}
-          username={selectedMessage.user}
-          walletAddress={selectedMessage.walletAddress}
-          profileImage={selectedMessage.profileImage}
-          rank={selectedMessage.rank} // Pass the rank from selectedMessage
+      {/* Onboarding Modal */}
+      {showOnboarding && (
+        <div className="onboarding-overlay">
+          <div className="onboarding-modal">
+            <h3>Welcome to Chat!</h3>
+            <div className="onboarding-steps">
+              <div className="onboarding-step">
+                <div className="step-number">1</div>
+                <div className="step-content">
+                  <h4>Send Messages</h4>
+                  <p>Press Ctrl+M anytime to open this chat window</p>
+                </div>
+              </div>
+              <div className="onboarding-step">
+                <div className="step-number">2</div>
+                <div className="step-content">
+                  <h4>Style Your Messages</h4>
+                  <p>
+                    Premium users can customize fonts, colors and add effects
+                  </p>
+                </div>
+              </div>
+              <div className="onboarding-step">
+                <div className="step-number">3</div>
+                <div className="step-content">
+                  <h4>Add Stickers</h4>
+                  <p>Click the emoji button to add stickers to your messages</p>
+                </div>
+              </div>
+            </div>
+            <button
+              className="onboarding-close-btn"
+              onClick={completeOnboarding}
+            >
+              Got it!
+            </button>
+          </div>
+        </div>
+      )}
+
+      {isMobile && (
+        <ChatFab
+          onClick={toggleInput}
+          showInput={showInput}
+          messageCount={newMessageCount}
+          onToggleMessages={toggleMessages}
+          showMessages={showMessages}
+          hasMessages={messages.length > 0}
         />
       )}
     </>
   );
 }
+
+// Add this helper function in your component
+const calculateMatchScore = (suggestion, messageAnalysis) => {
+  // Start with a base score
+  let score = 0.75;
+
+  // Get content type and sentiment from analysis
+  const contentType = messageAnalysis.contentType.primaryType;
+  const sentiment = messageAnalysis.sentiment;
+
+  // Suggestion name and description in lowercase for matching
+  const suggestionName = suggestion.name?.toLowerCase() || "";
+  const suggestionDesc = suggestion.description?.toLowerCase() || "";
+
+  // Content type matching (15% impact)
+  if (
+    suggestionName.includes(contentType) ||
+    suggestionDesc.includes(contentType)
+  ) {
+    score += 0.15;
+  }
+
+  // Sentiment matching (10% impact)
+  if (
+    sentiment.isPositive &&
+    (suggestionName.includes("positive") ||
+      suggestionDesc.includes("positive") ||
+      suggestionName.includes("celebrat") ||
+      suggestionDesc.includes("vibrant"))
+  ) {
+    score += 0.1;
+  } else if (
+    sentiment.isNegative &&
+    (suggestionName.includes("negative") ||
+      suggestionDesc.includes("serious") ||
+      suggestionDesc.includes("warning"))
+  ) {
+    score += 0.1;
+  }
+
+  // Message length matching (5% impact)
+  const messageLength = messageAnalysis.length;
+  if (
+    (messageLength < 20 && suggestionDesc.includes("short")) ||
+    (messageLength > 50 && suggestionDesc.includes("long"))
+  ) {
+    score += 0.05;
+  }
+
+  // Code content matching (20% impact)
+  if (
+    messageAnalysis.containsCodeSnippet &&
+    (suggestionName.includes("code") ||
+      suggestionDesc.includes("technical") ||
+      suggestionDesc.includes("code"))
+  ) {
+    score += 0.2;
+  }
+
+  // Add a tiny random factor for diversity (1-3%)
+  score += Math.random() * 0.02;
+
+  // Cap maximum score at 0.98
+  return Math.min(0.98, score);
+};
+
+const getMatchScoreClass = (score) => {
+  if (!score || isNaN(score)) return "match-medium";
+  if (score >= 0.9) return "match-excellent";
+  if (score >= 0.8) return "match-good";
+  if (score >= 0.7) return "match-medium";
+  return "match-basic";
+};
+
+const formatMatchPercentage = (score) => {
+  if (!score || isNaN(score)) return "85%";
+  const percentage = Math.round(score * 100);
+  return `${percentage}%`;
+};
+
+// Add this function to your component
+const generateDynamicThemes = (messageAnalysis) => {
+  const { contentType, sentiment } = messageAnalysis;
+  const dynamicThemes = [];
+
+  // Theme 1: Generate a theme based on content type
+  const contentBasedTheme = generateContentBasedTheme(
+    contentType.primaryType,
+    sentiment
+  );
+  dynamicThemes.push({
+    name: `${capitalize(contentType.primaryType)} Mood`,
+    description: `Custom theme generated for your ${contentType.primaryType} message`,
+    style: contentBasedTheme,
+    matchScore: 0.92, // High score since it's specifically for this content
+    isGenerated: true, // Flag to indicate this is a dynamically generated theme
+  });
+
+  // Theme 2: Generate a theme based on sentiment
+  const sentimentBasedTheme = generateSentimentBasedTheme(
+    sentiment,
+    contentType.primaryType
+  );
+  dynamicThemes.push({
+    name: `${getSentimentName(sentiment)} Expression`,
+    description: `Reflects the emotion in your message`,
+    style: sentimentBasedTheme,
+    matchScore: 0.89, // Also high, but slightly lower than content-based
+    isGenerated: true,
+  });
+
+  return dynamicThemes;
+};
+
+// Helper function to generate a theme based on content type
+const generateContentBasedTheme = (contentType, sentiment) => {
+  // Define color palettes for different content types
+  const palettes = {
+    announcement: {
+      positive: {
+        gradient: "linear-gradient(135deg, #3a1c71, #d76d77, #ffaf7b)",
+        textColor: "#ffffff",
+        fontFamily: "'Montserrat', sans-serif",
+        fontWeight: "bold",
+      },
+      negative: {
+        gradient: "linear-gradient(135deg, #232526, #414345)",
+        textColor: "#ff9b9b",
+        fontFamily: "'Montserrat', sans-serif",
+        fontWeight: "bold",
+      },
+      neutral: {
+        gradient: "linear-gradient(135deg, #5614B0, #DBD65C)",
+        textColor: "#ffffff",
+        fontFamily: "'Poppins', sans-serif",
+      },
+    },
+    question: {
+      gradient: "linear-gradient(135deg, #654ea3, #eaafc8)",
+      textColor: "#ffffff",
+      fontFamily: "'Nunito', sans-serif",
+      fontStyle: "italic",
+    },
+    trading: {
+      positive: {
+        gradient: "linear-gradient(135deg, #134E5E, #71B280)",
+        textColor: "#ffffff",
+        fontFamily: "'Space Grotesk', sans-serif",
+      },
+      negative: {
+        gradient: "linear-gradient(135deg, #232526, #414345)",
+        textColor: "#ff4a4a",
+        fontFamily: "'Space Grotesk', sans-serif",
+      },
+      neutral: {
+        gradient: "linear-gradient(135deg, #0F2027, #203A43, #2C5364)",
+        textColor: "#7acdff",
+        fontFamily: "'Space Grotesk', sans-serif",
+      },
+    },
+    technical: {
+      bgColor: "#1e1e1e",
+      textColor: "#4ec9b0",
+      fontFamily: "'Fira Code', monospace",
+      fontSize: "0.9rem",
+    },
+    celebration: {
+      gradient: "linear-gradient(135deg, #bc4e9c, #f80759)",
+      textColor: "#ffffff",
+      fontFamily: "'Poppins', sans-serif",
+      fontWeight: "bold",
+      animationType: "pulse",
+    },
+    warning: {
+      gradient: "linear-gradient(135deg, #434343, #000000)",
+      textColor: "#ff4545",
+      fontFamily: "'Roboto', sans-serif",
+      fontWeight: "bold",
+    },
+    general: {
+      positive: {
+        gradient: "linear-gradient(135deg, #2193b0, #6dd5ed)",
+        textColor: "#ffffff",
+        fontFamily: "'Poppins', sans-serif",
+      },
+      negative: {
+        gradient: "linear-gradient(135deg, #141e30, #243b55)",
+        textColor: "#e0e0e0",
+        fontFamily: "'Roboto', sans-serif",
+      },
+      neutral: {
+        gradient: "linear-gradient(135deg, #3E5151, #DECBA4)",
+        textColor: "#ffffff",
+        fontFamily: "'Montserrat', sans-serif",
+      },
+    },
+  };
+
+  // Get the appropriate palette based on content type and sentiment
+  let palette;
+  if (palettes[contentType]) {
+    // If the content type has sentiment-specific palettes
+    if (
+      typeof palettes[contentType] === "object" &&
+      palettes[contentType].positive
+    ) {
+      if (sentiment.isPositive) {
+        palette = palettes[contentType].positive;
+      } else if (sentiment.isNegative) {
+        palette = palettes[contentType].negative;
+      } else {
+        palette = palettes[contentType].neutral;
+      }
+    } else {
+      palette = palettes[contentType]; // Use the generic one
+    }
+  } else {
+    // Fallback to general palette
+    if (sentiment.isPositive) {
+      palette = palettes.general.positive;
+    } else if (sentiment.isNegative) {
+      palette = palettes.general.negative;
+    } else {
+      palette = palettes.general.neutral;
+    }
+  }
+
+  // Add some variation to make each generated theme unique
+  const theme = { ...palette };
+
+  // Add a unique aspect based on timestamp to ensure variation
+  const hueShift = (new Date().getSeconds() % 20) - 10; // -10 to +10 range
+
+  if (theme.gradient) {
+    // No easy way to shift hue in gradient strings, so just add a subtle variation marker
+    theme.gradient = theme.gradient.replace(
+      "deg,",
+      `deg, /* unique:${Math.random().toString(36).substring(7)} */`
+    );
+  } else if (theme.bgColor && theme.bgColor.startsWith("#")) {
+    // Slight color variation for background colors
+    theme.bgColor = shiftHexColor(theme.bgColor, hueShift);
+  }
+
+  return theme;
+};
+
+// Helper function to generate a theme based on sentiment
+const generateSentimentBasedTheme = (sentiment, contentType) => {
+  let theme = {};
+
+  // Strong positive (excited, enthusiastic)
+  if (sentiment.score > 0.3) {
+    theme = {
+      gradient: "linear-gradient(135deg, #FF8008, #FFC837)",
+      textColor: "#ffffff",
+      fontFamily: "'Montserrat', sans-serif",
+      fontWeight: "bold",
+    };
+  }
+  // Mild positive (happy, satisfied)
+  else if (sentiment.score > 0.1) {
+    theme = {
+      gradient: "linear-gradient(135deg, #56ab2f, #a8e063)",
+      textColor: "#ffffff",
+      fontFamily: "'Nunito', sans-serif",
+    };
+  }
+  // Neutral (balanced, informational)
+  else if (sentiment.score > -0.1) {
+    theme = {
+      gradient: "linear-gradient(135deg, #3494E6, #EC6EAD)",
+      textColor: "#ffffff",
+      fontFamily: "'Roboto', sans-serif",
+    };
+  }
+  // Mild negative (concerned, cautious)
+  else if (sentiment.score > -0.3) {
+    theme = {
+      gradient: "linear-gradient(135deg, #614385, #516395)",
+      textColor: "#f1f1f1",
+      fontFamily: "'Space Grotesk', sans-serif",
+    };
+  }
+  // Strong negative (warning, critical)
+  else {
+    theme = {
+      gradient: "linear-gradient(135deg, #232526, #414345)",
+      textColor: "#ff4a4a",
+      fontFamily: "'Roboto', sans-serif",
+      fontWeight: "bold",
+    };
+  }
+
+  // Add some content-specific tweaks
+  if (contentType === "technical") {
+    theme.fontFamily = "'Fira Code', monospace";
+    theme.fontSize = "0.9rem";
+  } else if (contentType === "celebration") {
+    theme.animationType = "pulse";
+  } else if (contentType === "question") {
+    theme.fontStyle = "italic";
+  }
+
+  // Add uniqueness to this theme
+  const randomElement = Math.floor(Math.random() * 5);
+  if (randomElement === 0) {
+    theme.textEffect = sentiment.isNegative ? "shadow" : "neon";
+  } else if (randomElement === 1 && !sentiment.isNegative) {
+    theme.animationType = "pulse";
+  }
+
+  return theme;
+};
+
+// Helper function to get a friendly name for sentiment
+const getSentimentName = (sentiment) => {
+  if (sentiment.score > 0.3) return "Excited";
+  if (sentiment.score > 0.1) return "Positive";
+  if (sentiment.score > -0.1) return "Neutral";
+  if (sentiment.score > -0.3) return "Concerned";
+  return "Critical";
+};
+
+// Helper function to capitalize first letter
+const capitalize = (string) => {
+  if (!string) return "";
+  return string.charAt(0).toUpperCase() + string.slice(1);
+};
+
+// Helper function to shift hex color by a hue amount
+const shiftHexColor = (hex, amount) => {
+  // Simple implementation - for production you might want a more robust color manipulation
+  if (!hex || !hex.startsWith("#")) return hex;
+
+  // Convert hex to RGB
+  let r = parseInt(hex.slice(1, 3), 16);
+  let g = parseInt(hex.slice(3, 5), 16);
+  let b = parseInt(hex.slice(5, 7), 16);
+
+  // Simple shift (not a true hue shift but works for subtle variations)
+  r = Math.max(0, Math.min(255, r + amount));
+  g = Math.max(0, Math.min(255, g + amount));
+  b = Math.max(0, Math.min(255, b + amount));
+
+  // Convert back to hex
+  return `#${r.toString(16).padStart(2, "0")}${g
+    .toString(16)
+    .padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+};

@@ -48,6 +48,7 @@ export default function Header() {
     hasClaimedWallet,
     isClaiming,
     claimWallet: contextClaimWallet,
+    checkWalletClaim, // Add this
   } = useWalletClaim();
 
   console.log(hasClaimedWallet);
@@ -67,6 +68,18 @@ export default function Header() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  // Add this effect near the top of your component
+  useEffect(() => {
+    // When session changes (login/logout), recheck wallet claim status
+    const checkClaim = async () => {
+      if (session && address) {
+        await checkWalletClaim(true); // Force refresh on session change
+      }
+    };
+
+    checkClaim();
+  }, [session, address, checkWalletClaim]);
 
   const handleClickOutside = (event) => {
     if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -137,7 +150,22 @@ export default function Header() {
       return;
     }
 
+    // Add this check before trying to claim
+    if (hasClaimedWallet) {
+      showToast("This wallet has already been claimed", "info");
+      return;
+    }
+
     try {
+      // First verify if the wallet is already claimed
+      await checkWalletClaim(true); // Force a fresh check
+
+      // If after the fresh check it's already claimed, stop here
+      if (hasClaimedWallet) {
+        showToast("This wallet has already been claimed", "info");
+        return;
+      }
+
       const result = await contextClaimWallet();
       if (result.success) {
         showToast(
@@ -165,19 +193,46 @@ export default function Header() {
   };
 
   const handleLogout = async () => {
-    clearCache();
-    if (session?.user) {
-      // Optional: Clear specific wallet cache if connected
-      const walletParam = address ? `&wallet=${address}` : "";
-      await fetch(`/api/clear-cache?type=walletClaim${walletParam}`, {
-        method: "POST",
-      });
-    }
     try {
+      // 1. Show a loading toast
+      showToast("Logging out...", "info");
+
+      // 2. Clear client-side cache first
+      clearCache();
+
+      // 3. Clear the Redis cache for this specific wallet if connected
+      if (session?.user) {
+        try {
+          await fetch(`/api/clear-cache`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              type: "walletClaim",
+              walletAddress: address || "",
+            }),
+          });
+
+          console.log("Redis cache cleared before logout");
+        } catch (err) {
+          console.warn("Cache clearing error:", err);
+        }
+      }
+
+      // 4. Sign out from Next-Auth
       await signOut({
         callbackUrl: window.location.origin,
         redirect: false,
       });
+
+      // 5. Force refresh the wallet claim state by calling the context method
+      if (checkWalletClaim) {
+        checkWalletClaim(true); // Pass true to force a refresh
+      }
+
+      // 6. Show success message
+      showToast("Logged out successfully", "success");
     } catch (error) {
       console.error("Logout error:", error);
       showToast("Error logging out", "error");
@@ -438,7 +493,7 @@ export default function Header() {
                           </svg>
                           Logout
                         </button>
-                        {!hasClaimedWallet ? (
+                        {!hasClaimedWallet && isConnected && session ? (
                           <button
                             onClick={handleClaimWallet}
                             disabled={isClaiming}
@@ -474,7 +529,7 @@ export default function Header() {
                             )}
                             {isClaiming ? "Claiming..." : "Claim Wallet"}
                           </button>
-                        ) : (
+                        ) : hasClaimedWallet && isConnected && session ? (
                           <button
                             disabled
                             className="btn btn-success btn-rounded d-flex align-items-center"
@@ -502,7 +557,7 @@ export default function Header() {
                             </svg>
                             Wallet Claimed
                           </button>
-                        )}
+                        ) : null}
                       </div>
                     ) : (
                       <button

@@ -11,15 +11,33 @@ export async function POST(request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url);
-    const type = searchParams.get("type") || "walletClaim";
+    // Support both URL params and JSON body
+    let type, walletAddress, patterns;
 
-    // Get optional wallet address
-    const walletAddress = searchParams.get("wallet")?.toLowerCase();
+    if (request.headers.get("content-type")?.includes("application/json")) {
+      // Parse body data if JSON
+      const body = await request.json();
+      type = body.type || "walletClaim";
+      walletAddress = body.walletAddress?.toLowerCase();
+      patterns = body.patterns || [];
+    } else {
+      // Use URL parameters as fallback
+      const { searchParams } = new URL(request.url);
+      type = searchParams.get("type") || "walletClaim";
+      walletAddress = searchParams.get("wallet")?.toLowerCase();
+    }
+
+    // Log the request
+    console.log(
+      `Cache clear request: type=${type}, wallet=${walletAddress || "none"}`
+    );
 
     if (type === "walletClaim" && walletAddress) {
       // Clear social data for specific wallet
       await redisCache.invalidate(`social:${walletAddress}`);
+
+      // Also clear the wallet's profile visibility cache if it exists
+      await redisCache.invalidate(`profileVisibility:${walletAddress}`);
 
       return NextResponse.json({
         success: true,
@@ -35,6 +53,16 @@ export async function POST(request) {
       return NextResponse.json({
         success: true,
         message: `General cache cleared`,
+      });
+    } else if (type === "selective" && patterns && patterns.length > 0) {
+      // Selective cache clearing with patterns
+      for (const pattern of patterns) {
+        await redisCache.invalidate(pattern);
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: `Selectively cleared caches: ${patterns.join(", ")}`,
       });
     } else if (type === "all") {
       // Clear everything - restricted to admin users

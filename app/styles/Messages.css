@@ -304,6 +304,8 @@ messages-container::-webkit-scrollbar-thumb:hover {
   overflow-x: hidden; /* Prevent horizontal scrolling */
   padding: 8px; /* Less padding */
   pointer-events: none; /* Make container transparent to clicks by default */
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 /* Make individual messages clickable */
@@ -331,6 +333,9 @@ messages-container::-webkit-scrollbar-thumb:hover {
   word-break: break-word;
   box-sizing: border-box !important;
   overflow: hidden;
+  touch-action: pan-y;
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 /* Add media query for mobile devices */
@@ -881,8 +886,7 @@ messages-container::-webkit-scrollbar-thumb:hover {
 .mobile-chat-controls {
   position: fixed;
   bottom: 20px;
-  left: 0;
-  right: 0;
+  right: 20px;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -912,6 +916,7 @@ messages-container::-webkit-scrollbar-thumb:hover {
   cursor: pointer;
   transition: all 0.2s ease;
   z-index: 1001;
+  
 }
 
 .messages-toggle-mobile:hover {
@@ -956,7 +961,7 @@ html, body {
 @media (max-width: 768px) {
   .mobile-chat-controls {
     bottom: 15px;
-    right: 15px;
+    left: 15px;
   }
   
   .chat-fab {
@@ -2112,11 +2117,7 @@ html, body {
   left: -50%;
   width: 200%;
   height: 200%;
-  background: radial-gradient(
-    circle,
-    rgba(255, 255, 255, 0.1) 0%,
-    rgba(255, 255, 255, 0) 70%
-  );
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 70%);
   animation: glowSpin 5s linear infinite;
   z-index: -1;
 }
@@ -4679,3 +4680,2174 @@ html, body {
   border-radius: 12px !important;
   overflow: hidden !important;
 }
+
+/* Add to your Messages.css */
+
+/* Text Effects */
+.message-text.shadow {
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+  -webkit-text-stroke: 0.3px rgba(255, 255, 255, 0.2);
+}
+
+.message-text.neon {
+  text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 20px #ff00de, 0 0 30px #ff00de;
+}
+
+.message-text.metallic {
+  background: linear-gradient(to right, #8f8f8f, #e6e6e6, #8f8f8f);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent !important;
+  text-shadow: 0px 0px 2px rgba(150, 150, 150, 0.5);
+}
+
+.message-text.retro {
+  text-shadow: 3px 3px 0px rgba(255, 214, 0, 0.7);
+  letter-spacing: 1px;
+}
+
+.message-text.glitch {
+  position: relative;
+  color: white;
+  text-shadow: none;
+}
+
+.message-text.glitch::before,
+.message-text.glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: inherit;
+  left: 0;
+}
+
+.message-text.glitch::before {
+  left: -2px;
+  text-shadow: -1px 0 #ff00de;
+  animation: glitch-anim-1 2s infinite linear alternate-reverse;
+  z-index: -1;
+}
+
+.message-text.glitch::after {
+  left: 2px;
+  text-shadow: 1px 0 #00fff9;
+  animation: glitch-anim-2 3s infinite linear alternate-reverse;
+  z-index: -2;
+}
+
+@keyframes glitch-anim-1 {
+  0%, 100% { clip-path: inset(20% 0 80% 0); }
+  20% { clip-path: inset(60% 0 1% 0); }
+  40% { clip-path: inset(25% 0 58% 0); }
+  60% { clip-path: inset(54% 0 7% 0); }
+  80% { clip-path: inset(4% 0 97% 0); }
+}
+
+@keyframes glitch-anim-2 {
+  0%, 100% { clip-path: inset(62% 0 1% 0); }
+  25% { clip-path: inset(8% 0 82% 0); }
+  50% { clip-path: inset(43% 0 1% 0); }
+  75% { clip-path: inset(3% 0 94% 0); }
+}
+
+/* Font Preset Styling */
+.font-preset-button {
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  margin: 4px;
+  min-width: 90px;
+  transition: all 0.2s;
+}
+
+.font-preset-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.font-presets {
+  margin-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 16px;
+}
+
+.preset-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* Font selector styling */
+.font-select-dropdown {
+  background: rgba(30, 30, 30, 0.9);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 8px;
+  border-radius: 6px;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.font-size-selector {
+  margin-top: 12px;
+}
+
+.effect-selector {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.effect-option {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 8px;
+  border-radius: 6px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.effect-option:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.effect-option.selected {
+  background: rgba(98, 134, 252, 0.3);
+  border: 1px solid rgba(98, 134, 252, 0.8);
+}
+
+/* Text Effects - Preview specific */
+.preview-message.shadow {
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+  -webkit-text-stroke: 0.3px rgba(255, 255, 255, 0.2);
+}
+
+.preview-message.neon {
+  text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 20px #ff00de, 0 0 30px #ff00de;
+}
+
+.preview-message.metallic {
+  background: linear-gradient(to right, #8f8f8f, #e6e6e6, #8f8f8f);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent !important;
+  text-shadow: 0px 0px 2px rgba(150, 150, 150, 0.5);
+}
+
+.preview-message.retro {
+  text-shadow: 3px 3px 0px rgba(255, 214, 0, 0.7);
+  letter-spacing: 1px;
+}
+
+.preview-message.glitch {
+  position: relative;
+  color: white;
+  text-shadow: none;
+}
+
+.preview-message.glitch::before,
+.preview-message.glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: inherit;
+  left: 0;
+}
+
+.preview-message.glitch::before {
+  left: -2px;
+  text-shadow: -1px 0 #ff00de;
+  animation: glitch-anim-1 2s infinite linear alternate-reverse;
+  z-index: -1;
+}
+
+.preview-message.glitch::after {
+  left: 2px;
+  text-shadow: 1px 0 #00fff9;
+  animation: glitch-anim-2 3s infinite linear alternate-reverse;
+  z-index: -2;
+}
+
+@keyframes glitch-anim-1 {
+  0%, 100% { clip-path: inset(20% 0 80% 0); }
+  20% { clip-path: inset(60% 0 1% 0); }
+  40% { clip-path: inset(25% 0 58% 0); }
+  60% { clip-path: inset(54% 0 7% 0); }
+  80% { clip-path: inset(4% 0 97% 0); }
+}
+
+@keyframes glitch-anim-2 {
+  0%, 100% { clip-path: inset(62% 0 1% 0); }
+  25% { clip-path: inset(8% 0 82% 0); }
+  50% { clip-path: inset(43% 0 1% 0); }
+  75% { clip-path: inset(3% 0 94% 0); }
+}
+
+/* Add to your Messages.css file */
+
+/* Mobile-specific adjustments */
+@media (max-width: 768px) {
+  .chat-input-overlay.mobile .chat-input-container {
+    width: 100%;
+    z-index: 9999;
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+  }
+  
+  .chat-input-overlay.mobile .chat-input-form {
+    margin-top: auto;
+    margin-bottom: 16px;
+    z-index: 9999;
+  }
+  
+  .chat-input-overlay.mobile .style-options-dropdown {
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+  
+  /* Full-screen backdrop for mobile */
+  .mobile-emoji-picker-wrapper .emoji-picker-backdrop {
+    position: fixed;
+
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 10;
+  }
+  
+  /* Bottom sheet style for mobile emoji picker */
+  .mobile-emoji-picker-container {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #1a1a1a;
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+    z-index: 11;
+    animation: slideUp 0.3s ease-out;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.25);
+  }
+  
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+}
+
+/* Tooltip styling */
+.tooltip-container {
+  position: relative;
+  display: inline-block;
+}
+
+.tooltip {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s, visibility 0.3s;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.tooltip.top {
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 8px;
+}
+
+.tooltip.bottom {
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 8px;
+}
+
+.tooltip-container:hover .tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+@media (max-width: 768px) {
+  .tooltip {
+    display: none; /* Hide tooltips on mobile */
+  }
+}
+
+/* Sending animation */
+.message-preview-bubble.sending {
+  animation: pulse-opacity 2s infinite;
+}
+
+
+/* Onboarding modal styling */
+.onboarding-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(5px);
+}
+
+.onboarding-modal {
+  background: #1a1a1a;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  padding: 24px;
+  color: white;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.onboarding-steps {
+  margin: 20px 0;
+}
+
+.onboarding-step {
+  display: flex;
+  margin-bottom: 16px;
+  align-items: center;
+}
+
+.step-number {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6286fc, #5d2ffc);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  margin-right: 16px;
+  flex-shrink: 0;
+}
+
+.step-content h4 {
+  margin: 0 0 4px 0;
+}
+
+.step-content p {
+  margin: 0;
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+.onboarding-close-btn {
+  background: linear-gradient(135deg, #6286fc, #5d2ffc);
+  border: none;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 16px;
+}
+
+/* Enhanced emoji picker styling */
+.emoji-picker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  user-select: none;
+  cursor: grab;
+}
+
+.emoji-picker-info {
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+.emoji-tabs {
+  display: flex;
+  overflow-x: auto;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0 10px;
+}
+
+.emoji-tab {
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  color: white;
+  opacity: 0.7;
+  cursor: pointer;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.emoji-tab:hover {
+  opacity: 1;
+}
+
+.emoji-tab.active {
+  opacity: 1;
+  position: relative;
+}
+
+.emoji-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(135deg, #6286fc, #5d2ffc);
+  border-radius: 3px 3px 0 0;
+}
+
+/* Fix for the ChatFab height issue on mobile */
+.mobile-chat-controls {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  z-index: 1000;
+  height: auto;
+  max-height: 60px;
+  pointer-events: none; /* Container transparent to clicks */
+}
+
+/* Make buttons clickable */
+.mobile-chat-controls button {
+  pointer-events: auto;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Hide the toggle messages button when chat input is open */
+.mobile-chat-controls.input-open .messages-toggle-mobile {
+  display: none;
+}
+
+/* Add these to improve the native app feel */
+.chat-input-overlay.mobile {
+  align-items: flex-end;
+}
+
+.chat-input-overlay.mobile .chat-input-container {
+  width: 100%;
+  border-radius: 20px 20px 0 0;
+  padding: 16px;
+  animation: slideUpMobile 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.3);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+@keyframes slideUpMobile {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Add bounce animation for the chat fab */
+.chat-fab {
+  animation: fabPop 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+}
+
+@keyframes fabPop {
+  0% { transform: scale(0.5); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+/* Haptic feedback visual indicator */
+.chat-fab:active, 
+.messages-toggle-mobile:active {
+  transform: scale(0.92) !important;
+  transition: transform 0.1s ease-in-out !important;
+}
+
+/* Better input field for mobile */
+.chat-input-overlay.mobile .chat-input {
+  padding: 12px 16px;
+  font-size: 16px; /* iOS default minimum to prevent zooming */
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.07);
+  -webkit-appearance: none; /* Remove iOS default styling */
+}
+
+.chat-input-overlay.mobile .send-button {
+  border-radius: 20px;
+  padding: 10px 18px;
+  font-weight: 600;
+  right: 20px;
+  box-shadow: 0 2px 8px rgba(98, 134, 252, 0.3);
+}
+
+/* Add bottom safe area padding for notched devices */
+@supports (padding: max(0px)) {
+  .chat-input-overlay.mobile .chat-input-container {
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+  
+  .mobile-chat-controls {
+    bottom: max(20px, env(safe-area-inset-bottom));
+  }
+}
+
+/* Status bar integration for PWA/full-screen mode */
+@media (display-mode: standalone) {
+  .chat-input-overlay.mobile .chat-input-container {
+    padding-top: max(16px, env(safe-area-inset-top));
+  }
+  
+  .chat-input-overlay.mobile .chat-input-header {
+    margin-top: env(safe-area-inset-top, 0);
+  }
+}
+
+/* Add iOS/Android specific styling */
+.chat-input-overlay.mobile .chat-input-header {
+  padding: 14px 16px;
+  text-align: center;
+  position: relative;
+}
+
+.chat-input-overlay.mobile .chat-input-header span {
+  font-weight: 600;
+  font-size: 17px;
+}
+
+/* Better loading states for mobile */
+.connection-status-indicator {
+  backdrop-filter: blur(5px);
+  border-radius: 30px;
+  padding: 8px 16px;
+  background: rgba(0, 0, 0, 0.6);
+  font-size: 14px;
+  margin: 12px auto;
+  max-width: 80%;
+  text-align: center;
+  animation: fadeInStatus 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes fadeInStatus {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.retry-button {
+  background: rgba(98, 134, 252, 0.3);
+  border: none;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 15px;
+  font-size: 12px;
+  margin-left: 8px;
+}
+
+/* Performance optimizations */
+.mobile-emoji-picker-container,
+.chat-input-overlay.mobile .chat-input-container,
+.message-float {
+  /* contain: content;
+  will-change: transform; */
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Reduce animation complexity for lower-end devices */
+@media (prefers-reduced-motion: reduce) {
+  .message-float,
+  .chat-input-overlay.mobile .chat-input-container,
+  .mobile-emoji-picker-container {
+    animation-duration: 0.1s !important;
+    transition-duration: 0.1s !important;
+  }
+  
+  .animate-rainbow,
+  .animate-glow,
+  .animate-pulse,
+  .animate-gradient {
+    animation: none !important;
+  }
+}
+
+/* Ultra Small Screen Optimizations (320px and below) */
+@media (max-width: 320px) {
+  /* Message container positioning */
+  .messages-float {
+    right: 0;
+    max-width: 90vw;
+    padding: 5px;
+  }
+  
+  /* Smaller message bubbles */
+  .message-float {
+    padding: 6px 8px;
+    margin-right: 4px;
+    max-width: 260px;
+    min-height: 40px !important;
+  }
+  
+  /* Smaller avatar */
+  .message-avatar {
+    width: 16px;
+    height: 16px;
+    min-width: 16px;
+  }
+  
+  /* More compact text */
+  .message-username {
+    font-size: 10px;
+  }
+  
+  .message-text {
+    font-size: 11px;
+    line-height: 1.2;
+  }
+  
+  /* ChatFab positioning and size */
+  .mobile-chat-controls {
+    bottom: 10px;
+    left: 10px;
+    gap: 6px;
+  }
+  
+  .chat-fab {
+    width: 42px;
+    height: 42px;
+  }
+  
+  .messages-toggle-mobile {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .fab-icon {
+    font-size: 18px;
+  }
+  
+  .fab-badge {
+    width: 16px;
+    height: 16px;
+    font-size: 9px;
+    top: -3px;
+    right: -3px;
+  }
+  
+  /* Chat input sizing */
+  .chat-input-overlay.mobile .chat-input-container {
+    padding: 10px;
+  }
+  
+  .chat-input-overlay.mobile .chat-input-header {
+    padding: 8px 10px;
+  }
+  
+  .chat-input-overlay.mobile .chat-input-header span {
+    font-size: 14px;
+  }
+  
+  .chat-input-form {
+    padding: 8px;
+    gap: 4px;
+  }
+  
+  .chat-input {
+    padding: 8px 10px;
+    font-size: 14px;
+  }
+  
+  .send-button {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  
+  /* Style options */
+  .style-options-dropdown {
+    padding: 8px;
+  }
+  
+  .theme-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+  
+  .theme-option {
+    padding: 6px;
+    font-size: 10px;
+  }
+  
+  /* Emoji picker sizing */
+  .mobile-emoji-picker-container {
+    height: 40vh;
+  }
+  
+  .mobile-emoji-picker-container .emoji-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  
+  .mobile-emoji-picker-container .emoji-button {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+  
+  /* Reduce animation stagger time for performance */
+  .message-float {
+    transition-delay: 0.05s !important;
+  }
+  
+  /* User rank indicator */
+  .user-rank-indicator {
+    font-size: 10px;
+    padding: 4px 8px;
+  }
+  
+  /* Sticker size */
+  .message-sticker {
+    font-size: 18px;
+    right: -12px;
+    bottom: -4px;
+  }
+  
+  /* Style buttons */
+  .style-toggle-button {
+    font-size: 14px;
+  }
+  
+  /* Animations tabs */
+  .animation-selector,
+  .effect-selector {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  /* Modal adjustments */
+  .custom-theme-editor {
+    padding: 10px;
+  }
+  
+  .custom-theme-editor h4 {
+    font-size: 14px;
+  }
+  
+  /* Connection status */
+  .connection-status-indicator {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+}
+
+/* Additional optimizations for all mobile sizes */
+@media (max-width: 480px) {
+  /* Improve touch targets */
+  .style-tab, 
+  .emoji-tab,
+  .effect-option,
+  .animation-option {
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Better scrolling */
+  .style-options-dropdown,
+  .emoji-grid-container {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  
+  .style-options-dropdown::-webkit-scrollbar,
+  .emoji-grid-container::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+  
+  /* Fix position of close buttons */
+  .close-button {
+    padding: 8px;
+    touch-action: manipulation;
+  }
+  
+  /* Prevent text selection when tapping */
+  .message-username,
+  .message-text,
+  .theme-name {
+    user-select: none;
+  }
+  
+  /* Improve tap response time */
+  .chat-fab, 
+  .messages-toggle-mobile,
+  .emoji-button,
+  .style-toggle-button,
+  .theme-option,
+  .chat-input,
+  .send-button {
+    touch-action: manipulation;
+  }
+  
+  /* Optimize SVG rendering */
+  svg {
+    will-change: transform;
+    transform: translateZ(0);
+  }
+}
+
+/* Notched device support */
+@supports (padding: max(0px)) {
+  .chat-input-overlay.mobile .chat-input-container {
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+  
+  .mobile-chat-controls {
+    bottom: max(15px, env(safe-area-inset-bottom));
+    left: max(10px, env(safe-area-inset-right));
+  }
+  
+  .mobile-emoji-picker-container {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Enhanced Metallic Effect */
+.message-text.metallic {
+  background-image: linear-gradient(
+    135deg,
+    #ffffff 0%,
+    #a0a0a0 20%,
+    #ffffff 40%,
+    #a0a0a0 60%,
+    #ffffff 80%,
+    #a0a0a0 100%
+  );
+  background-size: 200% 100%;
+  color: transparent !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  filter: drop-shadow(0px 2px 2px rgba(0, 0, 0, 0.3));
+  animation: metalShine 4s linear infinite;
+  font-weight: bold !important;
+  letter-spacing: 0.5px;
+}
+
+@keyframes metalShine {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+/* Enhanced Retro Effect */
+.message-text.retro {
+  font-family: 'Courier New', monospace !important;
+  color: #33ff00 !important;
+  text-shadow: 0 0 5px #33ff00, 0 0 10px rgba(51, 255, 0, 0.6);
+  background: transparent !important;
+  font-size: inherit !important; /* Will inherit from parent, respecting user settings */
+  padding: 0;
+  position: relative;
+  animation: textFlicker 0.8s infinite alternate;
+  letter-spacing: 1px;
+}
+
+@keyframes textFlicker {
+  0%, 30%, 50%, 70%, 100% { opacity: 1; }
+  20%, 40%, 60%, 80% { opacity: 0.8; }
+}
+
+@keyframes scanlines {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 3px; }
+}
+
+/* Add flicker effect when interacted with */
+.message-text.retro:hover {
+  animation: textGlitch 0.4s steps(1) infinite;
+}
+
+@keyframes textGlitch {
+  0%, 100% { 
+    text-shadow: 0 0 5px #33ff00, 0 0 10px rgba(51, 255, 0, 0.6);
+    transform: translate(0, 0); 
+  }
+  25% { 
+    text-shadow: 0 0 5px #ff0033, 0 0 10px rgba(255, 0, 51, 0.6);
+    transform: translate(-2px, 1px); 
+  }
+  50% { 
+    text-shadow: 0 0 5px #0033ff, 0 0 10px rgba(0, 51, 255, 0.6);
+    transform: translate(2px, -1px); 
+  }
+  75% { 
+    text-shadow: 0 0 5px #33ff00, 0 0 10px rgba(51, 255, 0, 0.6);
+    transform: translate(-1px, -1px); 
+  }
+}
+
+/* Preview-specific text effects */
+.preview-message.metallic {
+  background-image: linear-gradient(
+    135deg,
+    #ffffff 0%,
+    #a0a0a0 20%,
+    #ffffff 40%,
+    #a0a0a0 60%,
+    #ffffff 80%,
+    #a0a0a0 100%
+  );
+  background-size: 200% 100%;
+  color: transparent !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  filter: drop-shadow(0px 2px 2px rgba(0, 0, 0, 0.3));
+  animation: metalShine 4s linear infinite;
+  font-weight: bold !important;
+  letter-spacing: 0.5px;
+}
+
+.preview-message.retro {
+  font-family: 'Courier New', monospace !important;
+  color: #33ff00 !important;
+  text-shadow: 0 0 5px #33ff00, 0 0 10px rgba(51, 255, 0, 0.6);
+  background: transparent !important;
+  font-size: inherit !important; /* Will inherit from parent, respecting user settings */
+  padding: 0;
+  position: relative;
+  animation: textFlicker 0.8s infinite alternate;
+  letter-spacing: 1px;
+}
+
+.preview-message.glitch {
+  position: relative;
+  color: white;
+}
+
+.preview-message.glitch::before,
+.preview-message.glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.preview-message.glitch::before {
+  left: -2px;
+  text-shadow: -1px 0 #ff00de;
+  animation: glitch-anim-1 2s infinite linear alternate-reverse;
+  z-index: -1;
+}
+
+.preview-message.glitch::after {
+  left: 2px;
+  text-shadow: 1px 0 #00fff9;
+  animation: glitch-anim-2 3s infinite linear alternate-reverse;
+  z-index: -2;
+}
+
+.preview-message.shadow {
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+  -webkit-text-stroke: 0.3px rgba(255, 255, 255, 0.2);
+}
+
+.preview-message.neon {
+  text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 20px #ff00de, 0 0 30px #ff00de;
+  color: #ffffff !important;
+}
+
+.preview-message.holographic {
+  color: rgba(255, 255, 255, 0.9) !important;
+  background-image: linear-gradient(
+    135deg,
+    #ff00e4 0%,
+    #00fff3 20%,
+    #00a6ff 40%,
+    #ffcc00 60%,
+    #ff00e4 80%,
+    #00fff3 100%
+  );
+  background-size: 400% 400%;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  color: transparent !important;
+  text-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+  font-weight: bold !important;
+  animation: holographic 6s ease infinite;
+}
+
+.preview-message.matrix {
+  font-family: 'Courier New', monospace !important;
+  color: #0f0 !important;
+  text-shadow: 0 0 2px #0f0, 0 0 5px #0f0;
+  animation: matrixRain 3s ease-in-out infinite;
+}
+
+/* Fix message preview layout */
+.message-preview-bubble {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 15px;
+  border-radius: 12px;
+  position: relative;
+}
+
+.preview-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+}
+
+.preview-text-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.preview-username {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.preview-message {
+  margin: 0;
+  word-break: break-word;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.preview-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.preview-avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.preview-avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+}
+
+.preview-sticker {
+  position: absolute;
+  bottom: -5px;
+  right: -10px;
+  font-size: 24px;
+  transform: rotate(10deg);
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
+  animation: floatPreviewSticker 2s ease-in-out infinite;
+}
+
+@keyframes floatPreviewSticker {
+  0%, 100% { transform: translateY(0) rotate(10deg); }
+  50% { transform: translateY(-4px) rotate(5deg); }
+}
+
+/* Enhanced Matrix Digital Effect */
+@keyframes matrixRainFade {
+  0%, 100% { opacity: 0.9; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes matrixGlitch {
+  0%, 80%, 100% { 
+    clip-path: inset(0 0 0 0);
+    transform: none;
+  }
+  20% {
+    clip-path: inset(20% 0 20% 0);
+    transform: translate(-1px, 1px);
+  }
+  40% {
+    clip-path: inset(10% 0 50% 0);
+    transform: translate(1px, -1px);
+  }
+  60% {
+    clip-path: inset(50% 0 10% 0);
+    transform: translate(-1px, -1px);
+  }
+}
+
+.message-text.matrix, .preview-message.matrix {
+  font-family: 'Courier New', monospace !important;
+  font-size: inherit !important; /* Will inherit from parent, respecting user settings */
+  line-height: 1.2 !important;
+  color: #0f0 !important;
+  position: relative;
+  overflow: visible;
+  padding: 0.2em 0.3em;
+  background: rgba(0, 10, 2, 0.7);
+  border-radius: 4px;
+  text-shadow: 0 0 2px #0f0, 0 0 5px rgba(0, 255, 0, 0.5);
+  letter-spacing: 0.5px;
+  animation: matrixRainFade 2s infinite alternate;
+}
+
+/* Each letter has a random vertical glitch */
+.message-text.matrix span, .preview-message.matrix span {
+  display: inline-block;
+  animation: verticalGlitch 0.5s infinite;
+  animation-delay: calc(var(--i, 0) * 0.1s);
+}
+
+/* Create digital rain behind the text */
+.message-text.matrix::before, .preview-message.matrix::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: -1;
+  background: rgba(0, 10, 2, 0.8);
+  overflow: hidden;
+}
+
+/* Add raining letters effect */
+.message-text.matrix::after, .preview-message.matrix::after {
+  content: "10100110101011001010110010101010101001";
+  position: absolute;
+  top: -20px;
+  left: 0;
+  right: 0;
+  bottom: -20px;
+  z-index: -1;
+  color: rgba(0, 255, 0, 0.2);
+  font-size: 10px;
+  line-height: 1;
+  background: transparent;
+  overflow: hidden;
+  white-space: break-spaces;
+  word-break: break-all;
+  letter-spacing: 2px;
+  animation: matrixRain 10s linear infinite;
+  user-select: none;
+  mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent);
+}
+
+/* Add digital rain animation */
+@keyframes matrixRain {
+  0% { 
+    transform: translateY(0);
+  }
+  100% { 
+    transform: translateY(50%);
+  }
+}
+
+/* Make the text scan/flicker */
+.message-text.matrix, .preview-message.matrix {
+  animation: matrixScan 2s ease-in-out infinite alternate;
+}
+
+/* Add scan line effect */
+@keyframes matrixScan {
+  0%, 100% { 
+    background: linear-gradient(
+      to bottom,
+      rgba(0, 10, 2, 0.85) 0%,
+      rgba(0, 20, 5, 0.9) 50%,
+      rgba(0, 10, 2, 0.85) 100%
+    );
+    background-size: 100% 10px;
+    background-position: 0 0;
+  }
+  50% { 
+    background: linear-gradient(
+      to bottom,
+      rgba(0, 10, 2, 0.85) 0%,
+      rgba(0, 30, 10, 0.95) 50%,
+      rgba(0, 10, 2, 0.85) 100%
+    );
+    background-size: 100% 10px;
+    background-position: 0 100%;
+  }
+}
+
+/* Add blinking cursor effect at the end */
+.message-text.matrix::first-letter, .preview-message.matrix::first-letter {
+  animation: matrixCursor 1s step-end infinite;
+}
+
+@keyframes matrixCursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* Enhanced styling for matrix effect when rendering into DOM */
+.message-text.matrix[data-text]::before {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: none;
+  color: rgba(0, 255, 0, 0.2);
+  text-shadow: none;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: none;
+  animation: none;
+  z-index: -2;
+}
+
+/* Mobile optimization */
+@media (max-width: 768px) {
+  .message-text.matrix, .preview-message.matrix {
+    font-size: 1em !important;
+    padding: 0.2em 0.3em;
+  }
+}
+
+/* Style Suggestions Panel */
+.style-suggestions-panel {
+  position: absolute;
+  top: 50px;
+  left: 20px;
+  right: 20px;
+  max-height: 500px;
+  background: rgba(18, 18, 18, 0.95);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.suggestions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.suggestions-header h4 {
+  margin: 0;
+  color: #fff;
+  font-size: 16px;
+}
+
+.suggestions-list {
+  padding: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.style-suggestion {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+}
+
+.style-suggestion:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.suggestion-info {
+  padding: 12px;
+}
+
+.suggestion-info h5 {
+  margin: 0 0 4px 0;
+  color: #fff;
+  font-size: 14px;
+}
+
+.suggestion-info p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+}
+
+/* Suggestion loading state */
+.suggestion-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100px;
+}
+
+.suggestion-btn {
+  color: #4da8da;
+}
+
+.suggestion-btn svg {
+  animation: glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+  from {
+    filter: drop-shadow(0 0 2px rgba(77, 168, 218, 0.6));
+  }
+  to {
+    filter: drop-shadow(0 0 5px rgba(77, 168, 218, 0.9));
+  }
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .style-suggestions-panel {
+    top: 20%;
+    left: 10px;
+    right: 10px;
+    max-height: 60vh;
+  }
+  
+  .suggestions-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Style Suggestions Tab */
+.style-suggestions-tab {
+  padding: 15px;
+  max-height: 350px;
+  overflow-y: auto;
+}
+
+.style-suggestions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.style-suggestion-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+  padding-bottom: 5px;
+}
+
+.style-suggestion-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.suggestion-card-info {
+  padding: 10px;
+}
+
+.suggestion-card-info h5 {
+  margin: 0 0 5px 0;
+  color: #fff;
+  font-size: 14px;
+}
+
+.suggestion-card-info p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+}
+
+.suggestions-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 150px;
+}
+
+.suggestions-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #627eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 15px;
+}
+
+.suggestions-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100px;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
+}
+
+.refresh-suggestions-btn {
+  background: rgba(98, 126, 234, 0.2);
+  color: #627eea;
+  border: 1px solid #627eea;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: block;
+  margin: 0 auto;
+}
+
+.refresh-suggestions-btn:hover {
+  background: rgba(98, 126, 234, 0.3);
+}
+
+.refresh-suggestions-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Add Tab Icon styling */
+.tab-icon {
+  margin-right: 5px;
+}
+
+/* Make tabs scrollable on mobile */
+@media (max-width: 768px) {
+  .style-options-tabs {
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 5px;
+  }
+  
+  .style-tab {
+    display: inline-block;
+    flex: 0 0 auto;
+  }
+  
+  .style-suggestions-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Style suggestion button in the input form */
+.style-suggestion-btn {
+  position: absolute;
+  right: 90px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(98, 126, 234, 0.1);
+  border: 1px solid rgba(98, 126, 234, 0.3);
+  color: rgba(255, 255, 255, 0.9);
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.style-suggestion-btn:hover {
+  background: rgba(98, 126, 234, 0.2);
+  border-color: rgba(98, 126, 234, 0.5);
+}
+
+.style-suggestion-btn.generating {
+  animation: suggestionPulse 1.5s infinite alternate;
+  background: rgba(98, 126, 234, 0.15);
+}
+
+.suggestion-btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+}
+
+.suggestion-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #627eea;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes suggestionPulse {
+  0% { border-color: rgba(98, 126, 234, 0.3); }
+  100% { border-color: rgba(98, 126, 234, 0.8); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .style-suggestion-btn {
+    right: 70px;
+    padding: 4px 8px;
+  }
+  
+  .suggestion-btn-text {
+    display: none; /* Hide text on mobile, show only icon */
+  }
+}
+
+/* Style Suggestions Overlay */
+.style-suggestions-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.style-suggestions-panel {
+  background: rgba(18, 18, 18, 0.95);
+  width: 90%;
+  max-width: 800px;
+  max-height: 80vh;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  overflow-y: auto;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Add spinner for loading state */
+.suggestions-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #627eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 15px;
+}
+
+.suggestions-loading p {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+}
+
+/* Add this to your Messages.css file */
+.toast-message {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 20px;
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  font-weight: bold;
+  z-index: 10000;
+  opacity: 0;
+  animation: fadeInOut 3s ease forwards;
+}
+
+.toast-success {
+  background-color: #4caf50;
+}
+
+.toast-error {
+  background-color: #f44336;
+}
+
+.toast-info {
+  background-color: #2196f3;
+}
+
+.toast-warning {
+  background-color: #ff9800;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translate(-50%, 20px); }
+  10% { opacity: 1; transform: translate(-50%, 0); }
+  90% { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, -20px); }
+}
+
+/* Enhanced Suggestions Tab UI */
+.suggestions-header-info {
+  margin-bottom: 15px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+}
+
+.suggestion-match-score {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 8px;
+  padding: 0 3px;
+}
+
+.match-label {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+}
+
+.match-meter {
+  flex-grow: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.match-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #627eea, #a4acff);
+  border-radius: 2px;
+}
+
+.match-percentage {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: bold;
+}
+
+.suggestion-tag {
+  display: inline-block;
+  margin-top: 5px;
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 3px 6px;
+  border-radius: 3px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.style-suggestion-card {
+  transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.style-suggestion-card::before {
+  content: "Apply";
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(98, 126, 234, 0.8);
+  color: white;
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 3px;
+  opacity: 0;
+  transform: translateY(-5px);
+  transition: opacity 0.2s, transform 0.2s;
+  z-index: 2;
+}
+
+.style-suggestion-card:hover::before {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.suggestions-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 15px;
+}
+
+.refresh-suggestions-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.refresh-suggestions-btn svg {
+  transition: transform 0.3s ease;
+}
+
+.refresh-suggestions-btn:hover svg {
+  transform: rotate(180deg);
+}
+
+.no-suggestions {
+  text-align: center;
+  padding: 30px 0;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.no-suggestions p {
+  margin-bottom: 5px;
+}
+
+.no-suggestions small {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.suggestions-placeholder {
+  text-align: center;
+  padding: 30px 0;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.suggestions-placeholder p {
+  margin-bottom: 5px;
+}
+
+.suggestions-placeholder small {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Add these styles at the end of your file */
+
+/* Applied suggestion animation */
+@keyframes appliedPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 rgba(98, 126, 234, 0); }
+  50% { transform: scale(1.02); box-shadow: 0 0 15px rgba(98, 126, 234, 0.15); }
+}
+
+.suggestion-applied {
+  animation: appliedPulse 1s ease-in-out;
+}
+
+/* Add to your CSS */
+.match-excellent {
+  background: linear-gradient(90deg, #20bf55, #01baef) !important;
+}
+
+.match-good {
+  background: linear-gradient(90deg, #627eea, #a4acff) !important;
+}
+
+.match-medium {
+  background: linear-gradient(90deg, #a35bff, #df78ef) !important;
+}
+
+.match-basic {
+  background: linear-gradient(90deg, #ff7eb3, #ff758c) !important;
+}
+
+/* Generated theme styling */
+.generated-suggestion {
+  border: 1px solid rgba(98, 126, 234, 0.3);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.generated-suggestion:hover {
+  border-color: rgba(98, 126, 234, 0.6);
+  box-shadow: 0 0 10px rgba(98, 126, 234, 0.15);
+}
+
+.generated-tag {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(98, 126, 234, 0.7);
+  border-radius: 12px;
+  padding: 3px 8px;
+  font-size: 10px;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  z-index: 5;
+  backdrop-filter: blur(2px);
+}
+
+.generated-icon {
+  font-size: 12px;
+}
+
+/* Replace the previous pulsing border with a more subtle effect */
+.generated-suggestion::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.generated-suggestion:hover::before {
+  opacity: 0.4;
+  border-color: rgba(98, 126, 234, 0.2);
+}
+
+/* Fix the applied animation */
+@keyframes appliedPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 rgba(98, 126, 234, 0); }
+  50% { transform: scale(1.02); box-shadow: 0 0 15px rgba(98, 126, 234, 0.15); }
+}
+
+.suggestion-applied {
+  animation: appliedPulse 1s ease-in-out;
+}
+
+/* Add this to make all suggestion cards more consistent */
+.style-suggestion-card {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: rgba(30, 30, 30, 0.6);
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.style-suggestion-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Make the "Apply" text more subtle */
+.style-suggestion-card::before {
+
+  position: absolute;
+
+  background: rgba(98, 126, 234, 0.6);
+  color: white;
+  font-size: 10px;
+
+  border-radius: 3px;
+  opacity: 0;
+  transform: translateY(-5px);
+  transition: opacity 0.2s, transform 0.2s;
+  z-index: 2;
+  backdrop-filter: blur(2px);
+}
+
+/* Generated theme styling */
+.generated-suggestion {
+  border: 1px solid rgba(98, 126, 234, 0.3);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.generated-suggestion:hover {
+  border-color: rgba(98, 126, 234, 0.6);
+  box-shadow: 0 0 10px rgba(98, 126, 234, 0.15);
+}
+
+.generated-tag {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(98, 126, 234, 0.7);
+  border-radius: 12px;
+  padding: 3px 8px;
+  font-size: 10px;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  z-index: 5;
+  backdrop-filter: blur(2px);
+}
+
+.generated-icon {
+  font-size: 12px;
+}
+
+/* Replace the previous pulsing border with a more subtle effect */
+.generated-suggestion::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.generated-suggestion:hover::before {
+  opacity: 0.4;
+  border-color: rgba(98, 126, 234, 0.2);
+}
+
+/* Fix the applied animation */
+@keyframes appliedPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 rgba(98, 126, 234, 0); }
+  50% { transform: scale(1.02); box-shadow: 0 0 15px rgba(98, 126, 234, 0.15); }
+}
+
+.suggestion-applied {
+  animation: appliedPulse 1s ease-in-out;
+}
+
+/* Add this to make all suggestion cards more consistent */
+.style-suggestion-card {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: rgba(30, 30, 30, 0.6);
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.style-suggestion-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Make the "Apply" text more subtle */
+.style-suggestion-card::before {
+
+  position: absolute;
+
+  background: rgba(98, 126, 234, 0.6);
+  color: white;
+  font-size: 10px;
+
+  border-radius: 3px;
+  opacity: 0;
+  transform: translateY(-5px);
+  transition: opacity 0.2s, transform 0.2s;
+  z-index: 2;
+  backdrop-filter: blur(2px);
+}
+
+/* For the glitch effect */
+.preview-message.glitch,
+.message-text.glitch {
+  position: relative;
+  overflow: hidden;
+  animation: glitch-skew 1s infinite linear alternate-reverse;
+}
+
+.preview-message.glitch::before,
+.message-text.glitch::before,
+.preview-message.glitch::after,
+.message-text.glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  animation: glitch-anim 2s infinite linear alternate-reverse;
+}
+
+.preview-message.glitch::after,
+.message-text.glitch::after {
+  animation-duration: 3s;
+  animation-delay: 0.5s;
+  left: 1px;
+  text-shadow: -1px 0 #ff0000;
+}
+
+.preview-message.glitch::before,
+.message-text.glitch::before {
+  left: -1px;
+  text-shadow: 1px 0 #00ffff;
+}
+
+@keyframes glitch-anim {
+  0% { clip-path: inset(20% 0 40% 0); }
+  20% { clip-path: inset(60% 0 1% 0); }
+  40% { clip-path: inset(5% 0 70% 0); }
+  60% { clip-path: inset(80% 0 5% 0); }
+  80% { clip-path: inset(10% 0 60% 0); }
+  100% { clip-path: inset(40% 0 30% 0); }
+}
+
+@keyframes glitch-skew {
+  0% { transform: skew(0deg); }
+  20% { transform: skew(-1deg); }
+  40% { transform: skew(0deg); }
+  60% { transform: skew(2deg); }
+  80% { transform: skew(-2deg); }
+  100% { transform: skew(0deg); }
+}
+
+/* Check your animation CSS classes - Make sure they're uniquely named */
+
+/* Pulse Animation - Should be a subtle glow/pulse around the entire message */
+
+
+/* If you have a matrix effect, make sure it's separate */
+.preview-message.matrix,
+.message-text.matrix {
+  font-family: 'Courier New', monospace;
+  color: #00ff00 !important;
+  text-shadow: 0 0 5px #00ff00;
+  /* Other matrix styles */
+}
+
+/* Rainbow Animation */
+.preview-message.rainbow,
+.message-text.rainbow {
+  background-image: linear-gradient(to right, 
+    #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff);
+  background-size: 200% auto;
+  color: transparent !important;
+  background-clip: text;
+  -webkit-background-clip: text;
+  animation: rainbow 2s linear infinite;
+}
+
+@keyframes rainbow {
+  0% { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}
+
+
+/* Explicitly remove any text effects from the message when using pulse */
+.preview-pulse-glow .preview-message {
+  display: block;
+  width: auto;
+  position: static;
+}
+
+@keyframes preview-pulse-animation {
+  0% {
+    box-shadow: 0 0 10px rgba(98, 134, 252, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 25px rgba(98, 134, 252, 0.9);
+  }
+}
+
+/* Fixed Pulse Glow animation that won't affect text layout */
+.preview-pulse-glow {
+  animation: preview-pulse-animation 2s infinite alternate;
+  position: relative;
+}
+
+/* Fixed Retro Text Effect - No background and proper font size adaptation */
+.message-text.retro,
+.preview-message.retro {
+  font-family: 'Courier New', monospace !important;
+  color: #33ff00 !important;
+  text-shadow: 0 0 5px #33ff00, 0 0 10px rgba(51, 255, 0, 0.6);
+  background: transparent !important;
+  font-size: inherit !important; /* Will inherit from parent, respecting user settings */
+  padding: 0;
+  position: relative;
+  animation: textFlicker 0.8s infinite alternate;
+  letter-spacing: 1px;
+}
+
+/* Fixed Matrix text effect with proper size inheritance */
+.message-text.matrix, 
+.preview-message.matrix {
+  font-family: 'Courier New', monospace !important;
+  font-size: inherit !important; /* Will inherit from parent, respecting user settings */
+  line-height: 1.2 !important;
+  color: #0f0 !important;
+  position: relative;
+  overflow: visible;
+  padding: 0.2em 0.3em;
+  background: rgba(0, 10, 2, 0.7);
+  border-radius: 4px;
+  text-shadow: 0 0 2px #0f0, 0 0 5px rgba(0, 255, 0, 0.5);
+  letter-spacing: 0.5px;
+  animation: matrixRainFade 2s infinite alternate;
+}
+
+/* Update both effects in the MessagePreview component */
+.preview-message.retro,
+.preview-message.matrix {
+  font-size: inherit !important;
+}
+
+/* Add a hook to extract fontSize property correctly */
+.message-text.retro,
+.message-text.matrix,
+.preview-message.retro,
+.preview-message.matrix {
+  /* This ensures the font size respects the customStyle.fontSize property */
+  font-size: var(--custom-font-size, inherit) !important;
+}
+

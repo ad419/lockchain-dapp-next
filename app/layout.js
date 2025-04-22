@@ -31,7 +31,6 @@ export default function RootLayout({ children }) {
         <meta name="description" content="LockChain" />
         <meta name="keywords" content="LockChain" />
         <title>LockChain</title>
-
         {/* Favicon */}
         <link rel="icon" href="/favicon.ico" type="image/x-icon" />
         <link
@@ -51,7 +50,6 @@ export default function RootLayout({ children }) {
           sizes="16x16"
           href="/favicon-16x16.png"
         />
-
         {/* Stylesheets */}
         <link
           id="style"
@@ -69,6 +67,10 @@ export default function RootLayout({ children }) {
           href="/assets/plugins/select2/css/select2.min.css"
           rel="stylesheet"
         /> */}
+        <link
+          href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Montserrat:wght@400;700&family=Poppins:wght@400;700&family=Playfair+Display:wght@400;700&family=Pacifico&family=Fira+Code&family=Nunito:wght@400;700&family=Raleway:wght@400;700&family=Dancing+Script&family=Oswald&family=Space+Grotesk:wght@400;700&family=Caveat&display=swap"
+          rel="stylesheet"
+        />
         <link
           href="/assets/plugins/multipleselect/multiple-select.css"
           rel="stylesheet"
@@ -88,7 +90,6 @@ export default function RootLayout({ children }) {
         <link href="/assets/switcher/css/switcher.css" rel="stylesheet" />
         <link href="/assets/switcher/demo.css" rel="stylesheet" />
         <meta httpEquiv="imagetoolbar" content="no" />
-
         {/* Font Links */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
@@ -98,6 +99,10 @@ export default function RootLayout({ children }) {
         />
         <link
           href="https://fonts.googleapis.com/css2?family=Comic+Sans+MS&family=Courier+New&family=Georgia&family=Impact&family=Lucida+Console&family=Trebuchet+MS&display=swap"
+          rel="stylesheet"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"
           rel="stylesheet"
         />
       </head>

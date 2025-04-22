@@ -2,28 +2,35 @@ import { NextResponse } from "next/server";
 import { db } from "../../lib/firebase-admin";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route";
+import { v4 as uuidv4 } from "uuid";
+import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import admin from "firebase-admin";
 
-const MESSAGES_LIMIT = 50;
+const MAX_MESSAGES = 20; // Keep only the last 100 messages
 
 export async function GET() {
   try {
+    // Get messages from the messages collection instead of chat.global
     const messagesRef = db.collection("messages");
-    const snapshot = await messagesRef
+    const messagesQuery = await messagesRef
       .orderBy("timestamp", "desc")
-      .limit(MESSAGES_LIMIT)
+      .limit(MAX_MESSAGES)
       .get();
 
-    const messages = [];
-    snapshot.forEach((doc) => {
-      messages.push({
-        id: doc.id,
-        ...doc.data(),
-        timestamp: doc.data().timestamp?.toDate?.() || new Date(),
-      });
-    });
+    // Process query results
+    const messages = messagesQuery.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+      timestamp:
+        doc.data().timestamp?.toDate() || new Date(doc.data().timestamp),
+    }));
 
-    console.log("Fetched messages:", messages);
-    return NextResponse.json({ messages: messages.reverse() });
+    // Return the messages
+    return NextResponse.json({
+      messages: messages,
+      lastUpdated: messages.length > 0 ? messages[0].timestamp : new Date(),
+      messageCount: messages.length,
+    });
   } catch (error) {
     console.error("Error fetching messages:", error);
     return NextResponse.json(
@@ -33,6 +40,7 @@ export async function GET() {
   }
 }
 
+// Update your POST method to remove the unnecessary update to chat/global
 export async function POST(request) {
   try {
     const session = await getServerSession(authOptions);
@@ -40,7 +48,8 @@ export async function POST(request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { text, walletAddress } = await request.json();
+    const { text, walletAddress, customStyle } = await request.json();
+
     if (!text?.trim()) {
       return NextResponse.json(
         { error: "Message is required" },
@@ -48,24 +57,25 @@ export async function POST(request) {
       );
     }
 
-    const messagesRef = db.collection("messages");
+    // Create new message object
     const newMessage = {
       text: text.trim(),
       user: session.user.name,
       walletAddress,
       profileImage: session.user.image,
+      customStyle: customStyle || null,
       timestamp: new Date(),
     };
 
-    const docRef = await messagesRef.add(newMessage);
-    console.log("Message added:", { id: docRef.id, ...newMessage });
+    // Add message to the messages collection
+    const messageRef = await db.collection("messages").add(newMessage);
+
+    // Update the message with its ID for easier reference
+    await messageRef.update({ id: messageRef.id });
 
     return NextResponse.json({
       success: true,
-      message: {
-        id: docRef.id,
-        ...newMessage,
-      },
+      message: { ...newMessage, id: messageRef.id },
     });
   } catch (error) {
     console.error("Error sending message:", error);
