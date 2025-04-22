@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { redisCache } from "../../../lib/redis";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request) {
   try {
     // Get the last-modified timestamp from request headers

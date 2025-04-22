@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { serverCache } from "../../lib/server-cache";
 import { LRUCache } from "lru-cache";
 
+export const dynamic = "force-dynamic";
+
 // Create a cache for holder data
 const holderCache = new LRUCache({
   max: 500, // Cache up to 500 wallet addresses
