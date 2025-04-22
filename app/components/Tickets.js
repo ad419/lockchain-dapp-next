@@ -50,7 +50,7 @@ const Tickets = () => {
     const loadFirebase = async () => {
       try {
         // Import the firebase instance that's already initialized
-        const { db } = await import("../firebase/firebase");
+        const { db } = await import("../lib/firebase");
         setDb(db);
         setFirebaseReady(true);
       } catch (error) {
