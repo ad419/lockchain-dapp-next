@@ -1,34 +1,35 @@
 "use client";
-import { initializeApp } from "firebase/app";
+import React, { useState, useEffect } from "react";
 import {
-  addDoc,
   collection,
   doc,
   getDocs,
-  getFirestore,
-  limit,
   query,
   updateDoc,
   where,
+  limit,
+  addDoc,
 } from "firebase/firestore";
-import React, { useState } from "react"; // Add useRef and useCallback
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "../styles/Tickets.css";
 
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
-  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.REACT_APP_FIREBASE_APP_ID,
+// Update all toast calls with this configuration
+const toastConfig = {
+  position: "bottom-right",
+  autoClose: 4000,
+  hideProgressBar: true,
+  closeOnClick: true,
+  pauseOnHover: true,
+  draggable: true,
+  progress: undefined,
+  theme: "dark",
+  style: {
+    borderRadius: "10px",
+    background: "#333",
+    color: "#fff",
+  },
 };
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
 
 const Tickets = () => {
   const [walletId, setWalletId] = useState("");
@@ -40,7 +41,29 @@ const Tickets = () => {
   const [contactError, setContactError] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [claimedPrize, setClaimedPrize] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [firebaseReady, setFirebaseReady] = useState(false);
+  const [db, setDb] = useState(null);
+
+  // Load Firebase safely
+  useEffect(() => {
+    const loadFirebase = async () => {
+      try {
+        // Import the firebase instance that's already initialized
+        const { db } = await import("../firebase/firebase");
+        setDb(db);
+        setFirebaseReady(true);
+      } catch (error) {
+        console.error("Error loading Firebase:", error);
+        toast.error(
+          "Error connecting to server. Please try again later.",
+          toastConfig
+        );
+      }
+    };
+
+    loadFirebase();
+  }, []);
 
   // Success Modal Component
   const SuccessModal = ({ prize, onClose }) => {
@@ -205,6 +228,8 @@ const Tickets = () => {
 
   // Add this before the handleSubmit function
   const checkWalletClaims = async (walletAddress) => {
+    if (!db) return false;
+
     try {
       const claimsRef = collection(db, "claims");
       const q = query(
@@ -215,29 +240,16 @@ const Tickets = () => {
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
-        toast.error("This wallet has already claimed a prize", {
-          position: "bottom-right",
-          autoClose: 4000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          theme: "dark",
-        });
+        toast.error("This wallet has already claimed a prize", toastConfig);
         return true;
       }
       return false;
     } catch (error) {
       console.error("Error checking wallet claims:", error);
-      toast.error("Error checking wallet status. Please try again.", {
-        position: "bottom-right",
-        autoClose: 4000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        theme: "dark",
-      });
+      toast.error(
+        "Error checking wallet status. Please try again.",
+        toastConfig
+      );
       return false;
     }
   };
@@ -245,6 +257,15 @@ const Tickets = () => {
   // Update the handleSubmit function
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!firebaseReady || !db) {
+      toast.error(
+        "Server connection not ready. Please try again.",
+        toastConfig
+      );
+      return;
+    }
+
     if (!isValidWalletAddress(walletId)) {
       toast.error("Invalid wallet address", toastConfig);
       return;
@@ -346,6 +367,20 @@ const Tickets = () => {
       setIsLoading(false);
     }
   };
+
+  // Show loading indicator while Firebase initializes
+  if (!firebaseReady) {
+    return (
+      <div className="tickets-container-bg">
+        <div className="tickets-container">
+          <h2>Loading...</h2>
+          <div className="loader-container">
+            <div className="loader"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="tickets-container-bg">
@@ -465,20 +500,3 @@ const Tickets = () => {
 };
 
 export default Tickets;
-
-// Update all toast calls with this configuration
-const toastConfig = {
-  position: "bottom-right",
-  autoClose: 4000,
-  hideProgressBar: true,
-  closeOnClick: true,
-  pauseOnHover: true,
-  draggable: true,
-  progress: undefined,
-  theme: "dark",
-  style: {
-    borderRadius: "10px",
-    background: "#333",
-    color: "#fff",
-  },
-};
