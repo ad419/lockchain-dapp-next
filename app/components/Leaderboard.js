@@ -574,7 +574,7 @@ export default function LeaderboardClient({ initialData }) {
         walletAddress: walletClaim.walletAddress,
         userId: walletClaim.userId,
         profileImage: walletClaim.profileImage || session?.user?.image,
-        username: walletClaim.twitterUsername || session?.user?.name,
+        username: walletClaim.twitterUsername || session?.user?.username,
       });
     } else {
       setUserWalletData(null);
