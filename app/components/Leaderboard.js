@@ -1266,10 +1266,10 @@ export default function LeaderboardClient({ initialData }) {
                 width={48}
                 height={48}
                 className="token-logo"
-                onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src = defaultTokenLogo.src;
-                }}
+                // onError={(e) => {
+                //   e.target.onerror = null;
+                //   e.target.src = defaultTokenLogo.src;
+                // }}
               />
               <div className="token-details">
                 <h3>
