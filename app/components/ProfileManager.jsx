@@ -138,6 +138,32 @@ export default function ProfileManager() {
     }
   };
 
+  // Add this function to your ProfileManager component
+  const forceRefreshVisibility = async () => {
+    try {
+      const result = await toggleProfileVisibility(showProfile);
+
+      if (result.success) {
+        showToast(
+          `Profile visibility ${
+            showProfile ? "shown" : "hidden"
+          } on leaderboard`,
+          "success"
+        );
+
+        // Force refresh the page to show the changes
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      } else {
+        showToast(result.error || "Failed to update visibility", "error");
+      }
+    } catch (error) {
+      console.error("Error forcing visibility update:", error);
+      showToast("Failed to update visibility", "error");
+    }
+  };
+
   // Show loading state while checking session
   if (status === "loading") {
     return <LoadingSpinner />;
@@ -290,6 +316,29 @@ export default function ProfileManager() {
                 )}
               </button>
             </div>
+          </div>
+
+          <div className="profile-visibility-controls">
+            <div className="toggle-container">
+              <span>Show profile on leaderboard</span>
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={showProfile}
+                  onChange={handleToggleVisibility}
+                  disabled={isToggling}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
+
+            <button
+              onClick={forceRefreshVisibility}
+              disabled={isToggling}
+              className="refresh-visibility-button"
+            >
+              🔄 Apply Changes
+            </button>
           </div>
         </div>
 

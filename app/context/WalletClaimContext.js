@@ -468,94 +468,96 @@ export function WalletClaimProvider({ children }) {
     session?.user?.id,
   ]);
 
-  // Function to toggle profile visibility with optimistic updates
-  const toggleProfileVisibility = useCallback(async () => {
-    if (!walletClaim || !walletClaim.walletAddress) {
-      return { success: false, error: "No wallet claimed" };
-    }
+  // Updated toggleProfileVisibility function with forced state parameter
+  const toggleProfileVisibility = useCallback(
+    async (forcedState = null) => {
+      if (!walletClaim || !walletClaim.walletAddress) {
+        return { success: false, error: "No wallet claimed" };
+      }
 
-    try {
-      setIsToggling(true);
+      try {
+        setIsToggling(true);
 
-      // Optimistically update the UI immediately
-      const newVisibility = !showProfile;
-      setShowProfile(newVisibility);
+        // Use forced state or toggle current state
+        const newVisibility = forcedState !== null ? forcedState : !showProfile;
 
-      // Optimistically update the cache
-      const walletAddr = walletClaim.walletAddress;
-      visibilityCache.set(`visibility_${walletAddr}`, {
-        showProfile: newVisibility,
-        lastUpdated: Date.now(),
-      });
+        // Optimistically update the UI immediately
+        setShowProfile(newVisibility);
 
-      // Now make the API call
-      const response = await fetch("/api/profile-visibility", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          address: walletClaim.walletAddress,
-          showProfile: newVisibility,
-        }),
-      });
-
-      if (!response.ok) {
-        // Revert optimistic update on failure
-        setShowProfile(!newVisibility);
+        // Optimistically update the cache
+        const walletAddr = walletClaim.walletAddress;
         visibilityCache.set(`visibility_${walletAddr}`, {
-          showProfile: !newVisibility,
+          showProfile: newVisibility,
           lastUpdated: Date.now(),
         });
 
-        throw new Error("Failed to update profile visibility");
-      }
+        // Now make the API call
+        const response = await fetch("/api/profile-visibility", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            address: walletClaim.walletAddress,
+            showProfile: newVisibility,
+            updateRedis: true, // Add this flag to update Redis directly
+          }),
+        });
 
-      const result = await response.json();
+        if (!response.ok) {
+          // Revert optimistic update on failure
+          setShowProfile(!newVisibility);
+          visibilityCache.set(`visibility_${walletAddr}`, {
+            showProfile: !newVisibility,
+            lastUpdated: Date.now(),
+          });
 
-      // Real-time updates should handle the state update,
-      // but we'll update manually just in case
-      if (walletClaim && walletClaim.id) {
-        setWalletClaim((prev) => ({
-          ...prev,
-          showProfile: newVisibility,
-        }));
+          throw new Error("Failed to update profile visibility");
+        }
 
-        // Update claim cache as well
-        if (username) {
-          const cacheKey = `claim_${username.toLowerCase()}`;
-          if (claimCache.has(cacheKey)) {
-            const cached = claimCache.get(cacheKey);
-            claimCache.set(cacheKey, {
-              ...cached,
-              claim: { ...cached.claim, showProfile: newVisibility },
-            });
+        const result = await response.json();
+
+        // Real-time updates should handle the state update,
+        // but we'll update manually just in case
+        if (walletClaim && walletClaim.id) {
+          setWalletClaim((prev) => ({
+            ...prev,
+            showProfile: newVisibility,
+          }));
+
+          // Update claim cache as well
+          if (username) {
+            const cacheKey = `claim_${username.toLowerCase()}`;
+            if (claimCache.has(cacheKey)) {
+              const cached = claimCache.get(cacheKey);
+              claimCache.set(cacheKey, {
+                ...cached,
+                claim: { ...cached.claim, showProfile: newVisibility },
+              });
+            }
           }
         }
-      }
 
-      // Invalidate the social data cache for this wallet
-      if (result.success && walletAddr) {
-        try {
-          // Request cache invalidation
-          await fetch(`/api/holders?address=${walletAddr}`, {
-            method: "PATCH",
-          });
-        } catch (invalidateError) {
-          console.error("Error invalidating cache:", invalidateError);
-          // Continue anyway since the main operation succeeded
-        }
-      }
+        // Force refresh the leaderboard data
+        await fetch("/api/holders?refresh=true", {
+          method: "GET",
+          headers: { "x-force-refresh": "true" },
+        });
 
-      return { success: true, showProfile: newVisibility };
-    } catch (error) {
-      console.error("Error toggling profile visibility:", error);
-      return {
-        success: false,
-        error: error.message || "Failed to update visibility",
-      };
-    } finally {
-      setIsToggling(false);
-    }
-  }, [walletClaim, showProfile, username]);
+        // Also force SWR to revalidate
+        mutateGlobal("/api/holders");
+
+        return { success: true, showProfile: newVisibility };
+      } catch (error) {
+        console.error("Error toggling profile visibility:", error);
+        return {
+          success: false,
+          error: error.message || "Failed to update visibility",
+        };
+      } finally {
+        setIsToggling(false);
+      }
+    },
+    [walletClaim, showProfile, username]
+  );
 
   // Add this function to batch check multiple addresses at once
   const batchCheckWalletClaims = async (addresses) => {

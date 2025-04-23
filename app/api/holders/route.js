@@ -1191,3 +1191,66 @@ function buildResponse(holders, tokenPrice, socialDataMap) {
     tokenPrice,
   };
 }
+
+// In your /api/holders/route.js file
+
+// Modify the function that merges social data
+const mergeSocialData = async (holders) => {
+  try {
+    // Get all wallet claims from Firestore
+    const claimsSnapshot = await getDocs(collection(db, "walletClaims"));
+    const walletClaims = [];
+
+    claimsSnapshot.forEach((doc) => {
+      const claimData = doc.data();
+      walletClaims.push({
+        id: doc.id,
+        ...claimData,
+      });
+    });
+
+    // Create a map for faster lookups
+    const walletClaimsMap = new Map();
+    walletClaims.forEach((claim) => {
+      if (claim.walletAddress) {
+        walletClaimsMap.set(claim.walletAddress.toLowerCase(), claim);
+      }
+    });
+
+    // Merge social data with holders
+    return holders.map((holder) => {
+      const claim = walletClaimsMap.get(holder.address.toLowerCase());
+
+      if (claim && claim.twitterUsername) {
+        const socialData = {
+          twitter: claim.twitterUsername,
+          name: claim.twitterUsername,
+          profileImage: claim.profileImage || null,
+          // IMPORTANT: Default to true ONLY if showProfile is undefined
+          // If showProfile is explicitly false, respect that setting
+          showProfile: claim.showProfile !== false,
+        };
+
+        // Check if we need to preserve existing social data
+        if (holder.social) {
+          return {
+            ...holder,
+            social: {
+              ...holder.social,
+              ...socialData,
+            },
+          };
+        } else {
+          return {
+            ...holder,
+            social: socialData,
+          };
+        }
+      }
+      return holder;
+    });
+  } catch (error) {
+    console.error("Error merging social data:", error);
+    return holders; // Return original holders on error
+  }
+};

@@ -62,6 +62,8 @@ const RANK_TITLES = {
   10: { title: "Tier 3", color: "#7DA0FF", badge: "🛡️" },
 };
 
+const defaultTokenLogo = "../images/logo.png";
+
 const getRankTitle = (rank) => {
   if (rank <= 10) {
     return RANK_TITLES[rank];
@@ -856,51 +858,51 @@ export default function LeaderboardClient({ initialData }) {
   };
 
   // Debugging functions
-  useEffect(() => {
-    window._debugRefresh = () => {
-      console.log("-- Debug Info --");
-      console.log("Is refreshing:", isRefreshing);
-      console.log(
-        "Last refresh time:",
-        new Date(lastRefreshTime).toLocaleTimeString()
-      );
-      console.log("Live mode:", liveMode);
-      console.log("API error:", apiError);
-      console.log("SWR cache:", data);
-      console.log("User wallet:", walletClaim?.walletAddress);
-      console.log("User holder data:", userHolderData);
-    };
+  // useEffect(() => {
+  //   window._debugRefresh = () => {
+  //     console.log("-- Debug Info --");
+  //     console.log("Is refreshing:", isRefreshing);
+  //     console.log(
+  //       "Last refresh time:",
+  //       new Date(lastRefreshTime).toLocaleTimeString()
+  //     );
+  //     console.log("Live mode:", liveMode);
+  //     console.log("API error:", apiError);
+  //     console.log("SWR cache:", data);
+  //     console.log("User wallet:", walletClaim?.walletAddress);
+  //     console.log("User holder data:", userHolderData);
+  //   };
 
-    window._forceRefresh = async () => {
-      try {
-        console.log("Forcing API refresh...");
-        const response = await fetch("/api/holders?refresh=true&debug=true", {
-          headers: {
-            "Cache-Control": "no-cache, no-store, must-revalidate",
-            Pragma: "no-cache",
-          },
-        });
-        const data = await response.json();
-        console.log("API response:", data);
-        return data;
-      } catch (err) {
-        console.error("Force refresh failed:", err);
-      }
-    };
+  //   window._forceRefresh = async () => {
+  //     try {
+  //       console.log("Forcing API refresh...");
+  //       const response = await fetch("/api/holders?refresh=true&debug=true", {
+  //         headers: {
+  //           "Cache-Control": "no-cache, no-store, must-revalidate",
+  //           Pragma: "no-cache",
+  //         },
+  //       });
+  //       const data = await response.json();
+  //       console.log("API response:", data);
+  //       return data;
+  //     } catch (err) {
+  //       console.error("Force refresh failed:", err);
+  //     }
+  //   };
 
-    return () => {
-      delete window._debugRefresh;
-      delete window._forceRefresh;
-    };
-  }, [
-    isRefreshing,
-    lastRefreshTime,
-    liveMode,
-    apiError,
-    data,
-    walletClaim,
-    userHolderData,
-  ]);
+  //   return () => {
+  //     delete window._debugRefresh;
+  //     delete window._forceRefresh;
+  //   };
+  // }, [
+  //   isRefreshing,
+  //   lastRefreshTime,
+  //   liveMode,
+  //   apiError,
+  //   data,
+  //   walletClaim,
+  //   userHolderData,
+  // ]);
 
   // Add these functions before your renderContent function in LeaderboardClient
   const renderTableHeaders = useCallback(() => {
@@ -1285,7 +1287,7 @@ export default function LeaderboardClient({ initialData }) {
           <div className="token-stats-container">
             <div className="token-info">
               <img
-                src={dexData?.mainPair?.info?.imageUrl || "../images/logo.png"}
+                src={defaultTokenLogo}
                 alt="Token Logo"
                 width={48}
                 height={48}
