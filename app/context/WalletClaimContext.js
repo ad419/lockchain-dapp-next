@@ -86,9 +86,7 @@ export function WalletClaimProvider({ children }) {
   const unsubscribeRef = useRef(null);
 
   // Get Twitter username from session
-  const username = session?.user?.name
-    ? session.user.name.replace(/\s+/g, "").toLowerCase()
-    : null;
+  const username = session?.user?.username || null;
 
   // Setup Firestore listener for real-time updates
   const setupFirestoreListener = useCallback(
