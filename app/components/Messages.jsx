@@ -453,6 +453,9 @@ const StyleSuggestions = ({ suggestions, onSelectSuggestion, onClose }) => {
 
 // Main Messages Component
 export default function Messages({ session, userWalletData, userHolderData }) {
+  // Move this line up here with other state variables
+  const [isMounted, setIsMounted] = useState(false);
+
   // Existing state
   const userRank = userHolderData?.rank || null;
   const [messages, setMessages] = useState([]);
@@ -737,7 +740,7 @@ export default function Messages({ session, userWalletData, userHolderData }) {
 
   // *** OPTIMIZED Firestore Message Fetching Effect ***
   useEffect(() => {
-    if (!session) {
+    if (!session || !isMounted) {
       setMessages([]); // Clear messages if logged out
       setLatestInitialTimestamp(null); // Reset timestamp
       return;
@@ -746,7 +749,7 @@ export default function Messages({ session, userWalletData, userHolderData }) {
     console.log("Setting up Firestore message fetching strategy");
     setConnectionStatus("connecting");
 
-    let isMounted = true; // Track mount status for async operations
+    let effectActive = true; // Track mount status for async operations
     let unsubscribeListener = null; // Local unsubscribe variable
 
     const messagesRef = collection(db, "messages");
@@ -758,7 +761,7 @@ export default function Messages({ session, userWalletData, userHolderData }) {
       try {
         const initialQuery = query(baseQuery, limit(MAX_VISIBLE_MESSAGES));
         const snapshot = await getDocs(initialQuery);
-        if (!isMounted) return; // Don't update state if unmounted
+        if (!effectActive) return; // Don't update state if unmounted
 
         const initialMessages = snapshot.docs.map((doc) => ({
           id: doc.id,
@@ -876,7 +879,7 @@ export default function Messages({ session, userWalletData, userHolderData }) {
     // Cleanup function
     return () => {
       console.log("Cleaning up Firestore message listener effect");
-      isMounted = false; // Mark as unmounted
+      effectActive = false; // Mark as unmounted
       if (unsubscribeListener) {
         console.log("Unsubscribing from listener.");
         unsubscribeListener();
@@ -885,7 +888,7 @@ export default function Messages({ session, userWalletData, userHolderData }) {
     };
 
     // Dependencies: session (login/logout), latestInitialTimestamp (triggers listener setup after initial fetch or updates)
-  }, [session, latestInitialTimestamp]);
+  }, [session, latestInitialTimestamp, isMounted]);
 
   // --- Functions ---
 
@@ -960,26 +963,26 @@ export default function Messages({ session, userWalletData, userHolderData }) {
 
   // Add haptic feedback for mobile users (if supported)
   const triggerHapticFeedback = () => {
-    if (isMobile && window.navigator && window.navigator.vibrate) {
+    if (isMounted && isMobile && window.navigator && window.navigator.vibrate) {
       window.navigator.vibrate(50); // Short vibration
     }
   };
 
-  // Select Emoji (for sticker)
-  const handleSelectEmoji = (emoji) => {
-    triggerHapticFeedback();
-    // Update message input directly if input is focused, otherwise add as sticker
-    if (document.activeElement === inputRef.current) {
-      setMessage((prev) => prev + emoji);
-    } else {
-      // Add as a sticker style (if implementing stickers)
-      // setCustomStyle((prev) => ({ ...prev, sticker: emoji }));
-      console.log(
-        "Emoji selected, but input not focused. Implement sticker logic if needed."
-      );
-    }
-    setShowEmojiPicker(false);
-  };
+  // // Select Emoji (for sticker)
+  // const handleSelectEmoji = (emoji) => {
+  //   triggerHapticFeedback();
+  //   // Update message input directly if input is focused, otherwise add as sticker
+  //   if (document.activeElement === inputRef.current) {
+  //     setMessage((prev) => prev + emoji);
+  //   } else {
+  //     // Add as a sticker style (if implementing stickers)
+  //     // setCustomStyle((prev) => ({ ...prev, sticker: emoji }));
+  //     console.log(
+  //       "Emoji selected, but input not focused. Implement sticker logic if needed."
+  //     );
+  //   }
+  //   setShowEmojiPicker(false);
+  // };
 
   // Select Theme
   const handleSelectTheme = (theme) => {
@@ -1183,9 +1186,6 @@ export default function Messages({ session, userWalletData, userHolderData }) {
       gradientEnd: "#0288d1",
     });
   };
-
-  // Add this state at the top of your Messages component
-  const [isMounted, setIsMounted] = useState(false);
 
   // Add this useEffect to detect client-side rendering
   useEffect(() => {

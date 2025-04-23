@@ -29,7 +29,6 @@ import Tooltip from "./Tooltip";
 import "../styles/Leaderboard.css";
 import Link from "next/link";
 import Image from "next/image";
-import defaultTokenLogo from "../images/logo.png";
 import Messages from "./Messages";
 import { useToast } from "../context/ToastContext";
 import { useWalletClaim } from "../context/WalletClaimContext";
@@ -175,6 +174,22 @@ const MaintenanceMessage = ({ error, onRetry }) => {
       </button>
     </div>
   );
+};
+
+// Add this function at the top level of your component:
+const isSafeUrl = (url) => {
+  if (!url) return false;
+
+  // Check if it's a string
+  if (typeof url !== "string") return false;
+
+  // Check if it's a valid URL format
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
 };
 
 export default function LeaderboardClient({ initialData }) {
@@ -979,23 +994,32 @@ export default function LeaderboardClient({ initialData }) {
                 >
                   {holder.address}
                 </Link>
-                {holder.social && holder.social.showProfile !== false && (
-                  <Link
-                    href={`/public-profile/${holder.social.twitter}`}
-                    className="twitter-link"
-                  >
-                    <Image
-                      src={holder.social.profileImage}
-                      alt={holder.social.name}
-                      width={20}
-                      height={20}
-                      className="twitter-avatar"
-                    />
-                    <span className="twitter-username">
-                      @{holder.social.twitter}
-                    </span>
-                  </Link>
-                )}
+                {holder.social &&
+                  holder.social.showProfile !== false &&
+                  holder.social.twitter && (
+                    <Link
+                      href={`/public-profile/${holder.social.twitter}`}
+                      className="twitter-link"
+                    >
+                      {holder.social.profileImage !== null ? (
+                        <img
+                          src={holder.social.profileImage}
+                          alt={holder.social.name || "User"}
+                          width={20}
+                          height={20}
+                          className="twitter-avatar"
+                        />
+                      ) : (
+                        <div
+                          className="avatar-placeholder"
+                          style={{ width: 20, height: 20 }}
+                        ></div>
+                      )}
+                      <span className="twitter-username">
+                        @{holder.social.twitter}
+                      </span>
+                    </Link>
+                  )}
               </div>
             </div>
             <div className="holdings">
@@ -1260,16 +1284,12 @@ export default function LeaderboardClient({ initialData }) {
           </div>
           <div className="token-stats-container">
             <div className="token-info">
-              <Image
-                src={dexData?.mainPair?.info?.imageUrl || defaultTokenLogo}
+              <img
+                src={dexData?.mainPair?.info?.imageUrl || "../images/logo.png"}
                 alt="Token Logo"
                 width={48}
                 height={48}
                 className="token-logo"
-                // onError={(e) => {
-                //   e.target.onerror = null;
-                //   e.target.src = defaultTokenLogo.src;
-                // }}
               />
               <div className="token-details">
                 <h3>
@@ -1576,21 +1596,23 @@ export default function LeaderboardClient({ initialData }) {
             </div>
           </Modal>
 
-          {mounted && (
+          {mounted ? (
             <Messages
+              key={`messages-${session?.user?.name || "guest"}`}
               session={session}
               userWalletData={
                 walletClaim
                   ? {
                       walletAddress: walletClaim.walletAddress,
-                      username: session?.user?.name,
-                      profileImage: session?.user?.image,
+                      username: session?.user?.name || "Guest",
+                      profileImage:
+                        session?.user?.image || "/images/default-avatar.png",
                     }
                   : null
               }
               userHolderData={userHolderData}
             />
-          )}
+          ) : null}
         </motion.div>
       </div>
     );
