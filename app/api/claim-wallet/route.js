@@ -25,7 +25,7 @@ export async function POST(request) {
 
     // Convert addresses to lowercase for consistency
     const normalizedWalletAddress = walletAddress.toLowerCase();
-    const normalizedTwitterUsername = twitterUsername.toLowerCase();
+    const normalizedTwitterUsername = twitterUsername;
 
     // Check if wallet is already claimed
     const walletClaimsRef = db.collection("walletClaims");
