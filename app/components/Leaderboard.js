@@ -801,6 +801,26 @@ export default function LeaderboardClient({ initialData }) {
     },
   });
 
+  // Add this utility function near your other utility functions at the top
+  const formatNumber = (value, decimals = 2) => {
+    // Handle null/undefined values
+    if (value == null) return "0";
+
+    // Convert to number if needed
+    const num = typeof value === "string" ? parseFloat(value) : value;
+
+    // Format based on magnitude
+    if (Math.abs(num) >= 1_000_000_000) {
+      return `${(num / 1_000_000_000).toFixed(decimals)}B`;
+    } else if (Math.abs(num) >= 1_000_000) {
+      return `${(num / 1_000_000).toFixed(decimals)}M`;
+    } else if (Math.abs(num) >= 1_000) {
+      return `${(num / 1_000).toFixed(decimals)}K`;
+    } else {
+      return num.toFixed(decimals);
+    }
+  };
+
   // Add this function after your other useCallback functions but before renderContent
 
   // Add the toggleLiveMode function that was missing
@@ -1328,8 +1348,9 @@ export default function LeaderboardClient({ initialData }) {
                     >
                       24h:{" "}
                       <AnimatedNumber
-                        value={dexData?.mainPair?.priceChange?.h24 || 0}
+                        value={Number(dexData?.mainPair?.priceChange?.h24 || 0)}
                         duration={1000}
+                        formatValue={(value) => formatNumber(value, 2)}
                       />
                       %
                     </span>
@@ -1342,8 +1363,9 @@ export default function LeaderboardClient({ initialData }) {
                     >
                       1h:{" "}
                       <AnimatedNumber
-                        value={dexData?.mainPair?.priceChange?.h1 || 0}
+                        value={Number(dexData?.mainPair?.priceChange?.h1 || 0)}
                         duration={1000}
+                        formatValue={(value) => formatNumber(value, 2)}
                       />
                       %
                     </span>
@@ -1355,6 +1377,7 @@ export default function LeaderboardClient({ initialData }) {
                     <AnimatedNumber
                       value={dexData?.mainPair?.liquidity?.usd || 0}
                       duration={1500}
+                      formatValue={(value) => "$" + formatNumber(value, 2)}
                     />
                   </p>
                 </div>
@@ -1364,6 +1387,7 @@ export default function LeaderboardClient({ initialData }) {
                     <AnimatedNumber
                       value={dexData?.mainPair?.volume?.h24 || 0}
                       duration={1500}
+                      formatValue={(value) => "$" + formatNumber(value, 2)}
                     />
                   </p>
                 </div>

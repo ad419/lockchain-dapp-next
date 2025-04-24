@@ -47,8 +47,9 @@ export default function Header() {
   const {
     hasClaimedWallet,
     isClaiming,
+    walletClaim, // Add this line to get walletClaim from context
     claimWallet: contextClaimWallet,
-    checkWalletClaim, // Add this
+    checkWalletClaim,
   } = useWalletClaim();
 
   console.log(hasClaimedWallet);
@@ -80,6 +81,31 @@ export default function Header() {
 
     checkClaim();
   }, [session, address, checkWalletClaim]);
+
+  // Add this debugging useEffect to the Header component
+  useEffect(() => {
+    // Debug the current claim state
+    if (session?.user) {
+      console.log("Header component - claim status:", {
+        hasClaimedWallet,
+        walletClaim,
+        isConnected,
+        address: address || "not connected",
+      });
+
+      // Check localStorage directly
+      try {
+        const username = session.user.username || session.user.name;
+        if (username) {
+          const localData = localStorage.getItem(`wc_claim_${username}`);
+          console.log(
+            "Header - localStorage data:",
+            localData ? JSON.parse(localData) : null
+          );
+        }
+      } catch (e) {}
+    }
+  }, [session, hasClaimedWallet, walletClaim, isConnected, address]);
 
   const handleClickOutside = (event) => {
     if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -493,71 +519,83 @@ export default function Header() {
                           </svg>
                           Logout
                         </button>
-                        {!hasClaimedWallet && isConnected && session ? (
-                          <button
-                            onClick={handleClaimWallet}
-                            disabled={isClaiming}
-                            className="btn btn-primary btn-rounded d-flex align-items-center"
-                            style={{
-                              background: "#1253ff",
-                              border: "none",
-                              color: "#fff",
-                            }}
-                          >
-                            {isClaiming ? (
-                              <ClipLoader
-                                color="#ffffff"
-                                size={16}
-                                className="me-2"
-                              />
-                            ) : (
-                              <svg
-                                className="me-2"
-                                style={{ height: "16px", width: "16px" }}
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                                xmlns="http://www.w3.org/2000/svg"
+                        {(() => {
+                          // First, check if we're still waiting on session or connection
+                          if (!session || !isConnected) {
+                            return null;
+                          }
+
+                          // Check explicitly with === true for more robustness
+                          if (hasClaimedWallet === true) {
+                            return (
+                              <button
+                                disabled
+                                className="btn btn-success btn-rounded d-flex align-items-center"
+                                style={{
+                                  background: "#10B981",
+                                  border: "none",
+                                  color: "#fff",
+                                  opacity: 0.9,
+                                }}
                               >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
-                                />
-                              </svg>
-                            )}
-                            {isClaiming ? "Claiming..." : "Claim Wallet"}
-                          </button>
-                        ) : hasClaimedWallet && isConnected && session ? (
-                          <button
-                            disabled
-                            className="btn btn-success btn-rounded d-flex align-items-center"
-                            style={{
-                              background: "#10B981",
-                              border: "none",
-                              color: "#fff",
-                              opacity: 0.9,
-                            }}
-                          >
-                            <svg
-                              className="me-2"
-                              style={{ height: "16px", width: "16px" }}
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                              />
-                            </svg>
-                            Wallet Claimed
-                          </button>
-                        ) : null}
+                                <svg
+                                  className="me-2"
+                                  style={{ height: "16px", width: "16px" }}
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                  />
+                                </svg>
+                                Wallet Claimed
+                              </button>
+                            );
+                          } else {
+                            return (
+                              <button
+                                onClick={handleClaimWallet}
+                                disabled={isClaiming}
+                                className="btn btn-primary btn-rounded d-flex align-items-center"
+                                style={{
+                                  background: "#1253ff",
+                                  border: "none",
+                                  color: "#fff",
+                                }}
+                              >
+                                {isClaiming ? (
+                                  <ClipLoader
+                                    color="#ffffff"
+                                    size={16}
+                                    className="me-2"
+                                  />
+                                ) : (
+                                  <svg
+                                    className="me-2"
+                                    style={{ height: "16px", width: "16px" }}
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
+                                    />
+                                  </svg>
+                                )}
+                                {isClaiming ? "Claiming..." : "Claim Wallet"}
+                              </button>
+                            );
+                          }
+                        })()}
                       </div>
                     ) : (
                       <button

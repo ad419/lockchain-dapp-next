@@ -72,12 +72,12 @@ export const contract = {
     EXPLORE: "https://basescan.org/",
     MULTICALL_ADDRESS: "0xfEE958Fa595B4478cea7560C91400A98b83d6C91",
     WETH_ADDRESS: "0x4200000000000000000000000000000000000006",
-    TOKEN_ADDRESS: "0x32481ac9B124bD82944eac67B2EA449797d402D1",
-    TOKEN_LP_ADDRESS: "0x5a4afdb29821d55b550b7b2bd5a5513ddc6e0dc2",
-    VESTING_ADDRESS: "0x64D9D2ef90447A2f2BFCa8f8D3ec67f0109DbA91",
-    WETH: "0x4200000000000000000000000000000000000006",
-    ROUTER_ADDRESS: "0x4752ba5dbc23f44d87826276bf6fd6b1c372ad24",
-    SWAP_ADDRESS: "0x32a48D1b897333B2B1e3AE4DB48206B49FEf5487",
+    TOKEN_ADDRESS: "0x01FCE8e7a17b90DD0aAf761Fd889f66a469fdFC2", // New token address
+    TOKEN_LP_ADDRESS: "0xaee35AAf149de47d1a6733f892917e66BD72A1DB", // New LP address you just found
+    VESTING_ADDRESS: "0x1a704B26159d9ae75CCd12b09c2D8E3C9bdcD7F6", // Updated vesting address
+    WETH: "0x4200000000000000000000000000000000000006", // WETH stays the same
+    ROUTER_ADDRESS: "0x4752ba5dbc23f44d87826276bf6fd6b1c372ad24", // Keeping router the same unless you have a new address
+    SWAP_ADDRESS: "0x0eade3d8635E31740Dcda1fC8301150a3CbB35D3", // Updated swap address
   },
 };
 
@@ -91,11 +91,11 @@ export const PROJECT_ID = "27b9720018bf7f8740936e6a6eb28604";
 export const BUY_TAX = 40;
 export const SELL_TAX = 3;
 export const DEX_CHART_FRAME =
-  "https://dexscreener.com/base/0x32481ac9B124bD82944eac67B2EA449797d402D1?embed=1&amp;theme=dark&amp;info=0";
+  "https://dexscreener.com/base/0x01FCE8e7a17b90DD0aAf761Fd889f66a469fdFC2?embed=1&amp;theme=dark&amp;info=0";
 export const SIDEBAR_CHART_LINK =
-  "https://www.dextools.io/app/en/base/pair-explorer/0x32481ac9B124bD82944eac67B2EA449797d402D1";
+  "https://www.dextools.io/app/en/base/pair-explorer/0xaee35AAf149de47d1a6733f892917e66BD72A1DB"; // Use LP address for pair explorer
 export const SIDEBAR_TOKEN_LINK =
-  "https://basescan.org/address/0x32481ac9B124bD82944eac67B2EA449797d402D1";
+  "https://basescan.org/address/0x01FCE8e7a17b90DD0aAf761Fd889f66a469fdFC2";
 
 export const transactionQuery = `query ($network: EthereumNetwork!, $token: String!, $limit: Int!, $offset: Int!,$after: ISO8601DateTime  ) {
   ethereum(network: $network) {

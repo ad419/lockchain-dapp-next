@@ -115,13 +115,19 @@ export async function POST(request) {
       console.error("Failed to invalidate caches:", cacheError);
     }
 
+    // Update the response structure for consistency
+    const responseClaimData = {
+      id: newClaim.id,
+      walletAddress: normalizedWalletAddress,
+      twitterUsername: normalizedTwitterUsername,
+      timestamp: new Date().toISOString(),
+      showProfile: true,
+    };
+
+    // Make sure to return a consistent claim object
     return NextResponse.json({
       success: true,
-      claim: {
-        id: newClaim.id,
-        ...claimData,
-        claimedAt: claimData.claimedAt.toDate(),
-      },
+      claim: responseClaimData,
     });
   } catch (error) {
     console.error("Error in claim-wallet route:", error);
