@@ -255,7 +255,7 @@ export default function LeaderboardClient({ initialData }) {
     return false;
   });
 
-  // Modify your useSWR hook to not handle polling - we'll do it manually
+  // Update your SWR configuration to better handle caching
   const {
     data,
     error,
@@ -263,9 +263,11 @@ export default function LeaderboardClient({ initialData }) {
     mutate: refreshData,
   } = useSWR("/api/holders", fetcher, {
     fallbackData: { ...DEFAULT_TOKEN_DATA, ...initialData },
-    revalidateOnFocus: !liveMode,
+    revalidateOnFocus: !liveMode, // Don't revalidate on focus in live mode
     revalidateOnReconnect: !liveMode,
     dedupingInterval: liveMode ? 0 : 30000, // No deduping in live mode
+    // This is important - increase cache freshness time in live mode
+    refreshInterval: liveMode ? 0 : undefined, // No auto-refresh in live mode, we handle it manually
     onSuccess: (data) => {
       // Only update last refresh time when data successfully loads
       if (data?.holders?.length > 0) {
@@ -395,7 +397,7 @@ export default function LeaderboardClient({ initialData }) {
     const now = Date.now();
     const timeSinceLastRefresh = now - lastRefreshTime;
 
-    // Increase minimum refresh time to 15 seconds
+    // Throttle refreshes to prevent API abuse
     if (isRefreshing || timeSinceLastRefresh < 15000) {
       showToast(
         `Please wait ${Math.ceil(
@@ -411,20 +413,45 @@ export default function LeaderboardClient({ initialData }) {
     setApiError(null);
 
     try {
-      console.log("🔄 Manual refresh triggered");
+      console.log("🔄 Manual refresh triggered using direct API call");
 
-      // Pass refreshData=true to fetch fresh data
-      await refreshData(async () => {
-        const response = await fetch("/api/holders?refresh=true");
-        if (!response.ok) {
-          throw new Error(`Failed to refresh: ${response.status}`);
+      // Same approach as handleDirectRefresh - make a direct API call
+      const cacheBuster = Date.now();
+      const response = await fetch(
+        `/api/holders?refresh=true&t=${cacheBuster}&forceFresh=true`,
+        {
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+          // This next line is critical - it tells fetch to bypass the browser cache
+          cache: "no-store",
         }
-        return response.json();
-      });
+      );
 
-      // Only check position if necessary and not already checking
+      if (!response.ok) {
+        throw new Error(`Failed to refresh: ${response.status}`);
+      }
+
+      // Parse the fresh data
+      const freshData = await response.json();
+
+      // Clear any cached data in SessionStorage and LocalStorage
+      try {
+        sessionStorage.removeItem("cache_/api/holders");
+        localStorage.setItem("lastHoldersRefresh", Date.now().toString());
+      } catch (e) {
+        console.warn("Storage error:", e);
+      }
+
+      // Force SWR to completely revalidate with the fresh data
+      // revalidate: true is key here - it forces a full refresh
+      await refreshData(freshData, { revalidate: true });
+
+      // If we have wallet info, check holder position
       if (session && walletClaim && !isCheckingPosition) {
-        checkHolderPosition(true); // Add true to force refresh
+        checkHolderPosition(true); // Force a position refresh too
       }
 
       showToast("Leaderboard data refreshed!", "success");
@@ -525,13 +552,27 @@ export default function LeaderboardClient({ initialData }) {
         `📡 Direct API call #${apiCallsCount.current} - Fetching fresh data from Moralis`
       );
 
-      // Direct call to API with live=true to skip any caching
-      const response = await fetch(`/api/holders?live=true&t=${Date.now()}`, {
-        headers: {
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-          Pragma: "no-cache",
-        },
-      });
+      // Clear any cached data in SessionStorage before making the request
+      try {
+        sessionStorage.removeItem("cache_/api/holders");
+        localStorage.setItem("lastHoldersRefresh", Date.now().toString());
+      } catch (e) {
+        console.warn("Storage error:", e);
+      }
+
+      // Direct call to API with additional cache busting parameters
+      const cacheBuster = Date.now();
+      const response = await fetch(
+        `/api/holders?live=true&t=${cacheBuster}&forceFresh=true`,
+        {
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+          cache: "no-store", // Critical for bypassing browser cache
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`Failed to fetch: ${response.status}`);
@@ -539,15 +580,15 @@ export default function LeaderboardClient({ initialData }) {
 
       const freshData = await response.json();
 
-      // Update SWR cache with the fresh data
-      await refreshData(freshData, false);
+      // Update SWR cache with the fresh data and force revalidation
+      await refreshData(freshData, { revalidate: true });
 
       // Update last refresh time
       setLastRefreshTime(Date.now());
 
       // Check for user wallet position change
       if (session && walletClaim && !isCheckingPosition) {
-        checkHolderPosition();
+        checkHolderPosition(true); // Force refresh position data
       }
     } catch (error) {
       console.error("Live mode refresh failed:", error);
@@ -1626,22 +1667,37 @@ export default function LeaderboardClient({ initialData }) {
             <Messages
               key={`messages-${session?.user?.name || "guest"}`}
               session={session}
-              userWalletData={
-                walletClaim
-                  ? {
-                      walletAddress: walletClaim.walletAddress,
-                      username: session?.user?.name || "Guest",
-                      profileImage:
-                        session?.user?.image || "/images/default-avatar.png",
-                    }
-                  : null
-              }
+              userWalletData={userWalletData}
               userHolderData={userHolderData}
+              onOpenFullscreen={openFullscreenChat} // Add this prop
             />
           ) : null}
         </motion.div>
       </div>
     );
+  };
+
+  // Add this function to your Leaderboard.js component
+  const openFullscreenChat = () => {
+    // Store wallet data and holder data in localStorage
+    if (userWalletData) {
+      try {
+        localStorage.setItem("userWalletData", JSON.stringify(userWalletData));
+      } catch (error) {
+        console.error("Error storing wallet data:", error);
+      }
+    }
+
+    if (userHolderData) {
+      try {
+        localStorage.setItem("userHolderData", JSON.stringify(userHolderData));
+      } catch (error) {
+        console.error("Error storing holder data:", error);
+      }
+    }
+
+    // Navigate to chat page
+    router.push("/chat");
   };
 
   // Final return

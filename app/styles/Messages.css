@@ -6850,4 +6850,3 @@ html, body {
   /* This ensures the font size respects the customStyle.fontSize property */
   font-size: var(--custom-font-size, inherit) !important;
 }
-

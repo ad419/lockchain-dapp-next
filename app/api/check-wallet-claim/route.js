@@ -6,6 +6,18 @@ import { redis } from "../../lib/redis";
 
 const CACHE_TTL = 15 * 60; // 15 minutes Redis cache
 
+// Utility function to handle corrupted cache entries
+async function clearCorruptedCache(key) {
+  try {
+    await redis.del(key);
+    console.log(`Cleared corrupted cache for key: ${key}`);
+    return true;
+  } catch (error) {
+    console.error(`Failed to clear corrupted cache for key: ${key}`, error);
+    return false;
+  }
+}
+
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -32,13 +44,15 @@ export async function GET(request) {
     // Try Redis cache first (unless refresh is requested)
     if (!refresh) {
       try {
-        const cachedClaim = await redis.get(cacheKey);
-        if (cachedClaim) {
-          console.log("Using Redis cached claim data for:", twitterUsername);
-          return NextResponse.json(JSON.parse(cachedClaim));
-        }
+        // FIRST: Clear any existing potentially corrupted data
+        await redis.del(cacheKey);
+        console.log(
+          `Flushed Redis cache for ${twitterUsername} to prevent corruption`
+        );
+
+        // Continue straight to Firestore lookup
       } catch (redisError) {
-        console.warn("Redis error, falling back to Firestore:", redisError);
+        console.warn("Redis error while flushing cache:", redisError);
       }
     }
 
@@ -75,7 +89,45 @@ export async function GET(request) {
 
     // Cache the result in Redis
     try {
-      await redis.set(cacheKey, JSON.stringify(result), { ex: CACHE_TTL });
+      // Only cache claims with proper data structure
+      if (result && result.claim) {
+        // Convert the object to a string first, then check if it has the correct structure
+        const stringifiedResult = JSON.stringify(result);
+
+        if (stringifiedResult && stringifiedResult !== '"[object Object]"') {
+          // Cache a simplified version with plain JSON structure
+          const safeResult = {
+            hasClaimed: result.hasClaimed,
+            claim: result.claim
+              ? {
+                  id: result.claim.id || "",
+                  walletAddress: result.claim.walletAddress || "",
+                  twitterUsername: result.claim.twitterUsername || "",
+                  timestamp: result.claim.timestamp || "",
+                  claimedAt: result.claim.claimedAt || "",
+                }
+              : null,
+          };
+
+          const safeString = JSON.stringify(safeResult);
+
+          // Do a sanity check before caching
+          try {
+            // Test parsing to ensure it's valid
+            JSON.parse(safeString);
+
+            // If we got here, it's safe to cache
+            await redis.set(cacheKey, safeString, { ex: CACHE_TTL });
+            console.log(`Cached claim data in Redis for: ${twitterUsername}`);
+          } catch (parseError) {
+            console.error("Invalid JSON structure, not caching:", parseError);
+          }
+        } else {
+          console.warn("Invalid data format, not caching in Redis");
+        }
+      } else {
+        console.log("No valid claim to cache in Redis");
+      }
     } catch (redisError) {
       console.warn("Failed to cache result in Redis:", redisError);
     }
