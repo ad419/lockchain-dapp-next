@@ -6850,3 +6850,785 @@ html, body {
   /* This ensures the font size respects the customStyle.fontSize property */
   font-size: var(--custom-font-size, inherit) !important;
 }
+
+/* Add this to your Messages.css file */
+.messages-float.compact-mode {
+  max-height: 100%;
+  width: 100%;
+  position: relative;
+  padding: 8px;
+  margin: 0;
+  background: none;
+}
+
+.message-float.compact {
+  padding: 10px;
+  margin-bottom: 8px;
+  min-height: unset !important;
+  max-width: 100%;
+  border-radius: 12px;
+}
+
+.message-float.compact .message-avatar {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  margin-right: 10px;
+  border-radius: 50%;
+}
+
+.message-float.compact .message-username {
+  font-size: 12px;
+  margin-bottom: 3px;
+}
+
+.message-float.compact .message-text {
+  font-size: 14px;
+  line-height: 1.4;
+  margin: 0;
+  overflow-wrap: break-word;
+}
+
+.message-float.compact .message-close {
+  width: 22px;
+  height: 22px;
+  font-size: 16px;
+  opacity: 0.7;
+}
+
+.message-float.compact .message-sticker {
+  transform: scale(0.7);
+  margin: -5px;
+}
+
+/* Remove any conflicting animations in compact mode */
+.message-float.compact .animate-pulse,
+.message-float.compact .animate-gradient,
+.message-float.compact .animate-rainbow,
+.message-float.compact .animate-glow {
+  animation: none !important;
+}
+
+/* Fix scrollbar styling */
+.global-message-content::-webkit-scrollbar,
+.messages-float.compact-mode::-webkit-scrollbar {
+  width: 5px;
+}
+
+.global-message-content::-webkit-scrollbar-track,
+.messages-float.compact-mode::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.global-message-content::-webkit-scrollbar-thumb,
+.messages-float.compact-mode::-webkit-scrollbar-thumb {
+  background: rgba(100, 100, 100, 0.4);
+  border-radius: 5px;
+}
+
+/* Create cleaner fade transition for messages */
+.message-float.compact {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+/* Fix z-index layering */
+.message-float {
+  z-index: 1;
+}
+
+/* Fix any mobile specific issues */
+@media (max-width: 768px) {
+  .message-float.compact .message-text {
+    font-size: 13px;
+    line-height: 1.3;
+  }
+  
+  .message-float.compact .message-avatar {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+  }
+}
+
+/* Add this at the end of your Messages.css file */
+
+/* Compact mode styles for global messaging */
+.messages-float.compact-mode {
+  max-height: 400px;
+  width: 100%;
+  right: 0;
+  bottom: 0;
+  position: relative;
+  overflow-y: auto;
+  padding: 10px;
+  background: none;
+}
+
+.message-float.compact {
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  min-height: unset !important;
+  max-width: 100%;
+  border-radius: 12px;
+}
+
+.message-float.compact .message-avatar {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  margin-right: 8px;
+  border-radius: 50%;
+}
+
+.message-float.compact .message-username {
+  font-size: 12px;
+  margin-bottom: 2px;
+}
+
+.message-float.compact .message-text {
+  font-size: 13px;
+  line-height: 1.3;
+  margin: 0;
+  overflow-wrap: break-word;
+}
+
+.message-float.compact .message-close {
+  width: 20px;
+  height: 20px;
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+.message-float.compact .message-sticker {
+  transform: scale(0.7);
+  margin: -5px;
+}
+
+/* Ensure custom message styles work in compact mode */
+.message-float.compact.animate-pulse,
+.message-float.compact.animate-gradient,
+.message-float.compact.animate-rainbow,
+.message-float.compact.animate-glow {
+  /* This preserves the animations but makes them less intrusive */
+  animation-duration: 3s !important; 
+}
+
+/* This ensures text effects work in compact mode */
+.message-float.compact .message-text.retro,
+.message-float.compact .message-text.matrix,
+.message-float.compact .message-text.metallic,
+.message-float.compact .message-text.neon,
+.message-float.compact .message-text.glitch {
+  /* Preserve effects but adjust size */
+  font-size: 13px !important;
+}
+
+/* Add these rules at the end of your Messages.css file */
+
+/* ===== Compact Mode Fixes ===== */
+
+/* Container for compact mode messages */
+.messages-float.compact-mode {
+  height: 100%;
+  width: 100%;
+  padding: 8px;
+  margin: 0;
+  background: none;
+  overflow-y: auto;
+}
+
+/* Only adjust size and spacing in compact mode, but preserve all animations and gradients */
+.message-float.compact {
+  padding: 10px;
+  margin-bottom: 8px;
+  min-height: unset !important;
+  max-width: 100%;
+  /* Do NOT override any background styles here */
+}
+
+.message-float.compact .message-avatar {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  margin-right: 10px;
+  border-radius: 50%;
+}
+
+.message-float.compact .message-username {
+  font-size: 12px;
+  margin-bottom: 3px;
+}
+
+.message-float.compact .message-text {
+  font-size: 14px;
+  line-height: 1.4;
+  margin: 0;
+  overflow-wrap: break-word;
+  /* Do NOT override any text styles here */
+}
+
+.message-float.compact .message-close {
+  width: 22px;
+  height: 22px;
+  font-size: 14px;
+  opacity: 0.6;
+}
+
+/* Ensure animations work well in compact mode */
+.message-float.compact.animate-pulse,
+.message-float.compact.animate-gradient,
+.message-float.compact.animate-rainbow,
+.message-float.compact.animate-glow {
+  /* Keep all animations intact */
+}
+
+/* Fix clash between compact mode and text effects */
+.message-float.compact .message-text.retro,
+.message-float.compact .message-text.matrix,
+.message-float.compact .message-text.metallic,
+.message-float.compact .message-text.neon,
+.message-float.compact .message-text.glitch {
+  /* Don't reset font-size here */
+  /* Just adjust the container size */
+}
+
+/* Force any other important custom styles */
+.message-float.compact {
+  background: var(--message-background, inherit) !important;
+}
+
+/* Add these at the end of your Messages.css file */
+
+/* Updated Compact Mode Styles with preserved animations */
+.messages-float.compact-mode {
+  max-height: 100%;
+  width: 100%;
+  position: relative;
+  padding: 12px;
+  margin: 0;
+  background: none;
+  overflow-y: auto;
+}
+
+.message-float.compact {
+  padding: 10px;
+  margin-bottom: 10px;
+  min-height: unset !important;
+  max-width: 100%;
+  border-radius: 12px !important;
+}
+
+/* Preserve the background style using CSS variables */
+.message-float.compact {
+  background: var(--message-background, inherit) !important;
+}
+
+/* Fix avatar size and position */
+.message-float.compact .message-avatar {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  margin-right: 10px;
+  border-radius: 50%;
+}
+
+/* Username styling */
+.message-float.compact .message-username {
+  font-size: 12px;
+  margin-bottom: 3px;
+  font-weight: 600;
+}
+
+/* Message text with style preservation */
+.message-float.compact .message-text {
+  font-size: 14px !important;
+  line-height: 1.4;
+  margin: 0;
+  overflow-wrap: break-word;
+}
+
+/* Apply font size from custom style if set */
+.message-float.compact .message-text {
+  font-size: var(--custom-font-size, 14px) !important;
+}
+
+/* Fix close button */
+.message-float.compact .message-close {
+  width: 22px;
+  height: 22px;
+  font-size: 16px;
+  opacity: 0.7;
+}
+
+/* Make sticker smaller */
+.message-float.compact .message-sticker {
+  transform: scale(0.7);
+  margin: -5px;
+}
+
+/* Ensure all animation classes work in compact mode */
+.message-float.compact.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite !important;
+}
+
+.message-float.compact.animate-gradient {
+  animation: gradient 8s linear infinite !important;
+  background-size: 400% 400% !important;
+}
+
+.message-float.compact.animate-rainbow {
+  animation: rainbow 6s linear infinite !important;
+  background-size: 400% 400% !important;
+}
+
+.message-float.compact.animate-glow {
+  animation: glow 3s ease-in-out infinite !important;
+}
+
+/* Ensure text effects work in compact mode */
+.message-float.compact .message-text.retro,
+.message-float.compact .message-text.matrix,
+.message-float.compact .message-text.metallic,
+.message-float.compact .message-text.neon,
+.message-float.compact .message-text.glitch {
+  /* Keep all effects working but adjust size */
+  font-size: var(--custom-font-size, 14px) !important;
+}
+
+/* Restore animation keyframes if they're being overwritten */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes gradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes rainbow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 10px var(--glow-color, rgba(98, 134, 252, 0.7)); }
+  50% { box-shadow: 0 0 20px var(--glow-color, rgba(98, 134, 252, 0.9)); }
+}
+
+/* Core message styling for compact mode in global context */
+
+/* Container for messages */
+.messages-float.compact-mode {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  padding: 10px;
+  overflow-y: auto;
+  gap: 8px;
+}
+
+/* Base message style */
+.message-float.compact {
+  display: flex;
+  max-width: 80%;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
+  background: var(--message-background, rgba(14, 14, 14, 0.95)) !important;
+}
+
+/* Other users' messages align left */
+.message-float.compact:not(.own-message) {
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+}
+
+/* User's own messages align right */
+.message-float.compact.own-message {
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+  background: var(--message-background, rgba(98, 134, 252, 0.15)) !important;
+}
+
+/* Avatar styling */
+.message-float.compact .message-avatar {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+/* Hide avatar on own messages for cleaner UI */
+.message-float.compact.own-message .message-avatar {
+  display: none;
+}
+
+/* Message content container */
+.message-float.compact .message-content {
+  flex: 1;
+  min-width: 0; /* Important for text overflow handling */
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Username styling */
+.message-float.compact .message-username {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6286fc;
+  margin: 0 0 2px;
+}
+
+/* Message text */
+.message-float.compact .message-text {
+  font-size: var(--custom-font-size, 13px) !important;
+  line-height: 1.4;
+  margin: 0;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+/* Close button */
+.message-float.compact .message-close {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 18px;
+  height: 18px;
+  font-size: 14px;
+  background: rgba(0, 0, 0, 0.2);
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+  cursor: pointer;
+}
+
+.message-float.compact:hover .message-close {
+  opacity: 0.7;
+}
+
+.message-float.compact .message-close:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+/* Sticker positioning */
+.message-float.compact .message-sticker {
+  position: absolute;
+  bottom: -6px;
+  right: -12px;
+  font-size: 20px;
+  transform: rotate(10deg);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+  z-index: 2;
+}
+
+/* Preserve animations in compact mode */
+.message-float.compact.animate-pulse,
+.message-float.compact.animate-gradient,
+.message-float.compact.animate-rainbow,
+.message-float.compact.animate-glow {
+  animation-duration: 3s !important;
+}
+
+/* Preserve text effects */
+.message-float.compact .message-text.retro,
+.message-float.compact .message-text.matrix,
+.message-float.compact .message-text.metallic,
+.message-float.compact .message-text.neon,
+.message-float.compact .message-text.glitch {
+  font-size: var(--custom-font-size, 13px) !important;
+}
+
+/* Timestamp (optional) */
+.message-float.compact .message-timestamp {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 2px;
+  align-self: flex-end;
+}
+
+/* Mobile optimization */
+@media (max-width: 768px) {
+  .message-float.compact {
+    max-width: 85%;
+    padding: 8px 10px;
+  }
+  
+  .message-float.compact .message-avatar {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+  }
+  
+  .message-float.compact .message-text {
+    font-size: var(--custom-font-size, 12px) !important;
+  }
+  
+  .message-float.compact .message-username {
+    font-size: 10px;
+  }
+}
+
+/* Ensure all animations and gradients work properly */
+.message-float.compact.animate-gradient {
+  background-size: 200% 200% !important;
+}
+
+/* ==============================================
+   CORE MESSAGE STYLES FOR COMPACT MODE
+   ============================================== */
+
+/* Message container in global context */
+.messages-float.compact-mode {
+  height: 100%;
+  width: 100%;
+  padding: 10px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Basic message styling */
+.message-float.compact {
+  display: flex;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  border-radius: 12px;
+  max-width: 85%;
+  position: relative;
+  background: var(--message-background, rgba(14, 14, 14, 0.95)) !important;
+}
+
+/* Message alignment */
+.message-float.compact:not(.own-message) {
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+}
+
+.message-float.compact.own-message {
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+  background: var(--message-background, rgba(98, 134, 252, 0.15)) !important;
+}
+
+/* Avatar styling */
+.message-float.compact .message-avatar {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border-radius: 50%;
+  margin-right: 10px;
+}
+
+.message-float.compact.own-message .message-avatar {
+  display: none;
+}
+
+/* Content styling */
+.message-float.compact .message-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.message-float.compact .message-username {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6286fc;
+  margin-bottom: 3px;
+}
+
+.message-float.compact .message-text {
+  font-size: var(--custom-font-size, 13px) !important;
+  line-height: 1.4;
+  margin: 0;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Close button */
+.message-float.compact .message-close {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 18px;
+  height: 18px;
+  background: rgba(0, 0, 0, 0.2);
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  cursor: pointer;
+}
+
+.message-float.compact:hover .message-close {
+  opacity: 0.7;
+}
+
+/* Message sticker */
+.message-float.compact .message-sticker {
+  position: absolute;
+  bottom: -8px;
+  right: -12px;
+  font-size: 20px;
+  transform: rotate(10deg);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+  z-index: 2;
+  animation: floatSticker 2s ease-in-out infinite;
+}
+
+@keyframes floatSticker {
+  0%, 100% { transform: translateY(0) rotate(10deg); }
+  50% { transform: translateY(-4px) rotate(5deg); }
+}
+
+/* ==============================================
+   MESSAGE ANIMATIONS
+   ============================================== */
+
+/* Pulse Animation */
+.message-float.compact.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite !important;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+/* Gradient Animation */
+.message-float.compact.animate-gradient {
+  background-size: 200% 200% !important;
+  animation: gradient 8s linear infinite !important;
+}
+
+@keyframes gradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Rainbow Animation */
+.message-float.compact.animate-rainbow {
+  animation: rainbow 6s linear infinite !important;
+  background-size: 400% 400% !important;
+}
+
+@keyframes rainbow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Glow Animation */
+.message-float.compact.animate-glow {
+  animation: glow 3s ease-in-out infinite !important;
+}
+
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 10px rgba(98, 134, 252, 0.7); }
+  50% { box-shadow: 0 0 20px rgba(98, 134, 252, 0.9); }
+}
+
+/* ==============================================
+   TEXT EFFECTS
+   ============================================== */
+
+/* Retro Text Effect */
+.message-float.compact .message-text.retro {
+  font-family: 'Courier New', monospace !important;
+  color: #33ff00 !important;
+  text-shadow: 0 0 5px #33ff00, 0 0 10px rgba(51, 255, 0, 0.6);
+  font-size: var(--custom-font-size, 13px) !important;
+  letter-spacing: 1px;
+}
+
+/* Matrix Text Effect */
+.message-float.compact .message-text.matrix {
+  font-family: 'Courier New', monospace !important;
+  color: #0f0 !important;
+  background: rgba(0, 10, 2, 0.7);
+  border-radius: 4px;
+  padding: 0.2em 0.3em;
+  text-shadow: 0 0 2px #0f0, 0 0 5px rgba(0, 255, 0, 0.5);
+  font-size: var(--custom-font-size, 13px) !important;
+  letter-spacing: 0.5px;
+}
+
+/* Metallic Text Effect */
+.message-float.compact .message-text.metallic {
+  background-image: linear-gradient(
+    135deg,
+    #ffffff 0%,
+    #a0a0a0 20%,
+    #ffffff 40%,
+    #a0a0a0 60%,
+    #ffffff 80%,
+    #a0a0a0 100%
+  );
+  background-size: 200% 100%;
+  color: transparent !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  filter: drop-shadow(0px 2px 2px rgba(0, 0, 0, 0.3));
+  font-size: var(--custom-font-size, 13px) !important;
+  font-weight: bold !important;
+}
+
+/* Neon Text Effect */
+.message-float.compact .message-text.neon {
+  color: #fff !important;
+  text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 20px #ff00de, 0 0 30px #ff00de;
+  font-size: var(--custom-font-size, 13px) !important;
+}
+
+/* Glitch Text Effect */
+.message-float.compact .message-text.glitch {
+  position: relative;
+  color: white !important;
+  font-size: var(--custom-font-size, 13px) !important;
+  letter-spacing: 1px;
+}
+
+/* ==============================================
+   RESPONSIVE DESIGN
+   ============================================== */
+
+/* Mobile optimization */
+@media (max-width: 768px) {
+  .message-float.compact {
+    padding: 8px 10px;
+  }
+  
+  .message-float.compact .message-avatar {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+  }
+  
+  .message-float.compact .message-text {
+    font-size: var(--custom-font-size, 12px) !important;
+  }
+}

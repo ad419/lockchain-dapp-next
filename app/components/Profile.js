@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import { useAccountStats } from "../hooks/useAccount";
 import { formatPrice } from "../hooks/contractHelper";
@@ -8,7 +8,6 @@ import { contract, SUPPORTED_CHAIN } from "../hooks/constant";
 import vestAbi from "../json/vest.json";
 import { getWeb3 } from "../hooks/connectors";
 import { getContract } from "../hooks/contractHelper";
-import { Context } from "../context/context";
 import { useAccount, useNetwork } from "wagmi";
 import { useEthersSigner } from "../hooks/useEthersProvider";
 import styles from "../styles/profile.module.css";

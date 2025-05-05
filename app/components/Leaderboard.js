@@ -32,6 +32,7 @@ import Image from "next/image";
 import Messages from "./Messages";
 import { useToast } from "../context/ToastContext";
 import { useWalletClaim } from "../context/WalletClaimContext";
+import { useRouter } from "next/navigation";
 
 const MAX_SUPPLY = 1_000_000_000;
 const DEFAULT_TOKEN_DATA = {
@@ -194,7 +195,70 @@ const isSafeUrl = (url) => {
   }
 };
 
+// Add this hook near the top of your component file
+
+// Custom hook for responsive address formatting
+const useResponsiveAddressFormat = () => {
+  const [format, setFormat] = useState({
+    prefixLength: 6,
+    suffixLength: 4,
+  });
+
+  useEffect(() => {
+    const updateFormat = () => {
+      if (window.innerWidth <= 320) {
+        setFormat({ prefixLength: 4, suffixLength: 3 });
+      } else if (window.innerWidth <= 375) {
+        setFormat({ prefixLength: 5, suffixLength: 3 });
+      } else {
+        setFormat({ prefixLength: 6, suffixLength: 4 });
+      }
+    };
+
+    // Initial format
+    updateFormat();
+
+    // Update on resize
+    window.addEventListener("resize", updateFormat);
+    return () => window.removeEventListener("resize", updateFormat);
+  }, []);
+
+  return format;
+};
+
 export default function LeaderboardClient({ initialData }) {
+  const router = useRouter();
+  // First, add these state variables at the top with your other state
+  const [isMobileView, setIsMobileView] = useState(false);
+  const [expandedRows, setExpandedRows] = useState(new Set());
+
+  // Add a new state variable
+  const [darkMode, setDarkMode] = useState(true);
+
+  // Add a toggle function
+  const toggleTheme = useCallback(() => {
+    setDarkMode((prev) => !prev);
+  }, []);
+
+  // Add this to keep track of expanded row heights
+  const expandedRowHeights = useRef(new Map());
+
+  // Add this effect with your other useEffect hooks
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobileView(window.innerWidth <= 768);
+    };
+
+    // Initial check
+    checkMobile();
+
+    // Add event listener
+    window.addEventListener("resize", checkMobile);
+
+    // Cleanup
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
   // =============================================
   // 1. ALL HOOKS DEFINITIONS FIRST (no conditionals)
   // =============================================
@@ -830,17 +894,65 @@ export default function LeaderboardClient({ initialData }) {
   const indexOfLastHolder = currentPage * holdersPerPage;
   const indexOfFirstHolder = indexOfLastHolder - holdersPerPage;
 
+  const holders = useMemo(() => {
+    if (!data?.holders) return [];
+    return data.holders
+      .map((holder, index) => ({ ...holder, rank: index + 1 }))
+      .slice(indexOfFirstHolder, indexOfLastHolder);
+  }, [data?.holders, indexOfFirstHolder, indexOfLastHolder]);
+
+  // Now add rowVirtualizer FIRST, without the toggleRowExpand dependency
   const rowVirtualizer = useVirtualizer({
     count: holdersPerPage,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => 60,
-    overscan: 5,
+    estimateSize: (index) => {
+      const holder = holders[index];
+      if (!holder) return 50;
+
+      // Add more height for expanded rows based on content
+      if (expandedRows.has(holder.address)) {
+        // Add extra space if social info is present
+        const hasSocial = holder.social && holder.social.twitter;
+        const isContract = holder.is_contract;
+
+        // Base height + additional height for social or contract info
+        return 150 + (hasSocial ? 40 : 0) + (isContract ? 30 : 0);
+      }
+
+      return 50; // Default height for collapsed rows
+    },
+    overscan: 10, // Increase overscan to prevent content jumping
     scrollToFn: (offset, { behavior }) => {
       if (scrollRef.current) {
-        scrollRef.current.scrollTop = 0;
+        scrollRef.current.scrollTo({ top: offset, behavior });
       }
     },
   });
+
+  // THEN add toggleRowExpand AFTER rowVirtualizer is defined
+  const toggleRowExpand = useCallback((address) => {
+    setExpandedRows((prevRows) => {
+      const newRows = new Set(prevRows);
+      if (newRows.has(address)) {
+        newRows.delete(address);
+      } else {
+        newRows.add(address);
+      }
+
+      // Force the virtualizer to recalculate sizes after expanding/collapsing
+      setTimeout(() => {
+        if (rowVirtualizer && rowVirtualizer.measure) {
+          try {
+            rowVirtualizer.measure();
+          } catch (err) {
+            console.error("Failed to measure virtualizer", err);
+          }
+        }
+      }, 50);
+
+      return newRows;
+    });
+  }, []);
 
   // Add this utility function near your other utility functions at the top
   const formatNumber = (value, decimals = 2) => {
@@ -894,13 +1006,6 @@ export default function LeaderboardClient({ initialData }) {
       return newMode;
     });
   }, [liveMode, liveModeInCooldown, cooldownEndTime, showToast]);
-
-  const holders = useMemo(() => {
-    if (!data?.holders) return [];
-    return data.holders
-      .map((holder, index) => ({ ...holder, rank: index + 1 }))
-      .slice(indexOfFirstHolder, indexOfLastHolder);
-  }, [data?.holders, indexOfFirstHolder, indexOfLastHolder]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -1131,11 +1236,266 @@ export default function LeaderboardClient({ initialData }) {
                 }}
               ></div>
             )}
+            {holder.rank <= 10 && (
+              <div className="holder-graph">
+                <div className="graph-label">Holdings % vs Average</div>
+                <div className="graph-container">
+                  <div
+                    className="graph-bar"
+                    style={{
+                      width: `${Math.min(100, (holder.percentage / 5) * 100)}%`,
+                      background: `linear-gradient(90deg, 
+                        rgba(98, 134, 252, 0.8),
+                        rgba(98, 134, 252, 0.4))`,
+                    }}
+                  />
+                  <div className="graph-avg-marker" style={{ left: "10%" }} />
+                </div>
+                <div className="graph-info">
+                  <span className="holder-value">
+                    {/* Use optional chaining and ensure we're working with a number */}
+                    {typeof holder?.percentage === "number"
+                      ? `Your: ${holder.percentage.toFixed(2)}%`
+                      : `Your: ${parseFloat(holder?.percentage || 0).toFixed(
+                          2
+                        )}%`}
+                  </span>
+                  <span className="avg-value">Avg: 0.5%</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       );
     });
   }, [mounted, holders, rowVirtualizer, walletClaim, isAnimating]);
+
+  // Move this line here - BEFORE the renderMobileVirtualizedList function
+  const addressFormat = useResponsiveAddressFormat();
+
+  // Add this function to your Leaderboard.js component
+  const renderMobileVirtualizedList = useCallback(() => {
+    if (!mounted) return null;
+
+    // Instead of using virtualization for mobile, render all rows directly
+    return holders.map((holder, index) => {
+      if (!holder) return null;
+
+      const rankTitle = getRankTitle(holder.rank);
+      const isUserWallet =
+        walletClaim &&
+        holder.address.toLowerCase() ===
+          walletClaim.walletAddress.toLowerCase();
+      const walletColor = isUserWallet
+        ? generateWalletColor(holder.address)
+        : null;
+      const isUpdated = updatedHolders.has(holder.address.toLowerCase());
+      const isExpanded = expandedRows.has(holder.address);
+
+      return (
+        <div
+          key={holder.address}
+          className="holder-row-mobile"
+          style={{
+            position: "relative", // Changed from absolute positioning
+            width: "100%",
+            minHeight: isExpanded ? "auto" : "50px",
+            marginBottom: "8px",
+            overflow: "visible",
+          }}
+        >
+          <div
+            className={`mobile-holder-card ${
+              isUserWallet ? "user-wallet" : ""
+            } ${holder.rank === 1 && isAnimating ? "animating" : ""} ${
+              isExpanded ? "expanded" : ""
+            }`}
+            onClick={() => toggleRowExpand(holder.address)}
+            onTouchStart={(e) => handleSwipeStart(e, holder.address)}
+            style={
+              isUserWallet ? { borderLeft: `4px solid ${walletColor}` } : {}
+            }
+          >
+            <div className="mobile-card-main">
+              <div className="mobile-rank">
+                <span className="rank-value">#{holder.rank}</span>
+                <span className="rank-badge">{rankTitle.badge}</span>
+              </div>
+
+              <div className="mobile-address">
+                <span className="address-text">
+                  {`${holder.address.substring(
+                    0,
+                    addressFormat.prefixLength
+                  )}...${holder.address.substring(
+                    holder.address.length - addressFormat.suffixLength
+                  )}`}
+                </span>
+                <div className="address-actions">
+                  <button
+                    className="mobile-copy-button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigator.clipboard.writeText(holder.address);
+                      showToast("Address copied", "success");
+                    }}
+                  >
+                    📋
+                  </button>
+                  <a
+                    href={`https://basescan.org/address/${holder.address}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mobile-view-link"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    🔍
+                  </a>
+                </div>
+              </div>
+
+              <div className="mobile-holdings">
+                <span className="holdings-value"></span>
+              </div>
+
+              <div className="mobile-dropdown">
+                <button
+                  className="expand-toggle"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleRowExpand(holder.address);
+                  }}
+                >
+                  {isExpanded ? "▲" : "▼"}
+                </button>
+              </div>
+            </div>
+
+            {isExpanded && (
+              <div
+                className="mobile-expanded-content"
+                style={{
+                  height: "auto",
+                  overflow: "visible",
+                  maxHeight: "none",
+                }}
+              >
+                <div className="mobile-stats-grid">
+                  <div className="mobile-stat-item">
+                    <span className="stat-label">Value</span>
+                    <span className="stat-value">
+                      <AnimatedNumber
+                        value={parseFloat(holder.usdValue).toFixed(2)}
+                        duration={1000}
+                        formatValue={(value) =>
+                          value.toLocaleString(undefined, {
+                            style: "currency",
+                            currency: "USD",
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })
+                        }
+                      />
+                    </span>
+                  </div>
+                  <div className="mobile-stat-item">
+                    <span className="stat-label">%</span>
+                    <span className="stat-value">
+                      {typeof holder.percentage === "number"
+                        ? `${holder.percentage.toFixed(2)}%`
+                        : `${parseFloat(holder?.percentage || 0).toFixed(2)}%`}
+                    </span>
+                  </div>
+                  <div className="mobile-stat-item">
+                    <span className="stat-label">Tokens</span>
+                    <span className="stat-value">
+                      {parseFloat(holder.balance_formatted).toFixed(2)}
+                    </span>
+                  </div>
+                  {holder.is_contract && (
+                    <div className="mobile-stat-item full-width">
+                      <span className="contract-note">Contract</span>
+                    </div>
+                  )}
+                </div>
+
+                {holder.social && holder.social.twitter && (
+                  <div className="mobile-social">
+                    <Link
+                      href={`/public-profile/${holder.social.twitter}`}
+                      className="twitter-profile-link"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {holder.social.profileImage ? (
+                        <img
+                          src={holder.social.profileImage}
+                          alt={holder.social.name || "User"}
+                          width={16}
+                          height={16}
+                          className="twitter-avatar"
+                        />
+                      ) : (
+                        <div className="avatar-placeholder"></div>
+                      )}
+                      <span className="twitter-username">
+                        @{holder.social.twitter}
+                      </span>
+                    </Link>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    });
+  }, [
+    mounted,
+    holders,
+    walletClaim,
+    isAnimating,
+    updatedHolders,
+    expandedRows,
+    toggleRowExpand,
+    showToast,
+    addressFormat, // Add this dependency
+  ]);
+
+  // Add this function to your Leaderboard.js component
+  const handleSwipeStart = useCallback(
+    (e, address) => {
+      const touchStartX = e.touches[0].clientX;
+      const touchThreshold = 50;
+
+      const handleTouchMove = (e) => {
+        const currentX = e.touches[0].clientX;
+        const diff = currentX - touchStartX;
+
+        // If swiped right significantly, expand the row
+        if (diff > touchThreshold) {
+          toggleRowExpand(address);
+          document.removeEventListener("touchmove", handleTouchMove);
+        }
+        // If swiped left significantly, collapse the row
+        else if (diff < -touchThreshold) {
+          if (expandedRows.has(address)) {
+            toggleRowExpand(address);
+          }
+          document.removeEventListener("touchmove", handleTouchMove);
+        }
+      };
+
+      document.addEventListener("touchmove", handleTouchMove);
+
+      const handleTouchEnd = () => {
+        document.removeEventListener("touchmove", handleTouchMove);
+        document.removeEventListener("touchend", handleTouchEnd);
+      };
+
+      document.addEventListener("touchend", handleTouchEnd);
+    },
+    [expandedRows, toggleRowExpand]
+  );
 
   // =============================================
   // 3. RENDER LOGIC - Using conditional rendering inside the return
@@ -1185,11 +1545,17 @@ export default function LeaderboardClient({ initialData }) {
     // Main content rendering
     return (
       <div
+        className={`leaderboard-container-bg ${
+          darkMode ? "dark-mode" : "light-mode"
+        }`}
         style={{
-          paddingTop: "68px",
+          marginTop: "20px",
         }}
-        className="leaderboard-container-bg"
       >
+        <div className="theme-toggle" onClick={toggleTheme}>
+          {darkMode ? "☀️" : "🌙"}
+        </div>
+
         <motion.div
           style={{
             overflowX: "hidden",
@@ -1284,8 +1650,13 @@ export default function LeaderboardClient({ initialData }) {
               ) : null}
             </>
           )}
-          <h2 className="leaderboard-title">Top 500 Token Holders</h2>
-          <div className="leaderboard-stats">
+
+          <div
+            style={{
+              marginTop: "20px",
+            }}
+            className="leaderboard-stats"
+          >
             <div className="stat-item">
               <span className="stat-label">Total Supply</span>
               <span className="stat-value">
@@ -1346,7 +1717,12 @@ export default function LeaderboardClient({ initialData }) {
             </div> */}
           </div>
           <div className="token-stats-container">
-            <div className="token-info">
+            <div
+              style={{
+                position: "relative",
+              }}
+              className="token-info"
+            >
               <img
                 src={defaultTokenLogo}
                 alt="Token Logo"
@@ -1359,6 +1735,25 @@ export default function LeaderboardClient({ initialData }) {
                   {dexData?.mainPair?.baseToken?.name || "LockChain"} (
                   {dexData?.mainPair?.baseToken?.symbol || "LOCK"})
                 </h3>
+                <div
+                  style={{
+                    position: "absolute",
+                    right: "10px",
+                    top: "10px",
+                  }}
+                  className="leaderboard-title"
+                >
+                  {/* <h2>LockChain Holders</h2> */}
+                  <div className="leaderboard-controls">
+                    <button
+                      className="theme-toggle"
+                      onClick={toggleTheme}
+                      aria-label="Toggle theme"
+                    >
+                      {darkMode ? "☀️" : "🌙"}
+                    </button>
+                  </div>
+                </div>
                 <div className="social-links">
                   {STATIC_SOCIAL_LINKS.map((social) => (
                     <Link
@@ -1535,30 +1930,50 @@ export default function LeaderboardClient({ initialData }) {
               scrollRef.current = el;
               tableContainerRef.current = el;
             }}
-            className="leaderboard-table-container"
+            className={`leaderboard-table-container ${
+              isMobileView ? "mobile-view" : ""
+            }`}
             style={{
-              height: "600px",
+              height: "600px", // Keep this consistent
               overflow: "auto",
               position: "relative",
               width: "100%",
               margin: "0 auto",
             }}
           >
-            {renderTableHeaders()}
-            <div
-              style={{
-                height: `${Math.min(
-                  rowVirtualizer.getTotalSize(),
-                  holders.length * 60
-                )}px`,
-                width: "100%",
-                position: "relative",
-                minWidth: "800px",
-                margin: "0 auto",
-              }}
-            >
-              {renderVirtualizedList()}
-            </div>
+            {isMobileView ? (
+              <div
+                style={{
+                  height: `${Math.min(
+                    rowVirtualizer.getTotalSize(),
+                    holders.length * 65 // Adjust to a more appropriate height
+                  )}px`,
+                  width: "100%",
+                  position: "relative",
+                  margin: "0 auto",
+                }}
+              >
+                {renderMobileVirtualizedList()}
+              </div>
+            ) : (
+              <>
+                {renderTableHeaders()}
+                <div
+                  style={{
+                    height: `${Math.min(
+                      rowVirtualizer.getTotalSize(),
+                      holders.length * 60
+                    )}px`,
+                    width: "100%",
+                    position: "relative",
+                    minWidth: "800px",
+                    margin: "0 auto",
+                  }}
+                >
+                  {renderVirtualizedList()}
+                </div>
+              </>
+            )}
           </div>
 
           <div ref={inViewRef} style={{ height: "20px" }} />
@@ -1662,16 +2077,6 @@ export default function LeaderboardClient({ initialData }) {
               </button>
             </div>
           </Modal>
-
-          {mounted ? (
-            <Messages
-              key={`messages-${session?.user?.name || "guest"}`}
-              session={session}
-              userWalletData={userWalletData}
-              userHolderData={userHolderData}
-              onOpenFullscreen={openFullscreenChat} // Add this prop
-            />
-          ) : null}
         </motion.div>
       </div>
     );
@@ -1703,5 +2108,3 @@ export default function LeaderboardClient({ initialData }) {
   // Final return
   return renderContent();
 }
-
-// Add this effect to clean up the cooldown timer

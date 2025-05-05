@@ -39,6 +39,7 @@ import {
   where, // Make sure 'where' is imported
 } from "firebase/firestore";
 import { db } from "../lib/firebase"; // Make sure this points to your client-side Firebase config
+import { useGlobalMessages } from "../context/GlobalMessagesContext";
 
 const MAX_VISIBLE_MESSAGES = 14;
 const COOLDOWN_TIME = 30000; // 30 seconds
@@ -216,22 +217,40 @@ const Tooltip = ({ children, text, position = "top" }) => {
   );
 };
 
+// Add this helper function to your component file
+const formatRank = (rank) => {
+  if (!rank) return "";
+  return `#${rank}`;
+};
+
 // Message Component (keep as it was)
 const Message = forwardRef(
-  ({ msg, userWalletData, onDismiss, index, userRank, onShowArchive }, ref) => {
+  (
+    {
+      msg,
+      id, // Get the ID prop
+      userWalletData,
+      onDismiss,
+      index,
+      userRank,
+      onShowArchive,
+      compactMode = false,
+    },
+    ref
+  ) => {
+    // Define these variables
     const isOwnMessage = msg.walletAddress === userWalletData?.walletAddress;
     const customStyle = msg.customStyle || {};
-    const canUseCustomStyles = userRank !== null && userRank <= 500;
-    const canUseFonts = userRank !== null && userRank <= 500;
-    const canUseAnimations = userRank !== null && userRank <= 100;
+    const canUseCustomStyles = true; // Always allow custom styles in global context
+    const canUseFonts = true;
+    const canUseAnimations = true;
+    const showRank = false; // Disable rank in compact mode
 
     const bgColor =
       customStyle.bgColor ||
       (isOwnMessage ? "rgba(98, 134, 252, 0.15)" : "rgba(14, 14, 14, 0.95)");
     const textColor = customStyle.textColor || "#ffffff";
-    const fontFamily = canUseCustomStyles
-      ? customStyle.fontFamily || "inherit"
-      : "inherit";
+
     const fontWeight = canUseCustomStyles
       ? customStyle.fontWeight || "normal"
       : "normal";
@@ -247,121 +266,124 @@ const Message = forwardRef(
       : null;
 
     let messageStyle = {
+      ...customStyle,
+      borderRadius: "12px", // Always ensure rounded corners
       color: textColor,
       backfaceVisibility: "hidden",
       WebkitFontSmoothing: "subpixel-antialiased",
     };
 
-    messageStyle.background = customStyle.gradient || bgColor;
+    // Set background properly
+    if (customStyle.gradient) {
+      messageStyle.background = customStyle.gradient;
+    } else {
+      messageStyle.background = bgColor;
+    }
+
+    // Keep border radius
     messageStyle.borderRadius = "12px";
 
+    // Create a CSS variable to ensure the background style is preserved in compact mode
+    if (messageStyle.background) {
+      messageStyle["--message-background"] = messageStyle.background;
+    }
+
+    // Apply glow effect if specified
     if (customStyle.glow) {
       messageStyle.boxShadow = `0 0 15px ${customStyle.gradient || bgColor}`;
     }
 
+    // Apply any custom font styles
+    if (fontSize !== "inherit") {
+      messageStyle["--custom-font-size"] = fontSize;
+    }
+
+    // Apply animation classes
     let animationClass = "";
     if (animationType === "pulse") animationClass = "animate-pulse";
     else if (animationType === "gradient") animationClass = "animate-gradient";
     else if (animationType === "rainbow") animationClass = "animate-rainbow";
     else if (animationType === "glow") animationClass = "animate-glow";
 
-    const handleUserClick = (e) => {
-      e.stopPropagation();
-      if (onShowArchive) {
-        onShowArchive({
-          ...msg,
-          profileImage: profileImage,
-          rank: msg.rank,
-        });
-      }
-    };
+    // Apply text effect classes
+    let textEffectClass = "";
+    if (textEffect === "retro") textEffectClass = "retro";
+    else if (textEffect === "matrix") textEffectClass = "matrix";
+    else if (textEffect === "metallic") textEffectClass = "metallic";
+    else if (textEffect === "neon") textEffectClass = "neon";
+    else if (textEffect === "glitch") textEffectClass = "glitch";
 
+    // Create proper class names for the message
+    const messageClass = `message-float ${
+      isOwnMessage ? "own-message" : ""
+    } ${animationClass} ${compactMode ? "compact" : ""}`;
+
+    // Get avatar
     const profileImage =
-      isOwnMessage && userWalletData?.profileImage
-        ? userWalletData.profileImage
-        : msg.profileImage || "/default-avatar.png";
+      msg.profileImage ||
+      "https://api.dicebear.com/7.x/bottts/svg?seed=" + msg.walletAddress;
+
+    // Helper function to format rank
+    const formatRank = (rank) => {
+      if (!rank) return "";
+      return `#${rank}`;
+    };
 
     return (
       <motion.div
+        id={id} // Add the ID here
         ref={ref}
-        className={`message-float ${
-          isOwnMessage ? "own-message" : ""
-        } ${animationClass}`}
+        className={messageClass}
         initial={{ opacity: 0, x: 50, scale: 0.9 }}
         animate={{ opacity: 1, x: 0, scale: 1 }}
-        exit={{ opacity: 0, x: -100, transition: { duration: 0.2 } }}
+        exit={{ opacity: 0, x: -50, transition: { duration: 0.2 } }}
         transition={{
           type: "spring",
           stiffness: 50,
           damping: 20,
-          delay: index * 0.08,
+          delay: index * 0.05,
         }}
         style={messageStyle}
       >
-        <img
-          src={profileImage}
-          alt={msg.user}
-          className="message-avatar"
-          onClick={handleUserClick}
-          onError={(e) => {
-            e.target.onerror = null;
-            e.target.src = "/default-avatar.png";
-          }}
-          draggable={false}
-          style={{ cursor: "pointer" }}
-        />
+        <div className="message-avatar-wrapper">
+          <img
+            className="message-avatar"
+            src={profileImage}
+            alt="User avatar"
+          />
+          {showRank && (
+            <div className="message-rank">
+              {formatRank(msg.rank || userRank)}
+            </div>
+          )}
+        </div>
         <div className="message-content">
-          <span
-            className="message-username"
-            style={{
-              color: textColor,
-              fontFamily: fontFamily !== "inherit" ? fontFamily : "inherit",
-              fontWeight: fontWeight !== "normal" ? fontWeight : "normal",
-              cursor: "pointer",
-            }}
-            onClick={handleUserClick}
-          >
-            @{msg.user}
-          </span>
+          <div className="message-username">{msg.username || "Anonymous"}</div>
           <p
-            className={`message-text ${textEffect ? textEffect : ""}`}
-            data-text={msg.text} // For glitch effect
+            className={`message-text ${textEffectClass}`}
             style={{
-              color: textColor,
-              fontFamily: fontFamily !== "inherit" ? fontFamily : "inherit",
-              fontWeight: fontWeight !== "normal" ? fontWeight : "normal",
-              fontStyle: fontStyle !== "normal" ? fontStyle : "normal",
-              fontSize: fontSize !== "inherit" ? fontSize : "inherit",
+              fontWeight,
+              fontStyle,
             }}
           >
             {msg.text}
           </p>
-          {customStyle.sticker && (
-            <motion.div
-              className="message-sticker"
-              drag
-              dragConstraints={{
-                top: -50,
-                left: -50,
-                right: 50,
-                bottom: 50,
-              }}
-            >
-              {customStyle.sticker}
-            </motion.div>
-          )}
+          {msg.sticker && <div className="message-sticker">{msg.sticker}</div>}
         </div>
-        <button
-          className="message-close"
-          onClick={() => onDismiss(msg.id)}
-          aria-label="Close message"
-        >
-          ×
-        </button>
+        {onDismiss && (
+          <button
+            className="message-close"
+            onClick={() => onDismiss(msg.id)}
+            aria-label="Dismiss message"
+          >
+            ×
+          </button>
+        )}
       </motion.div>
     );
   }
 );
+
 Message.displayName = "Message";
 
 // ChatFab Component (keep as it was)
@@ -452,7 +474,13 @@ const StyleSuggestions = ({ suggestions, onSelectSuggestion, onClose }) => {
 };
 
 // Main Messages Component
-export default function Messages({ session, userWalletData, userHolderData }) {
+export default function Messages({
+  session,
+  userWalletData,
+  userHolderData,
+  compactMode = false,
+  inGlobalContext = false,
+}) {
   // Move this line up here with other state variables
   const [isMounted, setIsMounted] = useState(false);
 
@@ -740,13 +768,17 @@ export default function Messages({ session, userWalletData, userHolderData }) {
 
   // *** OPTIMIZED Firestore Message Fetching Effect ***
   useEffect(() => {
-    if (!session || !isMounted) {
-      setMessages([]); // Clear messages if logged out
-      setLatestInitialTimestamp(null); // Reset timestamp
+    if (inGlobalContext || !session || !isMounted) {
+      // If in global context, don't set up any Firebase listeners
+      // Also clear any previous listeners and reset state if needed
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
+        unsubscribeRef.current = null;
+      }
       return;
     }
 
-    console.log("Setting up Firestore message fetching strategy");
+    console.log("Setting up Firestore message fetching (standalone mode)");
     setConnectionStatus("connecting");
 
     let effectActive = true; // Track mount status for async operations
@@ -888,7 +920,7 @@ export default function Messages({ session, userWalletData, userHolderData }) {
     };
 
     // Dependencies: session (login/logout), latestInitialTimestamp (triggers listener setup after initial fetch or updates)
-  }, [session, latestInitialTimestamp, isMounted]);
+  }, [session, latestInitialTimestamp, isMounted, inGlobalContext]);
 
   // --- Functions ---
 
@@ -949,10 +981,27 @@ export default function Messages({ session, userWalletData, userHolderData }) {
     }
   };
 
-  // Dismiss a message visually (client-side only)
-  const dismissMessage = useCallback((id) => {
-    setMessages((prev) => prev.filter((msg) => msg.id !== id));
-  }, []); // No dependencies needed if setMessages is stable
+  // Fix the dismissMessage function to work in global context too
+  const dismissMessage = useCallback(
+    (id) => {
+      // If in global context, don't modify state directly
+      if (inGlobalContext) {
+        // You can trigger an event or call a function from the global context
+        // For now, we'll just hide it visually
+        const element = document.getElementById(`message-${id}`);
+        if (element) {
+          element.style.opacity = "0";
+          setTimeout(() => {
+            element.style.display = "none";
+          }, 300);
+        }
+      } else {
+        // Regular behavior for non-global context
+        setMessages((prev) => prev.filter((msg) => msg.id !== id));
+      }
+    },
+    [inGlobalContext]
+  );
 
   // Toggle message visibility
   const toggleMessages = () => {
@@ -1610,27 +1659,52 @@ export default function Messages({ session, userWalletData, userHolderData }) {
   const canUseFonts = userRank !== null && userRank <= 500; // Example rank check
   const canUseAnimations = userRank !== null && userRank <= 100; // Example rank check
 
+  // Add this to apply compact styling
+  const containerClassName = compactMode
+    ? "messages-float compact-mode"
+    : "messages-float";
+
+  // If in compact mode, hide the fab button
+  const showFab = !compactMode && isMobile;
+
+  // If we're in global context, use the messages from context instead of fetching
+  const { messages: globalMessages } = inGlobalContext
+    ? useGlobalMessages()
+    : { messages: [] };
+  const messagesToDisplay = inGlobalContext ? globalMessages : messages;
+
+  // Skip all the Firebase fetching logic if in global context
+  useEffect(() => {
+    if (inGlobalContext) return; // Skip Firebase fetching if we're in global context
+
+    // Your existing Firebase fetching code...
+  }, [session, latestInitialTimestamp, isMounted, inGlobalContext]);
+
+  // In the return statement:
   return (
     <>
       {/* Messages Display Area */}
       <AnimatePresence>
-        {showMessages && (
+        {(showMessages || inGlobalContext) && (
           <motion.div
-            className="messages-float"
-            initial={{ opacity: 0 }}
+            className={containerClassName}
+            initial={inGlobalContext ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            exit={inGlobalContext ? false : { opacity: 0 }}
             transition={{ duration: 0.3 }}
           >
             <AnimatePresence mode="popLayout" initial={false}>
-              {[...messages].map((msg, index) => (
+              {messagesToDisplay.map((msg, index) => (
                 <Message
                   key={msg.id}
+                  id={`message-${msg.id}`} // Add this ID attribute
                   msg={msg}
                   userWalletData={userWalletData}
                   userRank={userRank}
-                  onDismiss={dismissMessage}
+                  onDismiss={dismissMessage} // Always pass the dismiss function
                   index={index}
+                  compactMode={compactMode}
+                  onShowArchive={inGlobalContext ? null : onShowArchive} // Only allow archive in standalone mode
                 />
               ))}
             </AnimatePresence>
@@ -1638,38 +1712,41 @@ export default function Messages({ session, userWalletData, userHolderData }) {
         )}
       </AnimatePresence>
 
-      {/* Connection Status Indicator */}
-      {connectionStatus !== "connected" && (
-        <div className="connection-status-indicator">
-          {connectionStatus === "connecting" && "Connecting..."}
-          {connectionStatus === "reconnecting" && "Reconnecting..."}
-          {connectionStatus === "disconnected" && (
-            <>
-              Disconnected.{" "}
-              <button onClick={retryConnection} className="retry-button">
-                Retry
-              </button>
-            </>
+      {/* Only render connection indicator and other UI when not in global context */}
+      {!inGlobalContext && (
+        <>
+          {/* Connection Status Indicator */}
+          {connectionStatus !== "connected" && (
+            <div className="connection-status-indicator">
+              {connectionStatus === "connecting" && "Connecting..."}
+              {connectionStatus === "reconnecting" && "Reconnecting..."}
+              {connectionStatus === "disconnected" && (
+                <>
+                  Disconnected.{" "}
+                  <button onClick={retryConnection} className="retry-button">
+                    Retry
+                  </button>
+                </>
+              )}
+            </div>
           )}
-        </div>
-      )}
 
-      {/* TODO: Add MessageArchive Modal display logic here */}
-      <AnimatePresence>
-        {showInput && session && (
-          <motion.div
-            className={`chat-input-overlay ${isMobile ? "mobile" : ""}`}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div className="chat-input-container">
-              <div className="chat-input-header">
-                <span>Send Message</span>
-                <div className="style-buttons">
-                  {/* <Tooltip text="Get AI style suggestions" position="bottom"> */}
-                  {/* <button
+          {/* TODO: Add MessageArchive Modal display logic here */}
+          <AnimatePresence>
+            {showInput && session && (
+              <motion.div
+                className={`chat-input-overlay ${isMobile ? "mobile" : ""}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="chat-input-container">
+                  <div className="chat-input-header">
+                    <span>Send Message</span>
+                    <div className="style-buttons">
+                      {/* <Tooltip text="Get AI style suggestions" position="bottom"> */}
+                      {/* <button
                       className="style-toggle-button suggestion-btn"
                       onClick={handleGetStyleSuggestions}
                       title="AI Style Suggestions"
@@ -1687,117 +1764,117 @@ export default function Messages({ session, userWalletData, userHolderData }) {
                       </svg>
                     </button>
                   </Tooltip> */}
-                  <Tooltip
-                    text="Ctrl+T: Change message style"
-                    position="bottom"
-                  >
-                    <button
-                      className="style-toggle-button"
-                      onClick={() => setShowStyleOptions(!showStyleOptions)}
-                      title="Message Style"
-                    >
-                      <MdFormatColorFill />
-                    </button>
-                  </Tooltip>
-                  <button
-                    className="style-toggle-button"
-                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                    title="Add Emoji"
-                  >
-                    <BsEmojiSmile />
-                  </button>
-                  <button
-                    onClick={() => setShowInput(false)}
-                    className="close-button"
-                  >
-                    ×
-                  </button>
-                </div>
-              </div>
-
-              {/* Input Form */}
-              <form onSubmit={sendMessage} className="chat-input-form">
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder={
-                    cooldown
-                      ? `Wait ${cooldownTime > 0 ? cooldownTime : 0}s...`
-                      : "Type your message..."
-                  }
-                  disabled={cooldown}
-                  className="chat-input"
-                  maxLength={100}
-                />
-
-                {/* Enhanced AI Style Suggestion Button */}
-                {message.trim().length > 0 && (
-                  <button
-                    type="button"
-                    className={`style-suggestion-btn ${
-                      isGeneratingSuggestions ? "generating" : ""
-                    }`}
-                    onClick={handleGetStyleSuggestions}
-                    title="Get AI style suggestions"
-                    disabled={
-                      isSubmitting || cooldown || isGeneratingSuggestions
-                    }
-                  >
-                    <span className="suggestion-btn-icon">
-                      {isGeneratingSuggestions ? (
-                        <div className="suggestion-spinner"></div>
-                      ) : (
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          width="18"
-                          height="18"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
+                      <Tooltip
+                        text="Ctrl+T: Change message style"
+                        position="bottom"
+                      >
+                        <button
+                          className="style-toggle-button"
+                          onClick={() => setShowStyleOptions(!showStyleOptions)}
+                          title="Message Style"
                         >
-                          <path d="M9 3.5V2M14.5 4L15.5 2.5M19 8l1.5-1M4 8l-1-1M7.5 14.5c0 1.5 1 4.5 5 4.5s5-3 5-4.5c0-2-2.5-2.5-2.5-5 0-1.5-1-2.5-2.5-2.5s-2.5 1-2.5 2.5c0 2.5-2.5 3-2.5 5z" />
-                        </svg>
-                      )}
-                    </span>
-                    <span className="suggestion-btn-text">
-                      {isGeneratingSuggestions ? "Analyzing..." : "Style"}
-                    </span>
-                  </button>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={!message.trim() || isSubmitting || cooldown}
-                  className="send-button"
-                >
-                  {isSubmitting ? "Sending..." : "Send"}
-                </button>
-              </form>
-
-              {/* User Rank Indicator */}
-              {userRank && (
-                <div className="user-rank-indicator">
-                  {userRank <= 500 ? (
-                    <div className="premium-user-badge">
-                      Premium Messaging Enabled (Rank: #{userRank})
+                          <MdFormatColorFill />
+                        </button>
+                      </Tooltip>
+                      <button
+                        className="style-toggle-button"
+                        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                        title="Add Emoji"
+                      >
+                        <BsEmojiSmile />
+                      </button>
+                      <button
+                        onClick={() => setShowInput(false)}
+                        className="close-button"
+                      >
+                        ×
+                      </button>
                     </div>
-                  ) : (
-                    <div className="standard-user-badge">
-                      Standard Messaging (Rank: #{userRank})
+                  </div>
+
+                  {/* Input Form */}
+                  <form onSubmit={sendMessage} className="chat-input-form">
+                    <input
+                      ref={inputRef}
+                      type="text"
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      placeholder={
+                        cooldown
+                          ? `Wait ${cooldownTime > 0 ? cooldownTime : 0}s...`
+                          : "Type your message..."
+                      }
+                      disabled={cooldown}
+                      className="chat-input"
+                      maxLength={100}
+                    />
+
+                    {/* Enhanced AI Style Suggestion Button */}
+                    {message.trim().length > 0 && (
+                      <button
+                        type="button"
+                        className={`style-suggestion-btn ${
+                          isGeneratingSuggestions ? "generating" : ""
+                        }`}
+                        onClick={handleGetStyleSuggestions}
+                        title="Get AI style suggestions"
+                        disabled={
+                          isSubmitting || cooldown || isGeneratingSuggestions
+                        }
+                      >
+                        <span className="suggestion-btn-icon">
+                          {isGeneratingSuggestions ? (
+                            <div className="suggestion-spinner"></div>
+                          ) : (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 24 24"
+                              width="18"
+                              height="18"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                            >
+                              <path d="M9 3.5V2M14.5 4L15.5 2.5M19 8l1.5-1M4 8l-1-1M7.5 14.5c0 1.5 1 4.5 5 4.5s5-3 5-4.5c0-2-2.5-2.5-2.5-5 0-1.5-1-2.5-2.5-2.5s-2.5 1-2.5 2.5c0 2.5-2.5 3-2.5 5z" />
+                            </svg>
+                          )}
+                        </span>
+                        <span className="suggestion-btn-text">
+                          {isGeneratingSuggestions ? "Analyzing..." : "Style"}
+                        </span>
+                      </button>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={!message.trim() || isSubmitting || cooldown}
+                      className="send-button"
+                    >
+                      {isSubmitting ? "Sending..." : "Send"}
+                    </button>
+                  </form>
+
+                  {/* User Rank Indicator */}
+                  {userRank && (
+                    <div className="user-rank-indicator">
+                      {userRank <= 500 ? (
+                        <div className="premium-user-badge">
+                          Premium Messaging Enabled (Rank: #{userRank})
+                        </div>
+                      ) : (
+                        <div className="standard-user-badge">
+                          Standard Messaging (Rank: #{userRank})
+                        </div>
+                      )}
                     </div>
                   )}
-                </div>
-              )}
 
-              {/* Style Options Panel */}
-              {showStyleOptions && (
-                <div className="style-options-dropdown">
-                  <div className="style-options-header">
-                    <div className="style-options-tabs">
-                      {/* <button
+                  {/* Style Options Panel */}
+                  {showStyleOptions && (
+                    <div className="style-options-dropdown">
+                      <div className="style-options-header">
+                        <div className="style-options-tabs">
+                          {/* <button
                         className={`style-tab ${
                           activeStyleTab === "suggestions" ? "active" : ""
                         }`}
@@ -1810,758 +1887,778 @@ export default function Messages({ session, userWalletData, userHolderData }) {
                       >
                         <span className="tab-icon">💡</span> Suggestions
                       </button> */}
-                      <button
-                        className={`style-tab ${
-                          activeStyleTab === "themes" ? "active" : ""
-                        }`}
-                        onClick={() => setActiveStyleTab("themes")}
-                      >
-                        Themes
-                      </button>
-                      {/* Other existing tabs */}
-                      <button
-                        className={`style-tab ${
-                          activeStyleTab === "fonts" ? "active" : ""
-                        }`}
-                        onClick={() =>
-                          canUseFonts && setActiveStyleTab("fonts")
-                        }
-                        title={
-                          !canUseFonts
-                            ? "Requires Top 500 Holder Status"
-                            : "Font Options"
-                        }
-                      >
-                        Fonts
-                      </button>
-                      <button
-                        className={`style-tab ${
-                          activeStyleTab === "animations" ? "active" : ""
-                        }`}
-                        onClick={() =>
-                          canUseAnimations && setActiveStyleTab("animations")
-                        }
-                        title={
-                          !canUseAnimations
-                            ? "Requires Top 100 Holder Status"
-                            : "Animation Options"
-                        }
-                      >
-                        Animations
-                      </button>
-                    </div>
+                          <button
+                            className={`style-tab ${
+                              activeStyleTab === "themes" ? "active" : ""
+                            }`}
+                            onClick={() => setActiveStyleTab("themes")}
+                          >
+                            Themes
+                          </button>
+                          {/* Other existing tabs */}
+                          <button
+                            className={`style-tab ${
+                              activeStyleTab === "fonts" ? "active" : ""
+                            }`}
+                            onClick={() =>
+                              canUseFonts && setActiveStyleTab("fonts")
+                            }
+                            title={
+                              !canUseFonts
+                                ? "Requires Top 500 Holder Status"
+                                : "Font Options"
+                            }
+                          >
+                            Fonts
+                          </button>
+                          <button
+                            className={`style-tab ${
+                              activeStyleTab === "animations" ? "active" : ""
+                            }`}
+                            onClick={() =>
+                              canUseAnimations &&
+                              setActiveStyleTab("animations")
+                            }
+                            title={
+                              !canUseAnimations
+                                ? "Requires Top 100 Holder Status"
+                                : "Animation Options"
+                            }
+                          >
+                            Animations
+                          </button>
+                        </div>
 
-                    {Object.keys(customStyle).length > 0 && (
-                      <button
-                        className="reset-all-styles"
-                        onClick={handleResetStyle}
-                        title="Reset all styles"
-                      >
-                        Reset All
-                      </button>
-                    )}
-                  </div>
+                        {Object.keys(customStyle).length > 0 && (
+                          <button
+                            className="reset-all-styles"
+                            onClick={handleResetStyle}
+                            title="Reset all styles"
+                          >
+                            Reset All
+                          </button>
+                        )}
+                      </div>
 
-                  {/* Themes Section */}
-                  {activeStyleTab === "themes" && (
-                    <>
-                      {!isEditingCustomTheme ? (
+                      {/* Themes Section */}
+                      {activeStyleTab === "themes" && (
                         <>
-                          <h4>Color Themes</h4>
-                          <div className="theme-grid">
-                            {MESSAGE_THEMES.map((theme, index) => (
-                              <div
-                                key={`preset-${index}`}
-                                className={`theme-option ${
-                                  customStyle.selectedThemeId ===
-                                  `preset-${theme.name}`
-                                    ? "selected"
-                                    : ""
-                                }`}
-                                style={{
-                                  background: theme.gradient || theme.bgColor,
-                                  color: theme.textColor,
-                                }}
-                                onClick={() => handleSelectTheme(theme)}
-                              >
-                                <span className="theme-name">{theme.name}</span>
+                          {!isEditingCustomTheme ? (
+                            <>
+                              <h4>Color Themes</h4>
+                              <div className="theme-grid">
+                                {MESSAGE_THEMES.map((theme, index) => (
+                                  <div
+                                    key={`preset-${index}`}
+                                    className={`theme-option ${
+                                      customStyle.selectedThemeId ===
+                                      `preset-${theme.name}`
+                                        ? "selected"
+                                        : ""
+                                    }`}
+                                    style={{
+                                      background:
+                                        theme.gradient || theme.bgColor,
+                                      color: theme.textColor,
+                                    }}
+                                    onClick={() => handleSelectTheme(theme)}
+                                  >
+                                    <span className="theme-name">
+                                      {theme.name}
+                                    </span>
+                                    <button
+                                      className="edit-theme-btn"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openThemeEditor(theme);
+                                      }}
+                                      title="Customize theme"
+                                    >
+                                      <MdModeEdit />
+                                    </button>
+                                  </div>
+                                ))}
+
+                                {/* Custom themes */}
+                                {customThemes.map((theme) => (
+                                  <div
+                                    key={`custom-${theme.id}`}
+                                    className={`theme-option custom-theme ${
+                                      customStyle.selectedThemeId === theme.id
+                                        ? "selected"
+                                        : ""
+                                    }`}
+                                    style={{
+                                      background:
+                                        theme.gradient || theme.bgColor,
+                                      color: theme.textColor,
+                                    }}
+                                    onClick={() => handleSelectTheme(theme)}
+                                  >
+                                    <button
+                                      className="delete-theme-btn"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        deleteCustomTheme(theme.id);
+                                      }}
+                                      title="Delete theme"
+                                    >
+                                      <IoTrashOutline />
+                                    </button>
+
+                                    <span className="theme-name">
+                                      {theme.name}
+                                    </span>
+
+                                    <button
+                                      className="edit-theme-btn"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openThemeEditor(theme);
+                                      }}
+                                      title="Customize theme"
+                                    >
+                                      <MdModeEdit />
+                                    </button>
+                                  </div>
+                                ))}
+
+                                {/* Add button for creating new theme */}
                                 <button
-                                  className="edit-theme-btn"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    openThemeEditor(theme);
-                                  }}
-                                  title="Customize theme"
+                                  className="create-theme-btn"
+                                  onClick={() => openThemeEditor()}
+                                  title="Create custom theme"
                                 >
-                                  <MdModeEdit />
+                                  <IoAddCircleOutline />
+                                  <span>Create Theme</span>
                                 </button>
                               </div>
-                            ))}
+                            </>
+                          ) : (
+                            <div className="custom-theme-editor">
+                              <h4>
+                                {editingThemeId
+                                  ? "Customize Theme"
+                                  : "Create Custom Theme"}
+                              </h4>
 
-                            {/* Custom themes */}
-                            {customThemes.map((theme) => (
-                              <div
-                                key={`custom-${theme.id}`}
-                                className={`theme-option custom-theme ${
-                                  customStyle.selectedThemeId === theme.id
-                                    ? "selected"
-                                    : ""
-                                }`}
-                                style={{
-                                  background: theme.gradient || theme.bgColor,
-                                  color: theme.textColor,
-                                }}
-                                onClick={() => handleSelectTheme(theme)}
-                              >
-                                <button
-                                  className="delete-theme-btn"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    deleteCustomTheme(theme.id);
-                                  }}
-                                  title="Delete theme"
-                                >
-                                  <IoTrashOutline />
-                                </button>
-
-                                <span className="theme-name">{theme.name}</span>
-
-                                <button
-                                  className="edit-theme-btn"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    openThemeEditor(theme);
-                                  }}
-                                  title="Customize theme"
-                                >
-                                  <MdModeEdit />
-                                </button>
-                              </div>
-                            ))}
-
-                            {/* Add button for creating new theme */}
-                            <button
-                              className="create-theme-btn"
-                              onClick={() => openThemeEditor()}
-                              title="Create custom theme"
-                            >
-                              <IoAddCircleOutline />
-                              <span>Create Theme</span>
-                            </button>
-                          </div>
-                        </>
-                      ) : (
-                        <div className="custom-theme-editor">
-                          <h4>
-                            {editingThemeId
-                              ? "Customize Theme"
-                              : "Create Custom Theme"}
-                          </h4>
-
-                          {editingThemeId && (
-                            <p className="theme-editor-description">
-                              You're creating a copy of an existing theme. The
-                              original theme will not be modified.
-                            </p>
-                          )}
-
-                          <div className="theme-editor-form">
-                            <div className="theme-name-input">
-                              <label>Theme Name</label>
-                              <input
-                                type="text"
-                                value={customThemeColors.name}
-                                onChange={(e) =>
-                                  updateCustomThemeColors({
-                                    ...customThemeColors,
-                                    name: e.target.value,
-                                  })
-                                }
-                                placeholder="My Theme"
-                                maxLength={20}
-                              />
-                            </div>
-
-                            <div className="custom-theme-form">
-                              <label>
-                                Text Color:
-                                <ColorPicker
-                                  color={customThemeColors.textColor}
-                                  onChange={(color) =>
-                                    updateCustomThemeColors({
-                                      ...customThemeColors,
-                                      textColor: color,
-                                    })
-                                  }
-                                />
-                              </label>
-
-                              <label>
-                                Use Gradient:
-                                <input
-                                  type="checkbox"
-                                  checked={customThemeColors.useGradient}
-                                  onChange={() =>
-                                    updateCustomThemeColors({
-                                      ...customThemeColors,
-                                      useGradient:
-                                        !customThemeColors.useGradient,
-                                    })
-                                  }
-                                />
-                              </label>
-
-                              {customThemeColors.useGradient ? (
-                                <>
-                                  <label>
-                                    Gradient Start:
-                                    <ColorPicker
-                                      color={customThemeColors.gradientStart}
-                                      onChange={(color) =>
-                                        updateCustomThemeColors({
-                                          ...customThemeColors,
-                                          gradientStart: color,
-                                        })
-                                      }
-                                    />
-                                  </label>
-                                  <label>
-                                    Gradient End:
-                                    <ColorPicker
-                                      color={customThemeColors.gradientEnd}
-                                      onChange={(color) =>
-                                        updateCustomThemeColors({
-                                          ...customThemeColors,
-                                          gradientEnd: color,
-                                        })
-                                      }
-                                    />
-                                  </label>
-                                </>
-                              ) : (
-                                <label>
-                                  Background Color:
-                                  <ColorPicker
-                                    color={customThemeColors.bgColor}
-                                    onChange={(color) =>
-                                      updateCustomThemeColors({
-                                        ...customThemeColors,
-                                        bgColor: color,
-                                      })
-                                    }
-                                  />
-                                </label>
+                              {editingThemeId && (
+                                <p className="theme-editor-description">
+                                  You're creating a copy of an existing theme.
+                                  The original theme will not be modified.
+                                </p>
                               )}
 
-                              <div className="custom-theme-buttons">
-                                <button onClick={saveCustomTheme}>
-                                  <IoSaveOutline /> Save Theme
-                                </button>
-                                <button onClick={cancelThemeEditing}>
-                                  Cancel
-                                </button>
+                              <div className="theme-editor-form">
+                                <div className="theme-name-input">
+                                  <label>Theme Name</label>
+                                  <input
+                                    type="text"
+                                    value={customThemeColors.name}
+                                    onChange={(e) =>
+                                      updateCustomThemeColors({
+                                        ...customThemeColors,
+                                        name: e.target.value,
+                                      })
+                                    }
+                                    placeholder="My Theme"
+                                    maxLength={20}
+                                  />
+                                </div>
+
+                                <div className="custom-theme-form">
+                                  <label>
+                                    Text Color:
+                                    <ColorPicker
+                                      color={customThemeColors.textColor}
+                                      onChange={(color) =>
+                                        updateCustomThemeColors({
+                                          ...customThemeColors,
+                                          textColor: color,
+                                        })
+                                      }
+                                    />
+                                  </label>
+
+                                  <label>
+                                    Use Gradient:
+                                    <input
+                                      type="checkbox"
+                                      checked={customThemeColors.useGradient}
+                                      onChange={() =>
+                                        updateCustomThemeColors({
+                                          ...customThemeColors,
+                                          useGradient:
+                                            !customThemeColors.useGradient,
+                                        })
+                                      }
+                                    />
+                                  </label>
+
+                                  {customThemeColors.useGradient ? (
+                                    <>
+                                      <label>
+                                        Gradient Start:
+                                        <ColorPicker
+                                          color={
+                                            customThemeColors.gradientStart
+                                          }
+                                          onChange={(color) =>
+                                            updateCustomThemeColors({
+                                              ...customThemeColors,
+                                              gradientStart: color,
+                                            })
+                                          }
+                                        />
+                                      </label>
+                                      <label>
+                                        Gradient End:
+                                        <ColorPicker
+                                          color={customThemeColors.gradientEnd}
+                                          onChange={(color) =>
+                                            updateCustomThemeColors({
+                                              ...customThemeColors,
+                                              gradientEnd: color,
+                                            })
+                                          }
+                                        />
+                                      </label>
+                                    </>
+                                  ) : (
+                                    <label>
+                                      Background Color:
+                                      <ColorPicker
+                                        color={customThemeColors.bgColor}
+                                        onChange={(color) =>
+                                          updateCustomThemeColors({
+                                            ...customThemeColors,
+                                            bgColor: color,
+                                          })
+                                        }
+                                      />
+                                    </label>
+                                  )}
+
+                                  <div className="custom-theme-buttons">
+                                    <button onClick={saveCustomTheme}>
+                                      <IoSaveOutline /> Save Theme
+                                    </button>
+                                    <button onClick={cancelThemeEditing}>
+                                      Cancel
+                                    </button>
+                                  </div>
+                                </div>
                               </div>
                             </div>
+                          )}
+                        </>
+                      )}
+
+                      {/* Fonts Section */}
+                      {activeStyleTab === "fonts" && canUseFonts && (
+                        <div className="premium-options">
+                          <h4>Premium Font Style (Top 500 Holder)</h4>
+                          <div className="font-selector">
+                            <select
+                              value={customStyle.fontFamily || "inherit"}
+                              onChange={(e) =>
+                                setCustomStyle((prev) => ({
+                                  ...prev,
+                                  fontFamily: e.target.value,
+                                }))
+                              }
+                              className="font-select-dropdown"
+                            >
+                              {PREMIUM_FONTS.map((font) => (
+                                <option
+                                  key={font.value}
+                                  value={font.value}
+                                  style={{ fontFamily: font.value }}
+                                >
+                                  {font.name}
+                                </option>
+                              ))}
+                            </select>
+
+                            <div className="font-style-options">
+                              <label>
+                                <input
+                                  type="checkbox"
+                                  checked={customStyle.fontWeight === "bold"}
+                                  onChange={() =>
+                                    setCustomStyle((prev) => ({
+                                      ...prev,
+                                      fontWeight:
+                                        prev.fontWeight === "bold"
+                                          ? "normal"
+                                          : "bold",
+                                    }))
+                                  }
+                                />
+                                Bold
+                              </label>
+
+                              <label>
+                                <input
+                                  type="checkbox"
+                                  checked={customStyle.fontStyle === "italic"}
+                                  onChange={() =>
+                                    setCustomStyle((prev) => ({
+                                      ...prev,
+                                      fontStyle:
+                                        prev.fontStyle === "italic"
+                                          ? "normal"
+                                          : "italic",
+                                    }))
+                                  }
+                                />
+                                Italic
+                              </label>
+                            </div>
+
+                            <div className="font-size-selector">
+                              <label
+                                style={{
+                                  color: "#ffffff",
+                                }}
+                              >
+                                Font Size:
+                              </label>
+                              <select
+                                value={customStyle.fontSize || "inherit"}
+                                onChange={(e) =>
+                                  setCustomStyle((prev) => ({
+                                    ...prev,
+                                    fontSize: e.target.value,
+                                  }))
+                                }
+                                className="font-select-dropdown"
+                              >
+                                {FONT_SIZES.map((size) => (
+                                  <option key={size.value} value={size.value}>
+                                    {size.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
                           </div>
+
+                          {/* Add the UI component */}
+                          <div className="font-presets">
+                            <h4>Font Presets</h4>
+                            <div className="preset-buttons">
+                              {FONT_PRESETS.map((preset) => (
+                                <button
+                                  key={preset.name}
+                                  className="font-preset-button"
+                                  style={{ fontFamily: preset.fontFamily }}
+                                  onClick={() =>
+                                    setCustomStyle((prev) => ({
+                                      ...prev,
+                                      fontFamily: preset.fontFamily,
+                                      fontWeight: preset.fontWeight || "normal",
+                                      fontStyle: preset.fontStyle || "normal",
+                                      fontSize: preset.fontSize || "inherit",
+                                    }))
+                                  }
+                                >
+                                  {preset.name}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Animations Section */}
+                      {activeStyleTab === "animations" && canUseAnimations && (
+                        <div className="premium-options elite-options">
+                          <h4>Premium Animations (Top 100 Holder)</h4>
+                          <div className="animation-selector">
+                            {PREMIUM_ANIMATIONS.map((animation) => (
+                              <div
+                                key={animation.value || "none"}
+                                className={`animation-option ${
+                                  customStyle.animationType === animation.value
+                                    ? "selected"
+                                    : ""
+                                }`}
+                                onClick={() =>
+                                  setCustomStyle((prev) => {
+                                    // Clear animation if "None" is selected
+                                    if (animation.value === null) {
+                                      const newStyle = { ...prev };
+                                      delete newStyle.animationType;
+                                      return newStyle;
+                                    }
+                                    return {
+                                      ...prev,
+                                      animationType: animation.value,
+                                    };
+                                  })
+                                }
+                              >
+                                {animation.name}
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="premium-options elite-options">
+                            <h4>Premium Text Effects (Top 100 Holder)</h4>
+                            <div className="effect-selector">
+                              {TEXT_EFFECTS.map((effect) => (
+                                <div
+                                  key={effect.value || "none"}
+                                  className={`effect-option ${
+                                    customStyle.textEffect === effect.value
+                                      ? "selected"
+                                      : ""
+                                  }`}
+                                  onClick={() =>
+                                    setCustomStyle((prev) => ({
+                                      ...prev,
+                                      textEffect: effect.value,
+                                    }))
+                                  }
+                                >
+                                  {effect.name}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Suggestions Section */}
+                      {activeStyleTab === "suggestions" && (
+                        <div className="style-suggestions-tab">
+                          <h4>AI Style Recommendations</h4>
+
+                          {isGeneratingSuggestions ? (
+                            <div className="suggestions-loading">
+                              <div className="suggestions-spinner"></div>
+                              <p>
+                                Analyzing your message and generating
+                                personalized style suggestions...
+                              </p>
+                            </div>
+                          ) : (
+                            <>
+                              {message.trim() === "" ? (
+                                <div className="suggestions-placeholder">
+                                  <p>
+                                    Type a message to get AI style suggestions
+                                  </p>
+                                  <small>
+                                    The AI will analyze your message content and
+                                    suggest matching styles
+                                  </small>
+                                </div>
+                              ) : (
+                                <>
+                                  {styleSuggestions.length > 0 ? (
+                                    <>
+                                      <div className="suggestions-header-info">
+                                        <p>
+                                          AI generated {styleSuggestions.length}{" "}
+                                          style suggestions for your message
+                                        </p>
+                                      </div>
+
+                                      <div className="style-suggestions-grid">
+                                        {styleSuggestions.map(
+                                          (suggestion, index) => (
+                                            <div
+                                              key={`suggestion-${index}`}
+                                              className={`style-suggestion-card ${
+                                                suggestion.isGenerated
+                                                  ? "generated-suggestion"
+                                                  : ""
+                                              }`}
+                                              onClick={() => {
+                                                // Apply the style
+                                                setCustomStyle({
+                                                  ...customStyle,
+                                                  ...suggestion.style,
+                                                });
+
+                                                // Show success animation
+                                                const card =
+                                                  document.querySelector(
+                                                    `[data-suggestion-id="${index}"]`
+                                                  );
+                                                if (card) {
+                                                  card.classList.add(
+                                                    "suggestion-applied"
+                                                  );
+                                                  setTimeout(() => {
+                                                    card.classList.remove(
+                                                      "suggestion-applied"
+                                                    );
+                                                  }, 1000);
+                                                }
+
+                                                // Show toast message
+                                                showToast(
+                                                  `Applied "${suggestion.name}" style`,
+                                                  "success"
+                                                );
+                                              }}
+                                              data-suggestion-id={index}
+                                            >
+                                              {suggestion.isGenerated && (
+                                                <div className="generated-tag">
+                                                  <span className="generated-icon">
+                                                    ✨
+                                                  </span>{" "}
+                                                  Generated Now
+                                                </div>
+                                              )}
+
+                                              <div className="suggestion-match-score">
+                                                <span className="match-label">
+                                                  Match
+                                                </span>
+                                                <div className="match-meter">
+                                                  <div
+                                                    className={`match-fill ${getMatchScoreClass(
+                                                      suggestion.matchScore
+                                                    )}`}
+                                                    style={{
+                                                      width: `${
+                                                        suggestion.matchScore
+                                                          ? Math.round(
+                                                              suggestion.matchScore *
+                                                                100
+                                                            )
+                                                          : 80
+                                                      }%`,
+                                                    }}
+                                                  ></div>
+                                                </div>
+                                                <span className="match-percentage">
+                                                  {formatMatchPercentage(
+                                                    suggestion.matchScore
+                                                  )}
+                                                </span>
+                                              </div>
+
+                                              <MessagePreview
+                                                style={suggestion.style}
+                                                username={
+                                                  session?.user?.name || "you"
+                                                }
+                                                text={
+                                                  message ||
+                                                  suggestion.previewText
+                                                }
+                                                userImage={
+                                                  userWalletData?.profileImage ||
+                                                  session?.user?.image
+                                                }
+                                              />
+
+                                              <div className="suggestion-card-info">
+                                                <h5>{suggestion.name}</h5>
+                                                <p>{suggestion.description}</p>
+                                                {suggestion.basedOn && (
+                                                  <span className="suggestion-tag">
+                                                    Based on:{" "}
+                                                    {suggestion.basedOn}
+                                                  </span>
+                                                )}
+                                              </div>
+                                            </div>
+                                          )
+                                        )}
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <div className="no-suggestions">
+                                      <p>
+                                        No style suggestions available for this
+                                        message
+                                      </p>
+                                      <small>
+                                        Try entering a different message or
+                                        using the basic themes
+                                      </small>
+                                    </div>
+                                  )}
+                                </>
+                              )}
+
+                              <div className="suggestions-actions">
+                                <button
+                                  className="refresh-suggestions-btn"
+                                  onClick={handleGetStyleSuggestions}
+                                  disabled={
+                                    isGeneratingSuggestions ||
+                                    message.trim() === ""
+                                  }
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                  >
+                                    <path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16" />
+                                  </svg>
+                                  Refresh Suggestions
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Message Preview */}
+                      <div className="message-preview-wrapper">
+                        <h4 className="preview-title">Live Preview</h4>
+                        <MessagePreview
+                          style={
+                            isEditingCustomTheme &&
+                            Object.keys(previewStyle).length > 0
+                              ? previewStyle
+                              : customStyle
+                          }
+                          username={session?.user?.name}
+                          text={message || "This is how your message will look"}
+                          userImage={
+                            userWalletData?.profileImage ||
+                            session?.user?.image ||
+                            "/default-avatar.png"
+                          }
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Fix for the handleSelectEmoji function */}
+                  {/* Update the Emoji picker handler */}
+                  {showEmojiPicker && isMounted && (
+                    <>
+                      {isMobile ? (
+                        <div className="mobile-emoji-picker-wrapper">
+                          <div
+                            className="emoji-picker-backdrop"
+                            onClick={() => setShowEmojiPicker(false)}
+                          ></div>
+                          <div className="mobile-emoji-picker-container">
+                            <div className="mobile-emoji-picker-header">
+                              <h4>Select Emoji</h4>
+                              <button
+                                onClick={() => setShowEmojiPicker(false)}
+                                className="close-button"
+                              >
+                                ×
+                              </button>
+                            </div>
+                            <SimpleMobileEmojiPicker
+                              onSelect={(emoji) => {
+                                setCustomStyle((prev) => ({
+                                  ...prev,
+                                  sticker: emoji,
+                                }));
+                                setShowEmojiPicker(false);
+                              }}
+                              onClose={() => setShowEmojiPicker(false)}
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="desktop-emoji-picker-wrapper">
+                          <DraggableComponent
+                            initialPosition={{
+                              x: isMounted
+                                ? Math.min(
+                                    window.innerWidth - 350,
+                                    Math.max(20, window.innerWidth / 2 - 160)
+                                  )
+                                : 0,
+                              y: 50,
+                            }}
+                            onClose={() => setShowEmojiPicker(false)}
+                          >
+                            <SimpleEmojiPicker
+                              onSelect={(emoji) => {
+                                if (isMounted) triggerHapticFeedback();
+                                setCustomStyle((prev) => ({
+                                  ...prev,
+                                  sticker: emoji,
+                                }));
+                                setShowEmojiPicker(false);
+                              }}
+                              onClose={() => setShowEmojiPicker(false)}
+                            />
+                          </DraggableComponent>
                         </div>
                       )}
                     </>
                   )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-                  {/* Fonts Section */}
-                  {activeStyleTab === "fonts" && canUseFonts && (
-                    <div className="premium-options">
-                      <h4>Premium Font Style (Top 500 Holder)</h4>
-                      <div className="font-selector">
-                        <select
-                          value={customStyle.fontFamily || "inherit"}
-                          onChange={(e) =>
-                            setCustomStyle((prev) => ({
-                              ...prev,
-                              fontFamily: e.target.value,
-                            }))
-                          }
-                          className="font-select-dropdown"
-                        >
-                          {PREMIUM_FONTS.map((font) => (
-                            <option
-                              key={font.value}
-                              value={font.value}
-                              style={{ fontFamily: font.value }}
-                            >
-                              {font.name}
-                            </option>
-                          ))}
-                        </select>
-
-                        <div className="font-style-options">
-                          <label>
-                            <input
-                              type="checkbox"
-                              checked={customStyle.fontWeight === "bold"}
-                              onChange={() =>
-                                setCustomStyle((prev) => ({
-                                  ...prev,
-                                  fontWeight:
-                                    prev.fontWeight === "bold"
-                                      ? "normal"
-                                      : "bold",
-                                }))
-                              }
-                            />
-                            Bold
-                          </label>
-
-                          <label>
-                            <input
-                              type="checkbox"
-                              checked={customStyle.fontStyle === "italic"}
-                              onChange={() =>
-                                setCustomStyle((prev) => ({
-                                  ...prev,
-                                  fontStyle:
-                                    prev.fontStyle === "italic"
-                                      ? "normal"
-                                      : "italic",
-                                }))
-                              }
-                            />
-                            Italic
-                          </label>
-                        </div>
-
-                        <div className="font-size-selector">
-                          <label
-                            style={{
-                              color: "#ffffff",
-                            }}
-                          >
-                            Font Size:
-                          </label>
-                          <select
-                            value={customStyle.fontSize || "inherit"}
-                            onChange={(e) =>
-                              setCustomStyle((prev) => ({
-                                ...prev,
-                                fontSize: e.target.value,
-                              }))
-                            }
-                            className="font-select-dropdown"
-                          >
-                            {FONT_SIZES.map((size) => (
-                              <option key={size.value} value={size.value}>
-                                {size.name}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-
-                      {/* Add the UI component */}
-                      <div className="font-presets">
-                        <h4>Font Presets</h4>
-                        <div className="preset-buttons">
-                          {FONT_PRESETS.map((preset) => (
-                            <button
-                              key={preset.name}
-                              className="font-preset-button"
-                              style={{ fontFamily: preset.fontFamily }}
-                              onClick={() =>
-                                setCustomStyle((prev) => ({
-                                  ...prev,
-                                  fontFamily: preset.fontFamily,
-                                  fontWeight: preset.fontWeight || "normal",
-                                  fontStyle: preset.fontStyle || "normal",
-                                  fontSize: preset.fontSize || "inherit",
-                                }))
-                              }
-                            >
-                              {preset.name}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
+          {/* Onboarding Modal */}
+          {showOnboarding && (
+            <div className="onboarding-overlay">
+              <div className="onboarding-modal">
+                <h3>Welcome to Chat!</h3>
+                <div className="onboarding-steps">
+                  <div className="onboarding-step">
+                    <div className="step-number">1</div>
+                    <div className="step-content">
+                      <h4>Send Messages</h4>
+                      <p>Press Ctrl+M anytime to open this chat window</p>
                     </div>
-                  )}
-
-                  {/* Animations Section */}
-                  {activeStyleTab === "animations" && canUseAnimations && (
-                    <div className="premium-options elite-options">
-                      <h4>Premium Animations (Top 100 Holder)</h4>
-                      <div className="animation-selector">
-                        {PREMIUM_ANIMATIONS.map((animation) => (
-                          <div
-                            key={animation.value || "none"}
-                            className={`animation-option ${
-                              customStyle.animationType === animation.value
-                                ? "selected"
-                                : ""
-                            }`}
-                            onClick={() =>
-                              setCustomStyle((prev) => {
-                                // Clear animation if "None" is selected
-                                if (animation.value === null) {
-                                  const newStyle = { ...prev };
-                                  delete newStyle.animationType;
-                                  return newStyle;
-                                }
-                                return {
-                                  ...prev,
-                                  animationType: animation.value,
-                                };
-                              })
-                            }
-                          >
-                            {animation.name}
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="premium-options elite-options">
-                        <h4>Premium Text Effects (Top 100 Holder)</h4>
-                        <div className="effect-selector">
-                          {TEXT_EFFECTS.map((effect) => (
-                            <div
-                              key={effect.value || "none"}
-                              className={`effect-option ${
-                                customStyle.textEffect === effect.value
-                                  ? "selected"
-                                  : ""
-                              }`}
-                              onClick={() =>
-                                setCustomStyle((prev) => ({
-                                  ...prev,
-                                  textEffect: effect.value,
-                                }))
-                              }
-                            >
-                              {effect.name}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+                  </div>
+                  <div className="onboarding-step">
+                    <div className="step-number">2</div>
+                    <div className="step-content">
+                      <h4>Style Your Messages</h4>
+                      <p>
+                        Premium users can customize fonts, colors and add
+                        effects
+                      </p>
                     </div>
-                  )}
-
-                  {/* Suggestions Section */}
-                  {activeStyleTab === "suggestions" && (
-                    <div className="style-suggestions-tab">
-                      <h4>AI Style Recommendations</h4>
-
-                      {isGeneratingSuggestions ? (
-                        <div className="suggestions-loading">
-                          <div className="suggestions-spinner"></div>
-                          <p>
-                            Analyzing your message and generating personalized
-                            style suggestions...
-                          </p>
-                        </div>
-                      ) : (
-                        <>
-                          {message.trim() === "" ? (
-                            <div className="suggestions-placeholder">
-                              <p>Type a message to get AI style suggestions</p>
-                              <small>
-                                The AI will analyze your message content and
-                                suggest matching styles
-                              </small>
-                            </div>
-                          ) : (
-                            <>
-                              {styleSuggestions.length > 0 ? (
-                                <>
-                                  <div className="suggestions-header-info">
-                                    <p>
-                                      AI generated {styleSuggestions.length}{" "}
-                                      style suggestions for your message
-                                    </p>
-                                  </div>
-
-                                  <div className="style-suggestions-grid">
-                                    {styleSuggestions.map(
-                                      (suggestion, index) => (
-                                        <div
-                                          key={`suggestion-${index}`}
-                                          className={`style-suggestion-card ${
-                                            suggestion.isGenerated
-                                              ? "generated-suggestion"
-                                              : ""
-                                          }`}
-                                          onClick={() => {
-                                            // Apply the style
-                                            setCustomStyle({
-                                              ...customStyle,
-                                              ...suggestion.style,
-                                            });
-
-                                            // Show success animation
-                                            const card = document.querySelector(
-                                              `[data-suggestion-id="${index}"]`
-                                            );
-                                            if (card) {
-                                              card.classList.add(
-                                                "suggestion-applied"
-                                              );
-                                              setTimeout(() => {
-                                                card.classList.remove(
-                                                  "suggestion-applied"
-                                                );
-                                              }, 1000);
-                                            }
-
-                                            // Show toast message
-                                            showToast(
-                                              `Applied "${suggestion.name}" style`,
-                                              "success"
-                                            );
-                                          }}
-                                          data-suggestion-id={index}
-                                        >
-                                          {suggestion.isGenerated && (
-                                            <div className="generated-tag">
-                                              <span className="generated-icon">
-                                                ✨
-                                              </span>{" "}
-                                              Generated Now
-                                            </div>
-                                          )}
-
-                                          <div className="suggestion-match-score">
-                                            <span className="match-label">
-                                              Match
-                                            </span>
-                                            <div className="match-meter">
-                                              <div
-                                                className={`match-fill ${getMatchScoreClass(
-                                                  suggestion.matchScore
-                                                )}`}
-                                                style={{
-                                                  width: `${
-                                                    suggestion.matchScore
-                                                      ? Math.round(
-                                                          suggestion.matchScore *
-                                                            100
-                                                        )
-                                                      : 80
-                                                  }%`,
-                                                }}
-                                              ></div>
-                                            </div>
-                                            <span className="match-percentage">
-                                              {formatMatchPercentage(
-                                                suggestion.matchScore
-                                              )}
-                                            </span>
-                                          </div>
-
-                                          <MessagePreview
-                                            style={suggestion.style}
-                                            username={
-                                              session?.user?.name || "you"
-                                            }
-                                            text={
-                                              message || suggestion.previewText
-                                            }
-                                            userImage={
-                                              userWalletData?.profileImage ||
-                                              session?.user?.image
-                                            }
-                                          />
-
-                                          <div className="suggestion-card-info">
-                                            <h5>{suggestion.name}</h5>
-                                            <p>{suggestion.description}</p>
-                                            {suggestion.basedOn && (
-                                              <span className="suggestion-tag">
-                                                Based on: {suggestion.basedOn}
-                                              </span>
-                                            )}
-                                          </div>
-                                        </div>
-                                      )
-                                    )}
-                                  </div>
-                                </>
-                              ) : (
-                                <div className="no-suggestions">
-                                  <p>
-                                    No style suggestions available for this
-                                    message
-                                  </p>
-                                  <small>
-                                    Try entering a different message or using
-                                    the basic themes
-                                  </small>
-                                </div>
-                              )}
-                            </>
-                          )}
-
-                          <div className="suggestions-actions">
-                            <button
-                              className="refresh-suggestions-btn"
-                              onClick={handleGetStyleSuggestions}
-                              disabled={
-                                isGeneratingSuggestions || message.trim() === ""
-                              }
-                            >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="16"
-                                height="16"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                              >
-                                <path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16" />
-                              </svg>
-                              Refresh Suggestions
-                            </button>
-                          </div>
-                        </>
-                      )}
+                  </div>
+                  <div className="onboarding-step">
+                    <div className="step-number">3</div>
+                    <div className="step-content">
+                      <h4>Add Stickers</h4>
+                      <p>
+                        Click the emoji button to add stickers to your messages
+                      </p>
                     </div>
-                  )}
-
-                  {/* Message Preview */}
-                  <div className="message-preview-wrapper">
-                    <h4 className="preview-title">Live Preview</h4>
-                    <MessagePreview
-                      style={
-                        isEditingCustomTheme &&
-                        Object.keys(previewStyle).length > 0
-                          ? previewStyle
-                          : customStyle
-                      }
-                      username={session?.user?.name}
-                      text={message || "This is how your message will look"}
-                      userImage={
-                        userWalletData?.profileImage ||
-                        session?.user?.image ||
-                        "/default-avatar.png"
-                      }
-                    />
                   </div>
                 </div>
-              )}
-
-              {/* Fix for the handleSelectEmoji function */}
-              {/* Update the Emoji picker handler */}
-              {showEmojiPicker && isMounted && (
-                <>
-                  {isMobile ? (
-                    <div className="mobile-emoji-picker-wrapper">
-                      <div
-                        className="emoji-picker-backdrop"
-                        onClick={() => setShowEmojiPicker(false)}
-                      ></div>
-                      <div className="mobile-emoji-picker-container">
-                        <div className="mobile-emoji-picker-header">
-                          <h4>Select Emoji</h4>
-                          <button
-                            onClick={() => setShowEmojiPicker(false)}
-                            className="close-button"
-                          >
-                            ×
-                          </button>
-                        </div>
-                        <SimpleMobileEmojiPicker
-                          onSelect={(emoji) => {
-                            setCustomStyle((prev) => ({
-                              ...prev,
-                              sticker: emoji,
-                            }));
-                            setShowEmojiPicker(false);
-                          }}
-                          onClose={() => setShowEmojiPicker(false)}
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="desktop-emoji-picker-wrapper">
-                      <DraggableComponent
-                        initialPosition={{
-                          x: isMounted
-                            ? Math.min(
-                                window.innerWidth - 350,
-                                Math.max(20, window.innerWidth / 2 - 160)
-                              )
-                            : 0,
-                          y: 50,
-                        }}
-                        onClose={() => setShowEmojiPicker(false)}
-                      >
-                        <SimpleEmojiPicker
-                          onSelect={(emoji) => {
-                            if (isMounted) triggerHapticFeedback();
-                            setCustomStyle((prev) => ({
-                              ...prev,
-                              sticker: emoji,
-                            }));
-                            setShowEmojiPicker(false);
-                          }}
-                          onClose={() => setShowEmojiPicker(false)}
-                        />
-                      </DraggableComponent>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Onboarding Modal */}
-      {showOnboarding && (
-        <div className="onboarding-overlay">
-          <div className="onboarding-modal">
-            <h3>Welcome to Chat!</h3>
-            <div className="onboarding-steps">
-              <div className="onboarding-step">
-                <div className="step-number">1</div>
-                <div className="step-content">
-                  <h4>Send Messages</h4>
-                  <p>Press Ctrl+M anytime to open this chat window</p>
-                </div>
-              </div>
-              <div className="onboarding-step">
-                <div className="step-number">2</div>
-                <div className="step-content">
-                  <h4>Style Your Messages</h4>
-                  <p>
-                    Premium users can customize fonts, colors and add effects
-                  </p>
-                </div>
-              </div>
-              <div className="onboarding-step">
-                <div className="step-number">3</div>
-                <div className="step-content">
-                  <h4>Add Stickers</h4>
-                  <p>Click the emoji button to add stickers to your messages</p>
-                </div>
+                <button
+                  className="onboarding-close-btn"
+                  onClick={completeOnboarding}
+                >
+                  Got it!
+                </button>
               </div>
             </div>
-            <button
-              className="onboarding-close-btn"
-              onClick={completeOnboarding}
-            >
-              Got it!
-            </button>
-          </div>
-        </div>
-      )}
+          )}
 
-      {isMobile && (
-        <ChatFab
-          onClick={toggleInput}
-          showInput={showInput}
-          messageCount={newMessageCount}
-          onToggleMessages={toggleMessages}
-          showMessages={showMessages}
-          hasMessages={messages.length > 0}
-        />
+          {showFab && (
+            <ChatFab
+              onClick={toggleInput}
+              showInput={showInput}
+              messageCount={newMessageCount}
+              onToggleMessages={toggleMessages}
+              showMessages={showMessages}
+              hasMessages={messages.length > 0}
+            />
+          )}
+        </>
       )}
     </>
   );

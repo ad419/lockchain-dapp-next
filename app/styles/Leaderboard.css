@@ -20,6 +20,7 @@
   width: 100%;
   margin-left: 0;
   transition: all 0.3s ease;
+  overflow-x: hidden;
 }
 
 .leaderboard-container {
@@ -1327,12 +1328,13 @@
   background: linear-gradient(to right, rgba(29, 29, 49, 0.778), rgba(30, 30, 50, 0.9));
   border-radius: 12px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
-  margin: 0 auto 30px;
+  
   padding: 0;
   border: 1px solid rgba(98, 134, 252, 0.2);
   overflow: hidden;
   max-width: 1100px;
   position: relative;
+  z-index: 5;
 }
 
 .user-wallet-stats::before {
@@ -1625,7 +1627,7 @@
   background: linear-gradient(to right, rgba(15, 15, 25, 0.9), rgba(30, 30, 50, 0.9));
   border-radius: 12px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
-  margin: 0 auto 30px;
+  /* margin: 70px auto 30px; */
   border: 1px solid rgba(98, 134, 252, 0.2);
   overflow: hidden;
   max-width: 1100px;
@@ -2410,4 +2412,1359 @@ input:checked + .toggle-slider:before {
 .toggle-switch input:disabled + .toggle-slider {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* Add to your Leaderboard.css file */
+
+/* Mobile holder card design */
+.holder-row-mobile {
+  width: 100%;
+  padding: 0 8px;
+}
+
+.holder-card {
+  background: rgba(30, 36, 49, 0.5);
+  border-radius: 12px;
+  margin-bottom: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.holder-card.animating {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 215, 0, 0.2),
+    rgba(255, 165, 0, 0.3),
+    rgba(255, 215, 0, 0.2)
+  );
+  background-size: 300% 100%;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
+  animation: gradientShift 4s linear infinite;
+}
+
+.holder-card.user-wallet {
+  background: rgba(40, 46, 59, 0.6);
+  box-shadow: 0 2px 12px rgba(98, 134, 252, 0.2);
+}
+
+.holder-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.holder-card-body {
+  padding: 12px 16px;
+}
+
+.wallet-section {
+  margin-bottom: 10px;
+}
+
+.address-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.mobile-address {
+  font-family: "Roboto Mono", monospace;
+  color: var(--text-light);
+  font-size: 0.9rem;
+  flex: 1;
+}
+
+.copy-button, .view-link {
+  background: none;
+  border: none;
+  color: #6286fc;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+
+.copy-button:hover, .view-link:hover {
+  opacity: 1;
+}
+
+.twitter-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  color: #1DA1F2;
+  font-size: 0.85rem;
+}
+
+.twitter-avatar {
+  border-radius: 50%;
+}
+
+.avatar-placeholder {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.stats-section {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.holdings-value {
+  color: #fff;
+}
+
+.percentage-value {
+  color: #6286fc;
+}
+
+.percentage-value.updated {
+  animation: highlight-balance 4s ease-out;
+}
+
+.value-amount {
+  color: #6da75a;
+}
+
+.expand-toggle {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+}
+
+.expand-icon {
+  display: inline-block;
+  transition: transform 0.3s ease;
+}
+
+.holder-card.expanded .expand-icon {
+  transform: rotate(180deg);
+}
+
+/* Make sure we keep rank styling consistent with desktop */
+.holder-row-mobile:nth-child(1) .rank {
+  color: #ffd700;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.5), 0 0 20px rgba(255, 215, 0, 0.3),
+    0 0 30px rgba(255, 215, 0, 0.2);
+}
+
+.holder-row-mobile:nth-child(2) .rank {
+  color: #dfdfdf;
+  text-shadow: 0 0 10px rgba(232, 232, 232, 0.735),
+    0 0 20px rgba(192, 192, 192, 0.66), 0 0 30px rgba(255, 255, 255, 0.778);
+}
+
+.holder-row-mobile:nth-child(3) .rank {
+  color: #cd7f32;
+  text-shadow: 0 0 10px rgba(205, 127, 50, 0.5),
+    0 0 20px rgba(205, 127, 50, 0.3), 0 0 30px rgba(205, 127, 50, 0.2);
+}
+
+/* Expanded content for mobile */
+.expanded-content {
+  height: 0;
+  overflow: hidden;
+  transition: height 0.3s ease;
+}
+
+.holder-card.expanded .expanded-content {
+  height: auto;
+  padding: 12px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Small screens optimization */
+@media (max-width: 480px) {
+  .stats-section {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .stat-item:last-child {
+    grid-column: span 2;
+  }
+}
+
+/* Mobile-specific styles for the leaderboard */
+.leaderboard-table-container.mobile-view {
+  overflow-x: hidden !important;
+  min-width: unset !important;
+  height: auto !important; /* Change from fixed 600px height to auto */
+  max-height: 600px; /* But limit maximum height */
+}
+
+.holder-row-mobile {
+  width: 100%;
+  padding: 0 8px;
+  margin-bottom: 10px;
+}
+
+.mobile-holder-card {
+  background: rgba(30, 36, 49, 0.7);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  width: 100%;
+}
+
+.mobile-holder-card.user-wallet {
+  background: rgba(40, 46, 59, 0.8);
+}
+
+.mobile-card-main {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  padding: 10px 12px;
+  gap: 8px;
+}
+
+.mobile-rank {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.rank-value {
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+.mobile-address {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  overflow: hidden;
+}
+
+.address-text {
+  font-family: monospace;
+  font-size: 0.85rem;
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.address-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.mobile-copy-button, 
+.mobile-view-link {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #fff;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  padding: 0;
+}
+
+.mobile-holdings {
+  text-align: right;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.expand-toggle {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #fff;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+}
+
+.mobile-expanded-content {
+  padding: 8px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(20, 26, 39, 0.5);
+}
+
+.mobile-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.mobile-stat-item {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-stat-item.full-width {
+  grid-column: span 2;
+}
+
+.stat-label {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.stat-value {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.contract-note {
+  color: #ffaa00;
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.mobile-social {
+  margin-top: 8px;
+}
+
+.twitter-profile-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.twitter-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+}
+
+.twitter-username {
+  color: #1DA1F2;
+  font-size: 0.8rem;
+}
+
+.avatar-placeholder {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Preserve rank styling in mobile view */
+.holder-row-mobile:nth-child(1) .rank-value {
+  color: #ffd700;
+  text-shadow: 0 0 5px rgba(255, 215, 0, 0.4);
+}
+
+.holder-row-mobile:nth-child(2) .rank-value {
+  color: #c0c0c0;
+  text-shadow: 0 0 5px rgba(192, 192, 192, 0.4);
+}
+
+.holder-row-mobile:nth-child(3) .rank-value {
+  color: #cd7f32;
+  text-shadow: 0 0 5px rgba(205, 127, 50, 0.4);
+}
+
+.mobile-holder-card.animating {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 215, 0, 0.1),
+    rgba(255, 165, 0, 0.2),
+    rgba(255, 215, 0, 0.1)
+  );
+  background-size: 300% 100%;
+  animation: gradientShift 4s linear infinite;
+}
+
+/* Add these styles to your Leaderboard.css file */
+
+/* Fix rank color contrast in mobile view */
+.rank-value {
+  font-size: 1rem;
+  font-weight: bold;
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.5); /* Add text shadow for better contrast */
+}
+
+/* More visible rank colors for #1-#3 */
+.holder-row-mobile:nth-child(1) .rank-value {
+  color: #ffd700 !important; /* Gold - brighter gold */
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.7) !important;
+}
+
+.holder-row-mobile:nth-child(2) .rank-value {
+  color: #e0e0e0 !important; /* Silver - brighter silver */
+  text-shadow: 0 0 8px rgba(224, 224, 224, 0.7) !important;
+}
+
+.holder-row-mobile:nth-child(3) .rank-value {
+  color: #e8a87c !important; /* Bronze - brighter bronze */
+  text-shadow: 0 0 8px rgba(205, 127, 50, 0.7) !important;
+}
+
+/* Make rank badges more visible */
+.rank-badge {
+  font-size: 1.2rem;
+  margin-left: 4px;
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.7);
+}
+
+/* Emphasize the mobile card design */
+.mobile-holder-card {
+  background: rgba(22, 28, 41, 0.85); /* Darker background for better contrast */
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Make text more legible */
+.mobile-address .address-text {
+  color: #e0e0e0;
+  font-weight: 500;
+}
+
+.holdings-value {
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Add padding at the bottom to prevent sudden cutoff */
+.holder-row-mobile:last-child {
+  margin-bottom: 16px;
+}
+
+/* Fix scrolling behavior */
+.mobile-view .leaderboard-pagination-container {
+  margin-top: 16px;
+  padding-bottom: 16px;
+}
+
+/* Add to your Leaderboard.css file */
+
+/* Fix for mobile rank colors */
+.mobile-holder-card .mobile-rank .rank-value {
+  font-weight: bold;
+  font-size: 1.05rem;
+  text-shadow: 0px 0px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Top rank styling - use !important to override any conflicting styles */
+.holder-row-mobile:nth-child(1) .mobile-rank .rank-value {
+  color: #ffd700 !important; /* Gold */
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.6) !important;
+}
+
+.holder-row-mobile:nth-child(2) .mobile-rank .rank-value {
+  color: #e0e0e0 !important; /* Silver */
+  text-shadow: 0 0 10px rgba(224, 224, 224, 0.6) !important;
+}
+
+.holder-row-mobile:nth-child(3) .mobile-rank .rank-value {
+  color: #cd7f32 !important; /* Bronze */
+  text-shadow: 0 0 10px rgba(205, 127, 50, 0.6) !important;
+}
+
+/* Ranks 4-10 */
+.holder-row-mobile:nth-child(n+4):nth-child(-n+10) .mobile-rank .rank-value {
+  color: #6286fc !important;
+  text-shadow: 0 0 8px rgba(98, 134, 252, 0.5) !important;
+}
+
+/* Ranks 11-50 */
+.holder-row-mobile:nth-child(n+11):nth-child(-n+50) .mobile-rank .rank-value {
+  color: #b2b1fc !important;
+  text-shadow: 0 0 8px rgba(178, 177, 252, 0.5) !important;
+}
+
+/* Badge colors should also match */
+.holder-row-mobile:nth-child(1) .rank-badge {
+  color: #ffd700 !important;
+}
+
+.holder-row-mobile:nth-child(2) .rank-badge,
+.holder-row-mobile:nth-child(3) .rank-badge {
+  color: #e0e0e0 !important;
+}
+
+.holder-row-mobile:nth-child(n+4):nth-child(-n+10) .rank-badge {
+  color: #7DA0FF !important;
+}
+
+.holder-row-mobile:nth-child(n+11):nth-child(-n+50) .rank-badge {
+  color: #b2b1fc !important;
+}
+
+/* Add to your Leaderboard.css file */
+
+/* Glass morphism effect for mobile cards */
+.mobile-holder-card {
+  background: rgba(22, 28, 41, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2), 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.mobile-holder-card:active {
+  transform: scale(0.98);
+}
+
+/* Enhance rank display */
+.mobile-rank {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 4px 8px;
+}
+
+/* Top 3 rank styling with custom glow */
+.holder-row-mobile:nth-child(1) .mobile-rank {
+  background: linear-gradient(145deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.1));
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+}
+
+.holder-row-mobile:nth-child(2) .mobile-rank {
+  background: linear-gradient(145deg, rgba(192, 192, 192, 0.2), rgba(192, 192, 192, 0.1));
+  box-shadow: 0 0 10px rgba(192, 192, 192, 0.3);
+}
+
+.holder-row-mobile:nth-child(3) .mobile-rank {
+  background: linear-gradient(145deg, rgba(205, 127, 50, 0.2), rgba(205, 127, 50, 0.1));
+  box-shadow: 0 0 10px rgba(205, 127, 50, 0.3);
+}
+
+/* Improve rank badge appearance */
+.rank-badge {
+  font-size: 1rem;
+  text-shadow: 0 0 10px currentColor;
+  margin-left: 2px;
+}
+
+/* Better address styling */
+.mobile-address {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  padding: 6px 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.address-text {
+  font-family: 'Roboto Mono', monospace;
+  letter-spacing: 0.5px;
+  color: #e0e0e0;
+}
+
+/* Stylish action buttons */
+.address-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.mobile-copy-button, 
+.mobile-view-link {
+  background: rgba(98, 134, 252, 0.2);
+  border: none;
+  color: #fff;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.mobile-copy-button:active,
+.mobile-view-link:active {
+  transform: scale(0.9);
+  background: rgba(98, 134, 252, 0.4);
+}
+
+/* Holdings value styling */
+.mobile-holdings {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  padding: 6px 10px;
+  text-align: center;
+}
+
+.holdings-value {
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Expand toggle styling */
+.expand-toggle {
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: #fff;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  transition: all 0.3s ease;
+}
+
+.mobile-holder-card.expanded .expand-toggle {
+  background: rgba(98, 134, 252, 0.3);
+  transform: rotate(180deg);
+}
+
+/* Expanded content styling */
+.mobile-expanded-content {
+  background: rgba(10, 15, 25, 0.5);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Stats grid styling */
+.mobile-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.mobile-stat-item {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+}
+
+.mobile-stat-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Customize for user wallet */
+.mobile-holder-card.user-wallet {
+  background: rgba(30, 40, 60, 0.9);
+  box-shadow: 0 4px 20px rgba(98, 134, 252, 0.25);
+  border: 1px solid rgba(98, 134, 252, 0.2);
+}
+
+/* Twitter profile link styling */
+.twitter-profile-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(29, 161, 242, 0.15);
+  border-radius: 8px;
+  padding: 8px 12px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.twitter-profile-link:hover {
+  background: rgba(29, 161, 242, 0.25);
+}
+
+.twitter-username {
+  color: #1DA1F2;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* Animation for updates */
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(98, 134, 252, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(98, 134, 252, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(98, 134, 252, 0); }
+}
+
+.mobile-holder-card.updated {
+  animation: pulse 2s infinite;
+}
+
+/* Fade-in animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* First place animation */
+@keyframes goldPulse {
+  0% { box-shadow: 0 0 5px 0 rgba(255, 215, 0, 0.5); }
+  50% { box-shadow: 0 0 20px 5px rgba(255, 215, 0, 0.3); }
+  100% { box-shadow: 0 0 5px 0 rgba(255, 215, 0, 0.5); }
+}
+
+.holder-row-mobile:nth-child(1) .mobile-holder-card {
+  animation: goldPulse 4s infinite;
+  border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+/* Theme toggle */
+.theme-toggle {
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.2rem;
+  width: 36px;
+  height: 36px;
+  margin-left: 10px;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.theme-toggle:hover {
+  transform: scale(1.1);
+}
+
+/* Light mode styles */
+.leaderboard-container-bg.light-mode {
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+  color: #333;
+}
+
+.light-mode .mobile-holder-card {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.light-mode .mobile-address,
+.light-mode .mobile-holdings {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.light-mode .address-text {
+  color: #333;
+}
+
+.light-mode .mobile-expanded-content {
+  background: rgba(240, 242, 245, 0.85);
+}
+
+/* Holder graph */
+.holder-graph {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.graph-label {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 8px;
+}
+
+.graph-container {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.graph-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #5d6dfc, #8a94ff);
+  border-radius: 4px;
+  transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.graph-avg-marker {
+  position: absolute;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.graph-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  margin-top: 4px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Extra small screen adjustments - more aggressive size reductions */
+@media screen and (max-width: 375px) {
+  /* Mobile card layout fixes */
+  .mobile-holder-card {
+    padding: 6px 3px;
+    margin-bottom: 6px;
+  }
+  
+  .mobile-card-main {
+    gap: 3px;
+    padding: 6px 6px;
+  }
+  
+  /* Rank styling - significantly smaller */
+  .mobile-rank {
+    min-width: 36px;
+    padding: 2px 4px;
+  }
+  
+  .rank-value {
+    font-size: 0.85rem !important;
+    font-weight: bold;
+  }
+  
+  .rank-badge {
+    font-size: 0.85rem !important;
+    margin-left: 1px;
+  }
+  
+  /* Address area */
+  .mobile-address {
+    max-width: 190px;
+    padding: 3px 5px;
+  }
+  
+  .address-text {
+    font-size: 0.8rem !important;
+  }
+  
+  .address-actions {
+    gap: 1px;
+  }
+  
+  .mobile-copy-button, 
+  .mobile-view-link {
+    padding: 2px;
+    font-size: 0.65rem;
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+  }
+  
+  /* Dropdown button */
+  .mobile-dropdown {
+    margin-left: auto;
+  }
+  
+  .expand-toggle {
+    padding: 2px;
+    font-size: 0.65rem;
+    width: 20px;
+    height: 20px;
+    text-align: center;
+    min-width: 20px;
+  }
+  
+  /* Expanded content */
+  .mobile-expanded-content {
+    padding: 5px 3px;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  
+  .mobile-stats-grid {
+    gap: 4px;
+  }
+  
+  .mobile-stat-item {
+    padding: 3px 4px;
+    min-width: auto;
+  }
+  
+  .stat-label {
+    font-size: 0.6rem;
+    margin-bottom: 1px;
+  }
+  
+  .stat-value {
+    font-size: 0.65rem;
+  }
+  
+  /* Fix for the social links */
+  .mobile-social {
+    padding: 3px;
+    margin-top: 4px;
+  }
+  
+  .twitter-profile-link {
+    padding: 3px 5px;
+    font-size: 0.75rem;
+  }
+  
+  .twitter-avatar {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .twitter-username {
+    font-size: 0.75rem;
+  }
+  
+  /* Fix height constraints and overflow issues */
+  .holder-row-mobile {
+    overflow: visible !important;
+    margin-bottom: 6px;
+    min-height: 35px;
+  }
+  
+  .mobile-holder-card.expanded {
+    height: auto !important;
+    overflow: visible !important;
+  }
+  
+  /* Fix calculations for virtualized items */
+  .holder-row-mobile[style*="height"] {
+    height: auto !important;
+    min-height: 35px;
+  }
+  
+  .holder-row-mobile[style*="transform"] {
+    position: relative !important;
+    transform: none !important;
+    margin-bottom: 6px;
+  }
+}
+
+/* Fix for expanded content getting cut off */
+.mobile-expanded-content {
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+/* Fix for various screen sizes to ensure content isn't cut off */
+@media screen and (max-width: 480px) {
+  .holder-row-mobile {
+    overflow: visible !important;
+  }
+  
+  .mobile-holder-card {
+    overflow: visible !important;
+    height: auto !important;
+  }
+  
+  .mobile-holder-card.expanded {
+    height: auto !important;
+  }
+  
+  /* Fix the virtualized list behavior */
+  .leaderboard-table-container {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+}
+
+/* Fix expanded content and padding issues across all screen sizes */
+.mobile-expanded-content {
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+/* Small to medium screens (375px-480px) */
+@media screen and (min-width: 376px) and (max-width: 480px) {
+  .mobile-holder-card {
+    padding: 8px 6px;
+    margin-bottom: 8px;
+  }
+  
+  .mobile-card-main {
+    gap: 6px;
+    padding: 8px 8px;
+  }
+  
+  .mobile-rank {
+    min-width: 42px;
+    padding: 3px 6px;
+  }
+  
+  .rank-value {
+    font-size: 0.75rem !important;
+  }
+  
+  .rank-badge {
+    font-size: 0.8rem !important;
+  }
+  
+  .mobile-address {
+    max-width: 160px;
+    padding: 4px 6px;
+  }
+  
+  .address-text {
+    font-size: 0.7rem !important;
+  }
+  
+  .address-actions {
+    gap: 3px;
+  }
+  
+  .mobile-copy-button, 
+  .mobile-view-link {
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    font-size: 0.7rem;
+  }
+  
+  .expand-toggle {
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    font-size: 0.7rem;
+  }
+  
+  .mobile-expanded-content {
+    padding: 6px 5px;
+  }
+  
+  .mobile-stats-grid {
+    gap: 6px;
+  }
+  
+  .mobile-stat-item {
+    padding: 4px 5px;
+  }
+  
+  .stat-label {
+    font-size: 0.65rem;
+  }
+  
+  .stat-value {
+    font-size: 0.7rem;
+  }
+}
+
+/* Fix for virtualized list height calculation */
+.holder-row-mobile {
+  overflow: visible !important;
+  height: auto !important;
+  min-height: 50px;
+}
+
+.mobile-holder-card.expanded {
+  height: auto !important;
+  overflow: visible !important;
+}
+
+/* Fix for virtualized items positioning */
+.holder-row-mobile[style*="height"] {
+  height: auto !important;
+  min-height: 50px; 
+}
+
+/* Make sure the virtualizer can calculate correct heights */
+.leaderboard-table-container > div[style*="height"] {
+  height: auto !important;
+  min-height: 600px;
+}
+
+/* Fix the mobile list layout issues */
+.leaderboard-table-container.mobile-view {
+  height: auto !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  max-height: none !important;
+  min-height: 200px !important;
+  padding-bottom: 100px;
+}
+
+.leaderboard-table-container.mobile-view > div {
+  position: static !important;
+  transform: none !important;
+  height: auto !important;
+}
+
+/* Fix the mobile holder row layout */
+.holder-row-mobile {
+  position: relative !important;
+  transform: none !important;
+  height: auto !important;
+  width: 100% !important;
+  margin-bottom: 10px;
+  overflow: visible !important;
+}
+
+/* Fix expanded content */
+.mobile-expanded-content {
+  position: relative !important;
+  height: auto !important;
+  overflow: visible !important; 
+  max-height: none !important;
+  z-index: 1;
+  padding: 12px 10px !important;
+}
+
+/* Ensure the holder card doesn't overflow */
+.mobile-holder-card {
+  position: relative !important;
+  overflow: visible !important;
+  height: auto !important;
+}
+
+/* Create space for expanded content */
+.mobile-holder-card.expanded {
+  margin-bottom: 15px !important;
+}
+
+/* Override any transform properties that might be set by the virtualizer */
+.holder-row-mobile[style*="transform"],
+.mobile-holder-card[style*="transform"] {
+  transform: none !important;
+  position: relative !important;
+}
+
+/* Add sufficient margin to any expanded row */
+.holder-row-mobile:has(.mobile-holder-card.expanded) {
+  margin-bottom: 30px !important;
+}
+
+/* Ensure each item in the stats grid has sufficient height */
+.mobile-stat-item {
+  min-height: 50px !important;
+}
+
+/* Remove absolute positioning for mobile view */
+.mobile-view .leaderboard-table-container > div {
+  position: static !important;
+}
+
+/* Enhanced mobile expanded content styling */
+.mobile-expanded-content {
+  position: relative !important;
+  background: rgba(15, 20, 35, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(98, 134, 252, 0.15);
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+  padding: 14px 12px !important;
+  margin-top: 2px;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.2);
+  height: auto !important;
+  overflow: visible !important; 
+  max-height: none !important;
+  z-index: 1;
+  animation: expandContent 0.3s ease-out forwards;
+}
+
+/* Animation for expanded content */
+@keyframes expandContent {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Improved stats grid styling */
+.mobile-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.mobile-stat-item {
+  background: rgba(98, 134, 252, 0.08);
+  border: 1px solid rgba(98, 134, 252, 0.1);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+  min-height: auto !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.mobile-stat-item:hover {
+  background: rgba(98, 134, 252, 0.12);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.mobile-stat-item.full-width {
+  grid-column: span 2;
+  background: rgba(255, 170, 0, 0.08);
+  border: 1px solid rgba(255, 170, 0, 0.15);
+}
+
+.stat-label {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 500;
+}
+
+.stat-value {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Style for contract note */
+.contract-note {
+  color: #ffaa00;
+  font-size: 0.85rem;
+  text-align: center;
+  background: rgba(255, 170, 0, 0.1);
+  padding: 6px;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+/* Improved twitter link styling */
+.mobile-social {
+  margin-top: 12px;
+}
+
+.twitter-profile-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-decoration: none;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, rgba(29, 161, 242, 0.15), rgba(29, 161, 242, 0.25));
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(29, 161, 242, 0.2);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.twitter-profile-link:hover {
+  background: linear-gradient(135deg, rgba(29, 161, 242, 0.2), rgba(29, 161, 242, 0.3));
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.twitter-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid rgba(29, 161, 242, 0.3);
+}
+
+.twitter-username {
+  color: #1DA1F2;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+/* Fix for any remaining position issues */
+.holder-row-mobile:has(.mobile-holder-card.expanded) {
+  margin-bottom: 20px !important;
+}
+
+/* Adjust for very small screens */
+@media screen and (max-width: 375px) {
+  .mobile-expanded-content {
+    padding: 10px 8px !important;
+  }
+  
+  .mobile-stats-grid {
+    gap: 6px;
+  }
+  
+  .mobile-stat-item {
+    padding: 8px 10px;
+  }
+  
+  .stat-label {
+    font-size: 0.65rem;
+    margin-bottom: 4px;
+  }
+  
+  .stat-value {
+    font-size: 0.8rem;
+  }
+  
+  .twitter-profile-link {
+    padding: 6px 10px;
+  }
+  
+  .twitter-avatar {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .twitter-username {
+    font-size: 0.75rem;
+  }
+}
+
+/* Create a container for controls in the header */
+.leaderboard-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+/* Update user-wallet-stats to have proper margin-top */
+.user-wallet-stats {
+  background: linear-gradient(to right, rgba(29, 29, 49, 0.778), rgba(30, 30, 50, 0.9));
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+
+  padding: 0;
+  border: 1px solid rgba(98, 134, 252, 0.2);
+  overflow: hidden;
+  max-width: 1100px;
+  position: relative;
+  z-index: 5;
 }

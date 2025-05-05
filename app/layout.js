@@ -12,6 +12,8 @@ import { SessionProvider } from "next-auth/react";
 import { ToastProvider } from "./context/ToastContext";
 import { WalletClaimProvider } from "./context/WalletClaimContext"; // Add this import
 import { DataCacheProvider } from "./context/DataCacheContext";
+import { GlobalMessagesProvider } from "./context/GlobalMessagesContext";
+import GlobalMessageBubble from "./components/GlobalMessageBubble";
 
 export default function RootLayout({ children }) {
   const [mounted, setMounted] = useState(false);
@@ -114,8 +116,11 @@ export default function RootLayout({ children }) {
                 <ToastProvider>
                   <WalletClaimProvider>
                     <DataCacheProvider>
-                      {mounted && <Header />}
-                      {children}
+                      <GlobalMessagesProvider>
+                        {mounted && <Header />}
+                        {children}
+                        <GlobalMessageBubble />
+                      </GlobalMessagesProvider>
                     </DataCacheProvider>
                   </WalletClaimProvider>
                 </ToastProvider>
