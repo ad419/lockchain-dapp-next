@@ -14,6 +14,7 @@ import { WalletClaimProvider } from "./context/WalletClaimContext"; // Add this 
 import { DataCacheProvider } from "./context/DataCacheContext";
 import { GlobalMessagesProvider } from "./context/GlobalMessagesContext";
 import GlobalMessageBubble from "./components/GlobalMessageBubble";
+import { PriceProvider } from "./context/PriceContext";
 
 export default function RootLayout({ children }) {
   const [mounted, setMounted] = useState(false);
@@ -117,8 +118,10 @@ export default function RootLayout({ children }) {
                   <WalletClaimProvider>
                     <DataCacheProvider>
                       <GlobalMessagesProvider>
-                        {mounted && <Header />}
-                        {children}
+                        <PriceProvider>
+                          {mounted && <Header />}
+                          {children}
+                        </PriceProvider>
                         <GlobalMessageBubble />
                       </GlobalMessagesProvider>
                     </DataCacheProvider>

@@ -9,11 +9,12 @@ import swapABI from "../json/swap.json";
 import { useAccount, useNetwork } from "wagmi";
 import axios from "axios";
 import { getWeb3 } from "./connectors";
+import { usePrices } from "../context/PriceContext";
 
 export const useAccountStats = (updater) => {
   const { chain } = useNetwork();
-  let { address } = useAccount();
-  // address = "0x7aF3116867A208184F34c65e74a6b17E64f53160";
+  // Fix 1: Use "const" instead of "let" to prevent reassignment
+  const { address } = useAccount();
 
   const [stats, setStats] = useState({
     eth_balance: 0,
@@ -29,11 +30,24 @@ export const useAccountStats = (updater) => {
     referralearnWorth: 0,
   });
 
+  // Fix 2: Add a cache for previousValidStats to handle the temporary zeroing issue
+  const [previousValidStats, setPreviousValidStats] = useState(null);
+
   let web3 = getWeb3();
+  const prices = usePrices();
+
+  // Keep track of valid stats
+  useEffect(() => {
+    if (stats && stats.token_balance > 0) {
+      setPreviousValidStats(stats);
+    }
+  }, [stats]);
 
   useEffect(() => {
     const fetch = async () => {
       try {
+        if (!address) return;
+
         let eth_bal = web3.utils.fromWei(await web3.eth.getBalance(address));
         let currentChain =
           chain && chain.id
@@ -73,16 +87,12 @@ export const useAccountStats = (updater) => {
           currentChain
         );
 
-        const response = await axios.get(
-          `https://api.coingecko.com/api/v3/simple/price?ids=${contract[currentChain].coingecko_symbol}&vs_currencies=usd`
-        );
-        let eth_price = parseFloat(
-          response.data[contract[currentChain].coingecko_symbol].usd
-        );
-        let token_price =
-          parseFloat(eth_price) * parseFloat(data[1][1] / data[1][0]);
+        // Use the price from context instead of API call
+        let eth_price = prices.ethereum;
+        let token_price = eth_price * parseFloat(data[1][1] / data[1][0]);
 
-        setStats({
+        // Fix 3: Only update if data is valid or we have no previous valid data
+        const newStats = {
           eth_balance: eth_bal,
           eth_price,
           token_price,
@@ -98,11 +108,14 @@ export const useAccountStats = (updater) => {
           referralearn: data[5] / Math.pow(10, 18),
           referralearnWorth:
             (data[5] / Math.pow(10, 18)) * parseFloat(token_price),
-        });
+        };
 
-        console.log("fhfjhjhjchchcdjchdjhjhcj");
+        // Only update state if there is valid data
+        if (parseFloat(newStats.token_balance) > 0 || !previousValidStats) {
+          setStats(newStats);
+        }
       } catch (err) {
-        console.log("herererereererereerere", err.message);
+        console.log("Error fetching account data:", err.message);
         toast.error(err.reason);
       }
     };
@@ -123,9 +136,12 @@ export const useAccountStats = (updater) => {
     }
 
     // eslint-disable-next-line
-  }, [updater, address, chain]);
+  }, [updater, address, chain, prices]);
 
-  return stats;
+  // Return previous valid stats if they exist when we've temporarily lost connection
+  return previousValidStats && stats.token_balance === 0
+    ? previousValidStats
+    : stats;
 };
 
 export const useSwapStats = (updater) => {
