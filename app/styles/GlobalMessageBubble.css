@@ -1,292 +1,2628 @@
-/* Global Message Bubble - Core styles */
-.global-message-container {
+/* ===== GLOBAL CHAT BUBBLE SYSTEM ===== */
+
+:root {
+  --primary-color: #6286fc;
+  --text-light: #f8f8f8;
+  --card-bg: rgba(64, 63, 173, 0.1);
+  --border-light: rgba(255, 255, 255, 0.1);
+  --shadow-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Container for the entire bubble system */
+.lc-chat-container {
   position: fixed;
   bottom: 20px;
   right: 20px;
   z-index: 9999;
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  pointer-events: none; /* Container is transparent to clicks */
+  align-items: center;
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Ensure all elements within are clickable */
-.global-message-container button,
-.global-message-container .global-message-expanded {
-  pointer-events: auto;
+/* Container states */
+.lc-chat-container.minimized {
+  bottom: 20px;
+  right: 20px;
 }
 
-/* Chat bubble button */
-.global-message-bubble {
-  width: 56px;
-  height: 56px;
+.lc-chat-container.expanded {
+  top: 60px; /* Assumes navbar is ~60px tall - adjust as needed */
+  right: 0;
+  bottom: 0;
+  width: 350px;
+  height: calc(100vh - 60px); /* Full viewport height minus navbar */
+  position: fixed;
+}
+
+/* Main chat bubble button */
+.lc-chat-bubble {
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #6286fc, #4566c9);
+  background: linear-gradient(135deg, #6E8EFB, #7873F5);
   color: white;
   border: none;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   position: relative;
-  z-index: 9999;
+  pointer-events: auto;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  z-index: 10000;
 }
 
-.global-message-bubble:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+.lc-chat-bubble:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.3);
 }
 
-.global-message-bubble:active {
+.lc-chat-bubble:active {
   transform: scale(0.95);
 }
 
-.bubble-icon {
-  font-size: 26px;
-}
-
-/* Unread messages badge */
-.bubble-badge {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  background: #ff4545;
+/* Chat bubble icon */
+.lc-chat-bubble-icon {
+  font-size: 28px;
   color: white;
-  border-radius: 12px;
-  font-size: 12px;
-  padding: 2px 6px;
-  min-width: 20px;
-  text-align: center;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
-/* Expanded message panel */
-.global-message-expanded {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 400px;
-  height: 500px;
-  background: rgba(18, 18, 24, 0.95);
-  backdrop-filter: blur(10px);
+/* Notification badge */
+.lc-chat-notification {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
   border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  background: #FF3D71;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  border: 2px solid white;
+}
+
+/* Label below the chat bubble */
+.lc-chat-label {
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  margin-top: 8px;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.lc-chat-container:hover .lc-chat-label {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ===== EXPANDED CHAT PANEL ===== */
+.lc-chat-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(23, 23, 30, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 0; /* Remove border radius for full-height effect */
+  box-shadow: -5px 0 30px rgba(0, 0, 0, 0.15);
   display: flex;
   flex-direction: column;
-  z-index: 9998;
-  pointer-events: auto;
-}
-
-/* Header section */
-.global-message-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 15px;
-  background: rgba(10, 10, 14, 0.8);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  flex-shrink: 0;
-}
-
-.global-message-header h3 {
-  margin: 0;
-  font-size: 18px;
-  color: white;
-  font-weight: 600;
-}
-
-/* Loading animation for header */
-.loading-dots {
-  display: inline-block;
   overflow: hidden;
-  height: 1.3em;
-  margin-top: -0.3em;
-  line-height: 1.5em;
-  vertical-align: text-bottom;
-  animation: loading-wave 1s infinite;
+  pointer-events: auto;
+  z-index: 9998;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  max-height: none; /* Remove max-height limitation */
 }
 
-@keyframes loading-wave {
-  0% { width: 0; }
-  20% { width: 1em; }
-  100% { width: 0; }
+.lc-chat-panel.lc-minimized {
+  transform: scale(0.95);
+  opacity: 0;
+  pointer-events: none;
 }
 
-/* Main content area */
-.global-message-content {
+/* Chat header */
+.lc-chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 20px;
+  background: linear-gradient(to right, rgba(29, 29, 49, 0.9), rgba(30, 30, 50, 0.9));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.lc-chat-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lc-chat-header-title {
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: 1px;
+  background: linear-gradient(90deg, #6E8EFB, #FF9A9E);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.lc-chat-status {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #4caf50;
+  margin-right: 12px;
+  box-shadow: 0 0 6px currentColor;
+}
+
+.lc-chat-status.lc-offline {
+  background-color: #f44336;
+}
+
+.lc-chat-status.lc-connecting {
+  background-color: #ff9800;
+  animation: pulse 1.5s infinite;
+}
+
+.lc-chat-status.connecting {
+  background-color: #FFC107;
+  animation: pulse 1.5s infinite;
+  color: #FFC107;
+}
+
+.lc-chat-status.connected {
+  background-color: #4CAF50;
+  color: #4CAF50;
+}
+
+.lc-chat-status.disconnected {
+  background-color: #F44336;
+  color: #F44336;
+}
+
+.lc-chat-header-controls {
+  display: flex;
+  gap: 10px;
+}
+
+.lc-chat-control-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.7);
+  transition: background-color 0.2s ease, color 0.2s ease;
+  font-size: 18px;
+}
+
+.lc-chat-control-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+/* Chat messages area */
+.lc-chat-messages {
   flex: 1;
   overflow-y: auto;
-  position: relative;
-  max-height: 450px;
-  padding: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 10px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(98, 134, 252, 0.4) rgba(0, 0, 0, 0.2);
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  overflow-x: hidden;
+  background: radial-gradient(at 53% 34%, rgba(19, 83, 255, 0.1) -84%, rgba(21, 21, 21, 0.1) 63%);
 }
 
-.global-message-content::-webkit-scrollbar {
+.lc-chat-messages::-webkit-scrollbar {
   width: 6px;
 }
 
-.global-message-content::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.2);
+.lc-chat-messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.lc-chat-messages::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2);
   border-radius: 3px;
 }
 
-.global-message-content::-webkit-scrollbar-thumb {
-  background: rgba(98, 134, 252, 0.4);
-  border-radius: 3px;
+.lc-chat-messages::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.3);
 }
 
-/* Various states */
-.message-loading-state, 
-.message-error-state,
-.no-messages-state {
+/* Empty state */
+.lc-chat-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 200px;
-  color: rgba(255, 255, 255, 0.7);
+  height: 100%;
+  padding: 20px;
   text-align: center;
-  padding: 0 20px;
+  color: rgba(255, 255, 255, 0.5);
 }
 
-.message-loading-spinner {
-  width: 30px;
-  height: 30px;
+.lc-chat-empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.lc-chat-empty-title {
+  font-size: 16px;
+  margin: 0 0 8px 0;
+  color: white;
+}
+
+.lc-chat-empty-text {
+  font-size: 14px;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Loading state */
+.lc-chat-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
   border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top: 3px solid var(--primary-color);
   border-radius: 50%;
-  border-top-color: #6286fc;
-  animation: spin 1s ease-in-out infinite;
-  margin-bottom: 15px;
+  margin-bottom: 20px;
+  animation: spin 1s linear infinite;
+}
+
+/* Error state */
+.lc-chat-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 20px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.lc-chat-retry-btn {
+  margin-top: 15px;
+  background: linear-gradient(135deg, #F44336, #FF5252);
+  color: white;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
+  transition: all 0.2s;
+}
+
+.lc-chat-retry-btn:hover {
+  background: linear-gradient(135deg, #E53935, #FF1744);
+  box-shadow: 0 6px 14px rgba(244, 67, 54, 0.4);
+  transform: translateY(-1px);
+}
+
+/* Message stream effect */
+.message-stream {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Message styles */
+.lc-message {
+  display: flex;
+  margin-bottom: 14px;
+  animation: messageAppear 0.3s ease-out;
+  max-width: 100%;
+  align-items: flex-start;
+}
+
+@keyframes messageAppear {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.lc-message-avatar {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin-right: 10px;
+  background: linear-gradient(45deg, #2c3e50, #4ca1af);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+}
+
+.lc-message-own .lc-message-avatar {
+  margin-right: 0;
+  margin-left: 10px;
+  background: linear-gradient(45deg, #5E35B1, #3949AB);
+}
+
+.lc-message-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lc-message-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.lc-message-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  margin-bottom: 3px;
+  padding: 0 2px;
+}
+
+.lc-message-user {
+  font-weight: 600;
+  color: #c9d1ff;
+}
+
+.lc-message-time {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.lc-message-bubble {
+  background: rgba(30, 30, 50, 0.5);
+  padding: 10px 14px;
+  border-radius: 16px;
+  max-width: 95%;
+  word-break: break-word;
+  font-size: 14px;
+  line-height: 1.5;
+  position: relative;
+  border-top-left-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.lc-message-own {
+  flex-direction: row-reverse;
+  text-align: right;
+}
+
+.lc-message-own .lc-message-bubble {
+  background: rgba(98, 134, 252, 0.15);
+  border-top-left-radius: 16px;
+  border-top-right-radius: 4px;
+  margin-left: auto;
+  border: 1px solid rgba(98, 134, 252, 0.2);
+}
+
+.lc-message-own .lc-message-header {
+  flex-direction: row-reverse;
+}
+
+/* ===== MESSAGE INPUT SECTION ===== */
+.lc-chat-input-area {
+  padding: 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(30, 30, 50, 0.9);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lc-chat-tools {
+  display: flex;
+  gap: 8px;
+}
+
+.lc-chat-tool-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lc-chat-tool-btn:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.lc-chat-input-wrapper {
+  flex: 1;
+  position: relative;
+}
+
+.lc-chat-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 10px 16px;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.lc-chat-input:focus {
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 0 2px rgba(98, 134, 252, 0.3);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.lc-chat-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.lc-chat-input:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* Update the send button styles */
+
+/* Send button - now circular with icon */
+.lc-chat-send-btn {
+  background: linear-gradient(135deg, #6E8EFB, #7873F5);
+  color: white;
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(110, 142, 251, 0.3);
+  padding: 0;
+}
+
+.lc-chat-send-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #5E7EEB, #6863E5);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(110, 142, 251, 0.4);
+}
+
+.lc-chat-send-btn:active:not(:disabled) {
+  transform: translateY(0) scale(0.95);
+}
+
+.lc-chat-send-btn:disabled {
+  background: rgba(110, 142, 251, 0.3);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Icon styling */
+.lc-send-icon {
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.1));
+  transition: transform 0.2s ease;
+}
+
+.lc-chat-send-btn:hover:not(:disabled) .lc-send-icon {
+  transform: translateX(1px);
+}
+
+/* Loading dots */
+.lc-send-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+
+.lc-send-loading-dot {
+  width: 4px;
+  height: 4px;
+  background-color: white;
+  border-radius: 50%;
+  animation: send-loading 1.5s infinite ease-in-out both;
+}
+
+.lc-send-loading-dot:nth-child(1) {
+  animation-delay: -0.3s;
+}
+
+.lc-send-loading-dot:nth-child(2) {
+  animation-delay: -0.15s;
+}
+
+@keyframes send-loading {
+  0%, 80%, 100% { transform: scale(0); } 
+  40% { transform: scale(1); }
+}
+
+.lc-chat-send-btn-sending {
+  background-color: rgba(98, 134, 252, 0.7) !important;
+  cursor: not-allowed;
+}
+
+.lc-send-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.lc-send-loading-dot {
+  width: 4px;
+  height: 4px;
+  background-color: white;
+  border-radius: 50%;
+  animation: send-loading 1.5s infinite ease-in-out both;
+}
+
+.lc-send-loading-dot:nth-child(1) {
+  animation-delay: -0.3s;
+}
+
+.lc-send-loading-dot:nth-child(2) {
+  animation-delay: -0.15s;
+}
+
+/* Retry button */
+.lc-chat-retry-btn {
+  margin-top: 15px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #F44336, #FF5252);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
+  transition: all 0.2s;
+}
+
+.lc-chat-retry-btn:hover {
+  background: linear-gradient(135deg, #E53935, #FF1744);
+  box-shadow: 0 6px 14px rgba(244, 67, 54, 0.4);
+  transform: translateY(-1px);
+}
+
+/* ===== ANIMATION KEYFRAMES ===== */
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+@keyframes send-loading {
+  0%, 80%, 100% { 
+    transform: scale(0);
+  } 
+  40% { 
+    transform: scale(1);
+  }
+}
+
+@keyframes dotPulse {
+  0%, 100% { transform: scale(0.5); opacity: 0.5; }
+  50% { transform: scale(1); opacity: 1; }
 }
 
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 
-.message-error-state button {
-  background: #6286fc;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  margin-top: 15px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.message-error-state button:hover {
-  background: #4f6cd9;
-}
-
-/* Close button */
-.close-button {
-  background: none;
-  border: none;
-  color: white;
-  font-size: 24px;
-  cursor: pointer;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: color 0.2s;
-  border-radius: 50%;
-}
-
-.close-button:hover {
-  color: white;
-  background: rgba(255, 255, 255, 0.1);
-}
-
-/* Media queries for responsiveness */
+/* ===== RESPONSIVE DESIGN ===== */
 @media (max-width: 768px) {
-  .global-message-expanded {
-    width: 90vw;
+  .lc-chat-panel {
+    width: 320px;
+    right: 10px;
+    bottom: 80px;
+  }
+}
+
+@media (max-width: 768px) {
+  .lc-chat-container.expanded {
+    width: 100%;
     max-width: 350px;
-    height: 70vh;
-    max-height: 480px;
-    bottom: 60px;
-  }
-  
-  .global-message-bubble {
-    width: 48px;
-    height: 48px;
-  }
-  
-  .bubble-icon {
-    font-size: 22px;
   }
 }
 
 @media (max-width: 480px) {
-  .global-message-container {
-    bottom: 75px;
-    right: 10px;
+  .lc-chat-container {
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    right: auto;
   }
   
-  .global-message-expanded {
-    width: calc(100vw - 20px);
+  .lc-chat-container.expanded {
+    width: 100%;
+    max-width: 350px;
     right: 0;
+    bottom: 0;
+    height: calc(100vh - 60px);
+    transform: none;
     left: auto;
-    max-width: none;
-    height: 60vh;
-    margin: 0 10px;
+  }
+  
+  .lc-chat-panel {
+    position: absolute;
+    top: 0;
+    left: auto;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    transform: none;
+    border-radius: 0;
+  }
+  
+  .lc-chat-panel.lc-minimized {
+    transform: translate(-50%, -50%) scale(0.95);
+    opacity: 0;
+  }
+  
+  .lc-chat-input-area {
+    padding: 10px;
+  }
+  
+  .lc-chat-tools {
+    gap: 4px;
   }
 }
 
-/* Special handling for notch devices */
+@media (max-width: 480px) {
+  .lc-chat-container.expanded {
+    width: 100%;
+    max-width: none;
+    left: 0;
+    right: 0;
+  }
+  
+  .lc-chat-panel {
+    border-radius: 0;
+    border-left: none;
+  }
+}
+
+@media (max-width: 320px) {
+  .lc-chat-panel {
+    width: 95%;
+    max-width: none;
+  }
+  
+  .lc-chat-header {
+    padding: 10px;
+  }
+  
+  .lc-chat-tools {
+    display: none;
+  }
+}
+
+/* ===== CHAT BUBBLE ANIMATIONS ===== */
+.lc-chat-bubble-anim-in {
+  animation: bubbleIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.lc-chat-bubble-anim-out {
+  animation: bubbleOut 0.3s ease forwards;
+}
+
+@keyframes bubbleIn {
+  from {
+    transform: scale(0) rotate(-45deg);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) rotate(0);
+    opacity: 1;
+  }
+}
+
+@keyframes bubbleOut {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(0);
+    opacity: 0;
+  }
+}
+
+/* ===== ACCESSIBILITY ===== */
+@media (prefers-reduced-motion: reduce) {
+  .lc-chat-container *,
+  .lc-chat-panel * {
+    transition-duration: 0.1s !important;
+    animation-duration: 0.1s !important;
+  }
+}
+
+/* Support for notch devices */
 @supports (padding: max(0px)) {
-  .global-message-container {
+  .lc-chat-container {
     bottom: max(20px, env(safe-area-inset-bottom));
     right: max(20px, env(safe-area-inset-right));
   }
+  
+  @media (max-width: 480px) {
+    .lc-chat-container {
+      bottom: max(20px, env(safe-area-inset-bottom));
+      right: auto;
+    }
+  }
 }
 
-/* Compact message styles */
-.messages-float.compact-mode {
-  max-height: 400px;
-  width: 100%;
+/* Add new styles for login prompt */
+
+/* Wallet required button styling */
+.lc-chat-wallet-required {
+  background: linear-gradient(135deg, #FFA500, #FF6B00) !important;
+}
+
+.lc-chat-wallet-required:hover {
+  background: linear-gradient(135deg, #FF8C00, #FF5500) !important;
+}
+
+.lc-wallet-icon {
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2));
+}
+
+/* Login prompt overlay with cyberpunk aesthetic */
+.lc-login-prompt {
+  position: absolute;
+  top: 0;
+  left: 0;
   right: 0;
   bottom: 0;
+  background: rgba(13, 13, 23, 0.85);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: loginPromptFadeIn 0.3s ease forwards;
+}
+
+@keyframes loginPromptFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.lc-login-prompt-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(30, 30, 50, 0.7);
+  border: 1px solid rgba(255, 165, 0, 0.3);
+  border-radius: 16px;
+  padding: 30px;
+  box-shadow: 0 0 30px rgba(255, 165, 0, 0.2), 
+              inset 0 0 15px rgba(255, 165, 0, 0.1);
   position: relative;
+  overflow: hidden;
+  max-width: 85%;
+  animation: contentPulse 2s ease infinite;
+}
+
+@keyframes contentPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 30px rgba(255, 165, 0, 0.2), inset 0 0 15px rgba(255, 165, 0, 0.1); }
+  50% { transform: scale(1.03); box-shadow: 0 0 40px rgba(255, 165, 0, 0.3), inset 0 0 20px rgba(255, 165, 0, 0.15); }
+}
+
+/* Login icon animation */
+.lc-login-icon {
+  width: 70px;
+  height: 70px;
+  background: radial-gradient(circle, rgba(255, 165, 0, 0.2) 0%, rgba(255, 107, 0, 0.05) 70%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  position: relative;
+  animation: iconPulse 1.5s infinite ease-in-out;
+}
+
+@keyframes iconPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.lc-login-wallet-icon {
+  width: 40px;
+  height: 40px;
+  color: #FFA500;
+  filter: drop-shadow(0 0 8px rgba(255, 165, 0, 0.5));
+  animation: iconRotate 5s infinite linear;
+}
+
+@keyframes iconRotate {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(5deg); }
+  75% { transform: rotate(-5deg); }
+  100% { transform: rotate(0deg); }
+}
+
+/* Text styling */
+.lc-login-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+  text-align: center;
+  margin: 0 0 10px 0;
+  text-shadow: 0 0 10px rgba(255, 165, 0, 0.5);
+  letter-spacing: 0.5px;
+}
+
+/* Circuit board line animations */
+.lc-login-circuit-lines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.lc-circuit-line-1,
+.lc-circuit-line-2,
+.lc-circuit-line-3 {
+  position: absolute;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    transparent, 
+    rgba(255, 165, 0, 0.1), 
+    rgba(255, 165, 0, 0.5), 
+    rgba(255, 165, 0, 0.1), 
+    transparent);
+  animation-duration: 3s;
+  animation-iteration-count: infinite;
+  animation-timing-function: linear;
+}
+
+.lc-circuit-line-1 {
+  width: 100%;
+  top: 30%;
+  animation-name: circuit1;
+  animation-delay: 0s;
+}
+
+.lc-circuit-line-2 {
+  width: 60%;
+  top: 60%;
+  right: 0;
+  animation-name: circuit2;
+  animation-delay: 1s;
+}
+
+.lc-circuit-line-3 {
+  width: 80%;
+  bottom: 20%;
+  left: 0;
+  animation-name: circuit3;
+  animation-delay: 0.5s;
+}
+
+@keyframes circuit1 {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes circuit2 {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+@keyframes circuit3 {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Add these styles for the message styling interface */
+
+/* Style options panel */
+.lc-style-options-panel {
+  position: absolute;
+  bottom: 80px;
+  left: 0;
+  right: 0;
+  background: rgba(23, 23, 30, 0.98);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 15px;
+  border-radius: 12px 12px 0 0;
+  box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.2);
+  z-index: 100;
+  max-height: 320px;
   overflow-y: auto;
-  padding: 10px;
+  animation: slideUp 0.3s ease;
 }
 
-/* .message-float.compact {
-  padding: 8px 10px;
-  margin-bottom: 8px;
-  min-height: unset !important;
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
-.message-float.compact .message-avatar {
-  width: 28px;
-  height: 28px;
-  min-width: 28px;
-  margin-right: 8px;
+/* Style tabs */
+.lc-style-tabs {
+  display: flex;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 15px;
+  padding-bottom: 10px;
 }
 
-.message-float.compact .message-username {
+.lc-style-tab {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  padding: 5px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 4px;
+  margin-right: 5px;
+  transition: all 0.2s ease;
+}
+
+.lc-style-tab.active {
+  background: rgba(98, 134, 252, 0.2);
+  color: white;
+}
+
+.lc-style-tab:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.lc-style-reset {
+  background: rgba(244, 67, 54, 0.2);
+  border: none;
+  color: #ff5252;
+  padding: 5px 12px;
   font-size: 12px;
-  margin-bottom: 2px;
+  cursor: pointer;
+  border-radius: 4px;
+  margin-left: auto;
+  transition: all 0.2s ease;
 }
 
-.message-float.compact .message-text {
+.lc-style-reset:hover {
+  background: rgba(244, 67, 54, 0.3);
+}
+
+/* Theme grid */
+.lc-theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.lc-theme-option {
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  padding: 0 8px;
+}
+
+.lc-theme-option.selected {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px rgba(98, 134, 252, 0.5);
+  transform: scale(1.05);
+}
+
+.lc-theme-option:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Fonts grid */
+.lc-fonts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.lc-font-option {
+  height: 40px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  color: white;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+}
+
+.lc-font-option.selected {
+  border-color: rgba(98, 134, 252, 0.8);
+  background: rgba(98, 134, 252, 0.15);
+}
+
+.lc-font-option:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* Effects grid */
+.lc-effect-section {
+  margin-bottom: 15px;
+}
+
+.lc-effect-section h4 {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0 0 10px 0;
+}
+
+.lc-effects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 8px;
+}
+
+.lc-effect-option {
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
   font-size: 13px;
-  line-height: 1.3;
+  color: white;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+}
+
+.lc-effect-option.selected {
+  border-color: rgba(98, 134, 252, 0.8);
+  background: rgba(98, 134, 252, 0.15);
+}
+
+.lc-effect-option:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* Style preview */
+.lc-style-preview {
+  background: linear-gradient(to bottom, rgba(15, 15, 25, 0.5), rgba(10, 10, 20, 0.5));
+  border-radius: 12px;
+  padding: 15px 15px 12px 15px;
+  margin-top: 15px;
+  box-shadow: inset 0 1px 5px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(110, 142, 251, 0.1);
+  position: relative;
+}
+
+.lc-preview-label {
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  transform: translateY(-50%);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(15, 15, 25, 0.9);
+  padding: 2px 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(110, 142, 251, 0.15);
+}
+
+.lc-preview-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.lc-preview-user {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 4px;
+}
+
+.lc-preview-time {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 4px;
+}
+
+.lc-preview-bubble {
+  padding: 10px 14px;
+  border-radius: 16px 4px 16px 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  width: fit-content;
+  max-width: 100%;
+  position: relative;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  word-break: break-word;
+  overflow: visible; /* Prevent text clipping */
+}
+
+/* Fix text positioning within preview bubble */
+.lc-preview-text {
+  position: relative;
+  z-index: 1;
+  min-height: 20px; /* Ensure minimum height for empty messages */
+  max-height: 100px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0;
   margin: 0;
 }
 
-.message-float.compact .message-close {
-  width: 20px;
-  height: 20px;
+/* Sample text effects for preview */
+.lc-preview-text.neon {
+  text-shadow: 0 0 5px currentColor, 0 0 10px currentColor, 0 0 20px currentColor;
+}
+
+.lc-preview-text.matrix {
+  color: #4CAF50;
+  text-shadow: 0 0 5px #4CAF50;
+}
+
+.lc-preview-text.glitch {
+  position: relative;
+  animation: previewGlitch 2s infinite;
+}
+
+@keyframes previewGlitch {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+  20%, 40%, 60%, 80% { transform: translateX(2px); }
+}
+
+/* Enhanced styling UI - Add these improvements at the end of the file */
+
+/* Styling tool button - improved */
+.lc-chat-tool-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(110, 142, 251, 0.15);
+  color: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  flex-shrink: 0;
+  margin-right: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.lc-chat-tool-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(110, 142, 251, 0.2), rgba(120, 115, 245, 0.2));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  border-radius: 50%;
+}
+
+.lc-chat-tool-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(110, 142, 251, 0.25);
+}
+
+.lc-chat-tool-btn:hover::before {
+  opacity: 1;
+}
+
+.lc-chat-tool-btn svg {
+  position: relative;
+  z-index: 2;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+  transition: transform 0.3s ease;
+}
+
+.lc-chat-tool-btn:hover svg {
+  transform: scale(1.1);
+}
+
+/* Style options panel - enhanced */
+.lc-style-options-panel {
+  position: absolute;
+  bottom: 80px;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to bottom, rgba(23, 23, 40, 0.98), rgba(18, 18, 33, 0.98));
+  backdrop-filter: blur(15px);
+  border-top: 1px solid rgba(110, 142, 251, 0.15);
+  padding: 20px;
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -8px 25px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  max-height: 350px;
+  overflow-y: auto;
+  animation: enhancedSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(110, 142, 251, 0.3) transparent;
+}
+
+.lc-style-options-panel::-webkit-scrollbar {
+  width: 5px;
+}
+
+.lc-style-options-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.lc-style-options-panel::-webkit-scrollbar-thumb {
+  background: rgba(110, 142, 251, 0.3);
+  border-radius: 10px;
+}
+
+@keyframes enhancedSlideUp {
+  from { transform: translateY(30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Style panel header with glow */
+.lc-style-panel-header {
+  margin-bottom: 15px;
+  text-align: center;
+  position: relative;
+}
+
+.lc-style-panel-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+  margin: 0 0 5px 0;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  background: linear-gradient(90deg, #6E8EFB, #FF9A9E);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  position: relative;
+}
+
+.lc-style-panel-subtitle {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+}
+
+/* Enhanced style tabs */
+.lc-style-tabs {
+  display: flex;
+  border-bottom: 1px solid rgba(110, 142, 251, 0.2);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  position: relative;
+}
+
+.lc-style-tabs::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  height: 1px;
+  width: 100%;
+  background: linear-gradient(90deg, 
+    rgba(110, 142, 251, 0), 
+    rgba(110, 142, 251, 0.3),
+    rgba(110, 142, 251, 0));
+}
+
+.lc-style-tab {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  padding: 7px 14px;
   font-size: 14px;
-  opacity: 0.7;
-} */
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 6px;
+  margin-right: 8px;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  position: relative;
+  overflow: hidden;
+}
+
+.lc-style-tab::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(110, 142, 251, 0.1), rgba(120, 115, 245, 0.05));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  border-radius: 6px;
+}
+
+.lc-style-tab.active {
+  background: rgba(110, 142, 251, 0.15);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(110, 142, 251, 0.2);
+}
+
+.lc-style-tab.active::before {
+  opacity: 1;
+}
+
+.lc-style-tab:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.lc-style-tab:hover::before {
+  opacity: 0.5;
+}
+
+.lc-style-reset {
+  background: rgba(244, 67, 54, 0.1);
+  border: 1px solid rgba(244, 67, 54, 0.2);
+  color: #ff5252;
+  padding: 5px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 6px;
+  margin-left: auto;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.lc-style-reset:hover {
+  background: rgba(244, 67, 54, 0.15);
+  box-shadow: 0 2px 8px rgba(244, 67, 54, 0.15);
+  transform: translateY(-1px);
+}
+
+/* Enhanced theme grid */
+.lc-theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.lc-theme-option {
+  height: 45px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  border: 2px solid transparent;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  padding: 0 10px;
+  position: relative;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.lc-theme-option::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.lc-theme-option.selected {
+  border-color: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 0 2px rgba(110, 142, 251, 0.4), 0 4px 10px rgba(0, 0, 0, 0.2);
+  transform: scale(1.03) translateY(-3px);
+  z-index: 2;
+}
+
+.lc-theme-option:hover:not(.selected) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.lc-theme-option:hover::after {
+  opacity: 1;
+}
+
+/* Enhanced fonts grid */
+.lc-fonts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.lc-font-option {
+  height: 45px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 15px;
+  color: white;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  border: 2px solid transparent;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.lc-font-option::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(110, 142, 251, 0.05), rgba(110, 142, 251, 0));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.lc-font-option.selected {
+  border-color: rgba(110, 142, 251, 0.8);
+  background: rgba(110, 142, 251, 0.1);
+  box-shadow: 0 4px 12px rgba(110, 142, 251, 0.15);
+  transform: translateY(-2px);
+}
+
+.lc-font-option:hover:not(.selected) {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
+}
+
+.lc-font-option:hover::after {
+  opacity: 1;
+}
+
+/* Enhanced effects section */
+.lc-effect-section {
+  margin-bottom: 20px;
+  position: relative;
+  padding-bottom: 5px;
+}
+
+.lc-effect-section h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0 0 12px 0;
+  display: flex;
+  align-items: center;
+}
+
+.lc-effect-section h4::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 14px;
+  background: linear-gradient(to bottom, #6E8EFB, #7873F5);
+  margin-right: 8px;
+  border-radius: 2px;
+}
+
+.lc-effects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 10px;
+}
+
+.lc-effect-option {
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: white;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  border: 2px solid transparent;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.lc-effect-option::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(110, 142, 251, 0.05), rgba(120, 115, 245, 0));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.lc-effect-option.selected {
+  border-color: rgba(110, 142, 251, 0.7);
+  background: rgba(110, 142, 251, 0.1);
+  box-shadow: 0 4px 12px rgba(110, 142, 251, 0.15);
+  transform: translateY(-2px);
+}
+
+.lc-effect-option:hover:not(.selected) {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
+}
+
+.lc-effect-option:hover::before {
+  opacity: 1;
+}
+
+/* Enhanced style preview */
+.lc-style-preview {
+  background: linear-gradient(to bottom, rgba(15, 15, 25, 0.5), rgba(10, 10, 20, 0.5));
+  border-radius: 12px;
+  padding: 15px;
+  margin-top: 20px;
+  box-shadow: inset 0 1px 5px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(110, 142, 251, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.lc-style-preview::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  right: -50%;
+  bottom: -50%;
+  background: radial-gradient(circle at center, transparent 30%, rgba(110, 142, 251, 0.05) 100%);
+  opacity: 0.3;
+}
+
+.lc-preview-bubble {
+  padding: 14px 18px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  max-width: 100%;
+  margin: 0 auto;
+  position: relative;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+}
+
+.lc-preview-label {
+  position: absolute;
+  top: 15px;
+  left: 0;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  padding: 4px 8px;
+  border-radius: 0 0 6px 0;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* Enhanced text effects */
+.lc-preview-text.neon {
+  text-shadow: 
+    0 0 5px currentColor, 
+    0 0 10px currentColor, 
+    0 0 15px currentColor,
+    0 0 20px currentColor;
+  animation: neonPulse 1.5s infinite alternate;
+}
+
+@keyframes neonPulse {
+  from { text-shadow: 0 0 5px currentColor, 0 0 10px currentColor, 0 0 15px currentColor; }
+  to { text-shadow: 0 0 7px currentColor, 0 0 15px currentColor, 0 0 25px currentColor; }
+}
+
+.lc-preview-text.matrix {
+  color: #4CAF50;
+  text-shadow: 0 0 8px #4CAF50;
+  font-family: 'Fira Code', monospace;
+  position: relative;
+}
+
+.lc-preview-text.matrix::before {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: rgba(76, 175, 80, 0.7);
+  filter: blur(1px);
+  animation: matrixGlitch 0.3s infinite linear alternate-reverse;
+}
+
+@keyframes matrixGlitch {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(1px); }
+  75% { transform: translateX(-1px); }
+}
+
+.lc-preview-text.glitch {
+  position: relative;
+  animation: enhancedGlitch 2.5s infinite;
+}
+
+.lc-preview-text.glitch::before,
+.lc-preview-text.glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.8;
+  mix-blend-mode: overlay;
+}
+
+.lc-preview-text.glitch::before {
+  color: #ff00ff;
+  animation: glitchShift1 0.4s infinite;
+  clip-path: polygon(0 15%, 100% 15%, 100% 30%, 0 30%);
+  transform: translate(-2px);
+}
+
+.lc-preview-text.glitch::after {
+  color: #00ffff;
+  animation: glitchShift2 0.4s infinite;
+  clip-path: polygon(0 65%, 100% 65%, 100% 80%, 0 80%);
+  transform: translate(2px);
+}
+
+@keyframes enhancedGlitch {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-1px); text-shadow: 1px 0 0 red, -1px 0 0 blue; }
+  20%, 40%, 60%, 80% { transform: translateX(1px); text-shadow: -1px 0 0 red, 1px 0 0 blue; }
+}
+
+@keyframes glitchShift1 {
+  0%, 100% { transform: translate(-2px); }
+  50% { transform: translate(2px); }
+}
+
+@keyframes glitchShift2 {
+  0%, 100% { transform: translate(2px); }
+  50% { transform: translate(-2px); }
+}
+
+/* Animation effects for the bubble preview */
+.lc-preview-bubble.pulse {
+  animation: stylePulse 2s infinite;
+}
+
+.lc-preview-bubble.gradient {
+  background-size: 400% 400% !important;
+  animation: styleGradientShift 3s ease infinite;
+}
+
+.lc-preview-bubble.rainbow {
+  border: 2px solid transparent;
+  animation: styleRainbowBorder 2s linear infinite;
+}
+
+.lc-preview-bubble.glow {
+  animation: styleGlowPulse 1.5s infinite alternate;
+}
+
+@keyframes stylePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+@keyframes styleGradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes styleRainbowBorder {
+  0% { border-color: #ff0000; }
+  17% { border-color: #ff8000; }
+  33% { border-color: #ffff00; }
+  50% { border-color: #00ff00; }
+  67% { border-color: #0000ff; }
+  83% { border-color: #8000ff; }
+  100% { border-color: #ff0000; }
+}
+
+@keyframes styleGlowPulse {
+  from { box-shadow: 0 0 5px currentColor, 0 0 10px currentColor; }
+  to { box-shadow: 0 0 15px currentColor, 0 0 25px currentColor; }
+}
+
+/* Add styles for custom theme creator and background animations */
+
+/* Custom Theme Creator */
+.lc-custom-theme-creator {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.lc-custom-theme-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.lc-color-input-group {
+  flex: 1;
+  min-width: 120px;
+}
+
+.lc-color-input-group label {
+  display: block;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 5px;
+}
+
+.lc-color-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lc-color-picker input[type="color"] {
+  -webkit-appearance: none;
+  width: 35px;
+  height: 35px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  cursor: pointer;
+}
+
+.lc-color-picker input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.lc-color-picker input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: 6px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.lc-color-picker input[type="text"] {
+  flex: 1;
+  background: rgba(30, 30, 50, 0.5);
+  border: 1px solid rgba(110, 142, 251, 0.2);
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: white;
+  font-size: 14px;
+  font-family: 'Fira Code', monospace;
+}
+
+.lc-apply-custom-theme {
+  margin-top: 10px;
+  background: linear-gradient(135deg, #6E8EFB, #7873F5);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-weight: 500;
+  padding: 10px 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 3px 10px rgba(110, 142, 251, 0.2);
+  align-self: flex-start;
+}
+
+.lc-apply-custom-theme:hover {
+  box-shadow: 0 5px 15px rgba(110, 142, 251, 0.3);
+  transform: translateY(-2px);
+}
+
+/* Toggle switch for gradient mode */
+.lc-gradient-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lc-gradient-toggle span {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.lc-toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 24px;
+}
+
+.lc-toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.lc-toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(30, 30, 50, 0.5);
+  transition: .3s;
+  border-radius: 24px;
+}
+
+.lc-toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .3s;
+  border-radius: 50%;
+}
+
+input:checked + .lc-toggle-slider {
+  background-color: rgba(110, 142, 251, 0.7);
+}
+
+input:checked + .lc-toggle-slider:before {
+  transform: translateX(26px);
+}
+
+/* Enhanced Preview styles */
+.lc-style-preview {
+  background: linear-gradient(to bottom, rgba(15, 15, 25, 0.5), rgba(10, 10, 20, 0.5));
+  border-radius: 12px;
+  padding: 20px 15px;
+  margin-top: 20px;
+  box-shadow: inset 0 1px 5px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(110, 142, 251, 0.1);
+  position: relative;
+}
+
+.lc-preview-label {
+  position: absolute;
+  top: 15px;
+  left: 12px;
+  transform: translateY(-50%);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(15, 15, 25, 0.9);
+  padding: 2px 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(110, 142, 251, 0.15);
+}
+
+.lc-preview-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.lc-preview-user {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 4px;
+}
+
+.lc-preview-time {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 4px;
+}
+
+.lc-preview-bubble {
+  padding: 10px 14px;
+  border-radius: 16px 4px 16px 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  width: fit-content;
+  max-width: 80%;
+  position: relative;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Background animations */
+.lc-message-bubble.bg-pulse,
+.lc-preview-bubble.bg-pulse {
+  animation: bgPulse 2s infinite alternate;
+}
+
+.lc-message-bubble.bg-gradient-flow,
+.lc-preview-bubble.bg-gradient-flow {
+  background-size: 300% 300% !important;
+  animation: bgGradientFlow 5s ease infinite;
+}
+
+.lc-message-bubble.bg-glow,
+.lc-preview-bubble.bg-glow {
+  animation: bgGlow 1.5s infinite alternate;
+}
+
+.lc-message-bubble.bg-shimmer,
+.lc-preview-bubble.bg-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.lc-message-bubble.bg-shimmer::before,
+.lc-preview-bubble.bg-shimmer::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  right: -50%;
+  bottom: -50%;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: rotate(45deg);
+  animation: shimmerEffect 3s infinite;
+}
+
+.lc-message-bubble.bg-cyberpunk,
+.lc-preview-bubble.bg-cyberpunk {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(0, 255, 255, 0.3);
+}
+
+.lc-message-bubble.bg-cyberpunk::before,
+.lc-preview-bubble.bg-cyberpunk::before {
+  content: '';
+  position: absolute;
+  width: 200%;
+  height: 200%;
+  top: -50%;
+  left: -50%;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(0, 255, 255, 0.1) 0%,
+    rgba(0, 0, 0, 0) 70%
+  );
+  animation: cyberpunkGlow 4s infinite;
+}
+
+.lc-message-bubble.bg-cyberpunk::after,
+.lc-preview-bubble.bg-cyberpunk::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    rgba(0, 255, 255, 0),
+    rgba(0, 255, 255, 0.8),
+    rgba(0, 255, 255, 0)
+  );
+  animation: cyberpunkScan 3s infinite linear;
+}
+
+/* Animation keyframes for backgrounds */
+@keyframes bgPulse {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.03); }
+}
+
+@keyframes bgGradientFlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes bgGlow {
+  0% { box-shadow: 0 0 5px rgba(255, 255, 255, 0.1), 
+                0 0 10px rgba(255, 255, 255, 0.1); }
+  100% { box-shadow: 0 0 15px rgba(255, 255, 255, 0.3), 
+                  0 0 30px rgba(255, 255, 255, 0.1); }
+}
+
+@keyframes shimmerEffect {
+  0% { transform: translateX(-100%) rotate(45deg); }
+  100% { transform: translateX(100%) rotate(45deg); }
+}
+
+@keyframes cyberpunkGlow {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes cyberpunkScan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(1000%); }
+}
+
+/* Refined styling for the theme customization UI */
+
+/* More compact style options panel */
+.lc-style-options-panel {
+  padding: 15px;
+  max-height: 380px;
+}
+
+/* More compact tabs with better spacing */
+.lc-style-tabs {
+  padding-bottom: 8px;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+}
+
+.lc-style-tab {
+  padding: 5px 10px;
+  font-size: 13px;
+  margin-right: 6px;
+  margin-bottom: 4px;
+}
+
+/* More compact and refined theme grid */
+.lc-theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+  position: relative;
+}
+
+.lc-theme-option {
+  height: 38px;
+  border-radius: 8px;
+  font-size: 11px;
+  padding: 0 6px;
+}
+
+/* Add theme button */
+.lc-add-theme-button {
+  height: 38px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 2px dashed rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.7);
+  transition: all 0.2s ease;
+}
+
+.lc-add-theme-button:hover {
+  border-color: rgba(110, 142, 251, 0.4);
+  background: rgba(110, 142, 251, 0.08);
+  color: white;
+  transform: translateY(-2px);
+}
+
+.lc-add-theme-button svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* More compact custom theme creator */
+.lc-custom-theme-creator {
+  background: rgba(15, 15, 25, 0.3);
+  border-radius: 10px;
+  padding: 12px;
+  margin: 10px 0 15px 0;
+  gap: 12px;
+  border: 1px solid rgba(110, 142, 251, 0.1);
+}
+
+.lc-custom-theme-row {
+  gap: 10px;
+}
+
+.lc-color-input-group label {
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.lc-color-picker {
+  gap: 6px;
+}
+
+.lc-color-picker input[type="color"] {
+  width: 30px;
+  height: 30px;
+}
+
+.lc-color-picker input[type="text"] {
+  padding: 6px 8px;
+  font-size: 13px;
+}
+
+.lc-apply-custom-theme {
+  margin-top: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+/* Toggle switch - more compact */
+.lc-gradient-toggle {
+  gap: 8px;
+}
+
+.lc-gradient-toggle span {
+  font-size: 13px;
+}
+
+.lc-toggle-switch {
+  width: 40px;
+  height: 20px;
+}
+
+.lc-toggle-slider:before {
+  height: 14px;
+  width: 14px;
+  left: 3px;
+  bottom: 3px;
+}
+
+input:checked + .lc-toggle-slider:before {
+  transform: translateX(20px);
+}
+
+/* More compact fonts grid */
+.lc-fonts-grid {
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 8px;
+}
+
+.lc-font-option {
+  height: 38px;
+  font-size: 13px;
+}
+
+/* More compact effects section */
+.lc-effect-section {
+  margin-bottom: 15px;
+}
+
+.lc-effect-section h4 {
+  font-size: 13px;
+  margin: 0 0 8px 0;
+}
+
+.lc-effect-section h4::before {
+  width: 3px;
+  height: 13px;
+  margin-right: 6px;
+}
+
+.lc-effects-grid {
+  grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
+  gap: 8px;
+}
+
+.lc-effect-option {
+  height: 34px;
+  font-size: 12px;
+}
+
+/* More refined preview */
+.lc-style-preview {
+  padding: 15px 12px;
+  margin-top: 15px;
+}
+
+.lc-preview-container {
+  padding: 0 5px;
+}
+
+/* Updated styles to fix the gradient inputs layout issue */
+
+/* Make gradient toggle and rows more responsive */
+.lc-custom-theme-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+/* Gradient toggle improvements */
+.lc-gradient-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+
+/* Color input group improvements */
+.lc-color-input-group {
+  width: 100%;
+  min-width: auto;
+}
+
+/* Make text inputs more responsive */
+.lc-color-picker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.lc-color-picker input[type="color"] {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+}
+
+.lc-color-picker input[type="text"] {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  padding: 6px 8px;
+}
+
+/* For gradient mode, use grid layout instead */
+.lc-gradient-colors-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+}
+
+/* Special handling for small screens */
+@media (max-width: 350px) {
+  .lc-gradient-colors-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Make the apply button more aligned */
+.lc-apply-custom-theme {
+  align-self: center;
+  width: 100%;
+  margin-top: 10px;
+}
+
+/* Enhanced custom theme creator styles with better layout for gradient inputs */
+
+/* Gradient colors container */
+.lc-gradient-colors-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+}
+
+@media (max-width: 350px) {
+  .lc-gradient-colors-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Hint for first-time users */
+.lc-theme-creator-hint {
+  display: flex;
+  align-items: center;
+  background: rgba(110, 142, 251, 0.1);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  border-left: 3px solid rgba(110, 142, 251, 0.5);
+}
+
+.lc-hint-icon {
+  width: 16px;
+  height: 16px;
+  color: rgba(110, 142, 251, 0.8);
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.lc-theme-creator-hint span {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.4;
+}
+
+/* Theme creator action buttons */
+.lc-theme-creator-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.lc-apply-custom-theme {
+  flex: 1;
+  background: linear-gradient(135deg, #6E8EFB, #7873F5);
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-weight: 500;
+  padding: 8px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lc-apply-custom-theme:hover {
+  box-shadow: 0 4px 10px rgba(110, 142, 251, 0.3);
+  transform: translateY(-1px);
+}
+
+.lc-cancel-custom-theme {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.8);
+  padding: 8px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lc-cancel-custom-theme:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Success feedback animation */
+@keyframes successFeedback {
+  0% { background-position: 0%; }
+  100% { background-position: 100%; }
+}
+
+.lc-apply-custom-theme.success {
+  background: linear-gradient(90deg, #4CAF50, #8BC34A, #4CAF50);
+  background-size: 200%;
+  animation: successFeedback 1s ease;
+}
+
+/* Fix for gradient inputs and custom theme creator */
+
+/* Updated gradient colors container - vertical layout */
+.lc-gradient-colors-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+/* Theme name input field */
+.lc-theme-name-input {
+  width: 100%;
+  margin-bottom: 12px;
+  position: relative;
+}
+
+.lc-theme-name-input label {
+  display: block;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 4px;
+}
+
+.lc-theme-name-input input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(110, 142, 251, 0.2);
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: white;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.lc-theme-name-input input:focus {
+  border-color: rgba(110, 142, 251, 0.4);
+  background: rgba(255, 255, 255, 0.12);
+  outline: none;
+}
+
+/* Saved themes section */
+.lc-saved-themes-section {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.lc-saved-themes-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.lc-saved-themes-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0;
+  display: flex;
+  align-items: center;
+}
+
+.lc-saved-themes-title::before {
+  content: '';
+  display: inline-block;
+  width: 3px;
+  height: 13px;
+  background: linear-gradient(to bottom, #6E8EFB, #7873F5);
+  margin-right: 6px;
+  border-radius: 2px;
+}
+
+.lc-saved-theme-item {
+  position: relative;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lc-saved-theme-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
+}
+
+.lc-saved-theme-color {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  margin-right: 10px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.lc-saved-theme-name {
+  font-size: 12px;
+  color: white;
+  flex-grow: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lc-saved-theme-delete {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: all 0.2s ease;
+}
+
+.lc-saved-theme-item:hover .lc-saved-theme-delete {
+  opacity: 1;
+}
+
+.lc-saved-theme-delete:hover {
+  background: rgba(244, 67, 54, 0.15);
+  color: #ff5252;
+}
+
+/* Save theme button */
+.lc-save-theme-btn {
+  background: rgba(76, 175, 80, 0.15);
+  border: 1px solid rgba(76, 175, 80, 0.3);
+  color: #4CAF50;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lc-save-theme-btn:hover {
+  background: rgba(76, 175, 80, 0.2);
+  box-shadow: 0 2px 6px rgba(76, 175, 80, 0.2);
+  transform: translateY(-1px);
+}
+
+.lc-save-theme-btn.success {
+  background: #4CAF50;
+  color: white;
+}
+
+/* Theme creator actions - updated for 3 buttons */
+.lc-theme-creator-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.lc-apply-custom-theme {
+  flex: 1;
+  max-width: 35%;
+}
+
+.lc-save-theme-btn {
+  flex: 1;
+  max-width: 35%;
+}
+
+.lc-cancel-custom-theme {
+  flex-shrink: 0;
+  max-width: 30%;
+}

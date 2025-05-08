@@ -419,8 +419,54 @@ export default function LeaderboardClient({ initialData }) {
         setUpdateDetected(true);
         setTimeout(() => setUpdateDetected(false), 1500);
 
-        // Refresh the data
-        await refreshData();
+        // IMPORTANT CHANGE: Set isRefreshing to prevent competing updates
+        setIsRefreshing(true);
+
+        try {
+          // Directly fetch fresh data from the API
+          const freshDataResponse = await fetch(
+            `/api/holders?refresh=true&t=${Date.now()}&forceFresh=true`,
+            {
+              headers: {
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                Pragma: "no-cache",
+                Expires: "0",
+              },
+              cache: "no-store",
+            }
+          );
+
+          if (!freshDataResponse.ok) {
+            throw new Error(
+              `Failed to fetch fresh data: ${freshDataResponse.status}`
+            );
+          }
+
+          // Parse the fresh data
+          const freshData = await freshDataResponse.json();
+
+          // Clear any existing cache that might be causing the reversion
+          try {
+            sessionStorage.removeItem("cache_/api/holders");
+            localStorage.setItem(
+              "lastHoldersRefresh",
+              data.timestamp.toString()
+            );
+          } catch (e) {
+            console.warn("Could not clear cached data:", e);
+          }
+
+          // Update the SWR cache with fresh data and force it to revalidate
+          await refreshData(freshData, { revalidate: true });
+
+          // Update the last refresh time
+          setLastRefreshTime(Date.now());
+        } catch (error) {
+          console.error("Error refreshing data after update detection:", error);
+        } finally {
+          // Release the refresh lock after a short delay
+          setTimeout(() => setIsRefreshing(false), 500);
+        }
 
         // Check holder position if needed
         if (
@@ -430,13 +476,6 @@ export default function LeaderboardClient({ initialData }) {
           )
         ) {
           checkHolderPosition(true);
-        }
-
-        // Update the timestamp
-        try {
-          localStorage.setItem("lastHoldersRefresh", data.timestamp.toString());
-        } catch (e) {
-          console.warn("Could not update lastHoldersRefresh:", e);
         }
 
         return true;
@@ -454,6 +493,8 @@ export default function LeaderboardClient({ initialData }) {
     userHolderData,
     checkHolderPosition,
     isRefreshing,
+    setIsRefreshing,
+    setLastRefreshTime,
   ]);
 
   // Modify the handleRefresh function in Leaderboard.js
@@ -739,6 +780,8 @@ export default function LeaderboardClient({ initialData }) {
     // Update state if there are changes
     if (updates.size > 0) {
       console.log(`Found ${updates.size} holders with balance changes`);
+
+      // Store the updated addresses for highlighting
       setUpdatedHolders(updates);
 
       // If the changed address matches our wallet, refresh position
@@ -749,7 +792,13 @@ export default function LeaderboardClient({ initialData }) {
         checkHolderPosition(true);
       }
 
-      // Store timer ID for cleanup
+      // IMPORTANT: Make sure to update the previousHoldersRef AFTER setting updatedHolders
+      // This ensures we don't lose the updated state
+      previousHoldersRef.current = new Map(
+        data.holders.map((h) => [h.address.toLowerCase(), h.balance])
+      );
+
+      // Clear the highlighting after animation completes
       const timerId = setTimeout(() => {
         setUpdatedHolders(new Set());
       }, 4000);
@@ -758,10 +807,13 @@ export default function LeaderboardClient({ initialData }) {
       return () => clearTimeout(timerId);
     }
 
-    // Update reference for next comparison - use Map for better performance
-    previousHoldersRef.current = new Map(
-      data.holders.map((h) => [h.address.toLowerCase(), h.balance])
-    );
+    // Update reference for next comparison ONLY if no updates were found
+    // This prevents losing updated values
+    if (updates.size === 0) {
+      previousHoldersRef.current = new Map(
+        data.holders.map((h) => [h.address.toLowerCase(), h.balance])
+      );
+    }
 
     // Always return a function for cleanup
     return () => {};
@@ -1744,7 +1796,7 @@ export default function LeaderboardClient({ initialData }) {
                   className="leaderboard-title"
                 >
                   {/* <h2>LockChain Holders</h2> */}
-                  <div className="leaderboard-controls">
+                  {/* <div className="leaderboard-controls">
                     <button
                       className="theme-toggle"
                       onClick={toggleTheme}
@@ -1752,7 +1804,7 @@ export default function LeaderboardClient({ initialData }) {
                     >
                       {darkMode ? "☀️" : "🌙"}
                     </button>
-                  </div>
+                  </div> */}
                 </div>
                 <div className="social-links">
                   {STATIC_SOCIAL_LINKS.map((social) => (

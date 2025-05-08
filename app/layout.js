@@ -15,6 +15,7 @@ import { DataCacheProvider } from "./context/DataCacheContext";
 import { GlobalMessagesProvider } from "./context/GlobalMessagesContext";
 import GlobalMessageBubble from "./components/GlobalMessageBubble";
 import { PriceProvider } from "./context/PriceContext";
+import Footer from "./components/Footer";
 
 export default function RootLayout({ children }) {
   const [mounted, setMounted] = useState(false);
@@ -121,6 +122,7 @@ export default function RootLayout({ children }) {
                         <PriceProvider>
                           {mounted && <Header />}
                           {children}
+                          {mounted && <Footer />}
                         </PriceProvider>
                         <GlobalMessageBubble />
                       </GlobalMessagesProvider>
