@@ -14,6 +14,7 @@ const nextConfig = {
       "dextools.io",
       "basescan.org",
       "res.cloudinary.com",
+      "i.ibb.co",
     ],
     remotePatterns: [
       {
