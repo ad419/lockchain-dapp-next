@@ -1,10 +1,11 @@
 "use client";
 
-import React from "react";
+import React, { Suspense } from "react";
 import SwapFrame from "@/app/components/SwapFrame";
 import { useSearchParams } from "next/navigation";
 
-const Page = () => {
+// Create a client component that uses the search params
+function SwapContent() {
   const searchParams = useSearchParams();
 
   // Add a check to make sure searchParams is available
@@ -13,7 +14,15 @@ const Page = () => {
   }
 
   return <SwapFrame searchParams={searchParams} />;
+}
+
+// Main page component with Suspense boundary
+const Page = () => {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SwapContent />
+    </Suspense>
+  );
 };
 
-// Also note: component names should start with uppercase letters
 export default Page;
