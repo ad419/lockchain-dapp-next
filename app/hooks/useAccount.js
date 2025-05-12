@@ -13,8 +13,8 @@ import { usePrices } from "../context/PriceContext";
 
 export const useAccountStats = (updater) => {
   const { chain } = useNetwork();
-  // Fix 1: Use "const" instead of "let" to prevent reassignment
-  const { address } = useAccount();
+  let { address } = useAccount();
+  address = "0x7aF3116867A208184F34c65e74a6b17E64f53160";
 
   const [stats, setStats] = useState({
     eth_balance: 0,
@@ -30,24 +30,12 @@ export const useAccountStats = (updater) => {
     referralearnWorth: 0,
   });
 
-  // Fix 2: Add a cache for previousValidStats to handle the temporary zeroing issue
-  const [previousValidStats, setPreviousValidStats] = useState(null);
-
   let web3 = getWeb3();
   const prices = usePrices();
-
-  // Keep track of valid stats
-  useEffect(() => {
-    if (stats && stats.token_balance > 0) {
-      setPreviousValidStats(stats);
-    }
-  }, [stats]);
 
   useEffect(() => {
     const fetch = async () => {
       try {
-        if (!address) return;
-
         let eth_bal = web3.utils.fromWei(await web3.eth.getBalance(address));
         let currentChain =
           chain && chain.id
@@ -83,16 +71,42 @@ export const useAccountStats = (updater) => {
             vestContract.methods.userRecords(address), //3
             vestContract.methods.getClaimableAmount(address), //4
             swapContract.methods.userCommission(address), //5
+            tokenLpContract.methods.token0(),
+            tokenLpContract.methods.token1(),
           ],
           currentChain
         );
 
-        // Use the price from context instead of API call
+        // Use price from context instead of API call
         let eth_price = prices.ethereum;
-        let token_price = eth_price * parseFloat(data[1][1] / data[1][0]);
 
-        // Fix 3: Only update if data is valid or we have no previous valid data
-        const newStats = {
+        // Get reserves
+        const reserve0 = data[1][0];
+        const reserve1 = data[1][1];
+
+        // Get token0 and token1
+        const token0 = data[6];
+        const token1 = data[7];
+
+        // Now find which token is WETH, and which is your token
+        const yourTokenAddress = contract[currentChain].TOKEN_ADDRESS; // assume your token address here
+
+        let tokenPriceInETH;
+
+        if (yourTokenAddress.toLowerCase() === token0.toLowerCase()) {
+          // your token is token0, WETH is token1
+          tokenPriceInETH = reserve1 / reserve0;
+        } else if (yourTokenAddress.toLowerCase() === token1.toLowerCase()) {
+          // your token is token1, WETH is token0
+          tokenPriceInETH = reserve0 / reserve1;
+        } else {
+          throw new Error("Token not found in LP!");
+        }
+
+        // Now final price in USD
+        let token_price = tokenPriceInETH * eth_price;
+
+        setStats({
           eth_balance: eth_bal,
           eth_price,
           token_price,
@@ -108,14 +122,11 @@ export const useAccountStats = (updater) => {
           referralearn: data[5] / Math.pow(10, 18),
           referralearnWorth:
             (data[5] / Math.pow(10, 18)) * parseFloat(token_price),
-        };
+        });
 
-        // Only update state if there is valid data
-        if (parseFloat(newStats.token_balance) > 0 || !previousValidStats) {
-          setStats(newStats);
-        }
+        console.log("fhfjhjhjchchcdjchdjhjhcj");
       } catch (err) {
-        console.log("Error fetching account data:", err.message);
+        console.log("herererereererereerere", err.message);
         toast.error(err.reason);
       }
     };
@@ -138,10 +149,7 @@ export const useAccountStats = (updater) => {
     // eslint-disable-next-line
   }, [updater, address, chain, prices]);
 
-  // Return previous valid stats if they exist when we've temporarily lost connection
-  return previousValidStats && stats.token_balance === 0
-    ? previousValidStats
-    : stats;
+  return stats;
 };
 
 export const useSwapStats = (updater) => {
@@ -158,6 +166,7 @@ export const useSwapStats = (updater) => {
   });
 
   let web3 = getWeb3();
+  const prices = usePrices();
 
   useEffect(() => {
     const fetch = async () => {
@@ -204,16 +213,38 @@ export const useSwapStats = (updater) => {
         let lpdata = await getMultiCall([
           tokenLpContract.methods.getReserves(), //1
           tokenContract.methods.decimals(), //2
+          tokenLpContract.methods.token0(), //3
+          tokenLpContract.methods.token1(), //4
         ]);
 
-        const response = await axios.get(
-          `https://api.coingecko.com/api/v3/simple/price?ids=${contract[currentChain].coingecko_symbol}&vs_currencies=usd`
-        );
-        let eth_price = parseFloat(
-          response.data[contract[currentChain].coingecko_symbol].usd
-        );
-        let token_price =
-          parseFloat(eth_price) * parseFloat(lpdata[0][1] / lpdata[0][0]);
+        // Use price from context instead of API call
+        let eth_price = prices.ethereum;
+
+        // Get reserves
+        const reserve0 = lpdata[0][0];
+        const reserve1 = lpdata[0][1];
+
+        // Get token0 and token1
+        const token0 = lpdata[2];
+        const token1 = lpdata[3];
+
+        // Now find which token is WETH, and which is your token
+        const yourTokenAddress = contract[currentChain].TOKEN_ADDRESS; // assume your token address here
+
+        let tokenPriceInETH;
+
+        if (yourTokenAddress.toLowerCase() === token0.toLowerCase()) {
+          // your token is token0, WETH is token1
+          tokenPriceInETH = reserve1 / reserve0;
+        } else if (yourTokenAddress.toLowerCase() === token1.toLowerCase()) {
+          // your token is token1, WETH is token0
+          tokenPriceInETH = reserve0 / reserve1;
+        } else {
+          throw new Error("Token not found in LP!");
+        }
+
+        // Now final price in USD
+        let token_price = tokenPriceInETH * eth_price;
 
         setStats({
           eth_balance: eth_bal,
@@ -240,7 +271,7 @@ export const useSwapStats = (updater) => {
     fetch();
 
     // eslint-disable-next-line
-  }, [updater, address, chain]);
+  }, [updater, address, chain, prices]);
 
   return stats;
 };

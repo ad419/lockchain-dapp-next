@@ -50,6 +50,8 @@ export const useTokenInfoStats = (updater) => {
           tokenContract.methods.balanceOf(
             contract[currentChain].TOKEN_LP_ADDRESS
           ), //3
+          tokenLpContract.methods.token0(), //4
+          tokenLpContract.methods.token1(), //5
         ]);
 
         const response = await axios.get(
@@ -58,7 +60,32 @@ export const useTokenInfoStats = (updater) => {
         let eth_price = parseFloat(
           response.data[contract[currentChain].coingecko_symbol].usd
         );
-        let token_price = eth_price * (data[2][1] / data[2][0]);
+
+        // Get reserves
+        const reserve0 = data[2][0];
+        const reserve1 = data[2][1];
+
+        // Get token0 and token1
+        const token0 = data[4];
+        const token1 = data[5];
+
+        // Now find which token is WETH, and which is your token
+        const yourTokenAddress = contract[currentChain].TOKEN_ADDRESS; // assume your token address here
+
+        let tokenPriceInETH;
+
+        if (yourTokenAddress.toLowerCase() === token0.toLowerCase()) {
+          // your token is token0, WETH is token1
+          tokenPriceInETH = reserve1 / reserve0;
+        } else if (yourTokenAddress.toLowerCase() === token1.toLowerCase()) {
+          // your token is token1, WETH is token0
+          tokenPriceInETH = reserve0 / reserve1;
+        } else {
+          throw new Error("Token not found in LP!");
+        }
+
+        // Now final price in USD
+        let token_price = tokenPriceInETH * eth_price;
 
         setStats({
           decimal: data[0],

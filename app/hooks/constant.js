@@ -72,12 +72,12 @@ export const contract = {
     EXPLORE: "https://basescan.org/",
     MULTICALL_ADDRESS: "0xfEE958Fa595B4478cea7560C91400A98b83d6C91",
     WETH_ADDRESS: "0x4200000000000000000000000000000000000006",
-    TOKEN_ADDRESS: "0x01FCE8e7a17b90DD0aAf761Fd889f66a469fdFC2", // New token address
-    TOKEN_LP_ADDRESS: "0xaee35AAf149de47d1a6733f892917e66BD72A1DB", // New LP address you just found
-    VESTING_ADDRESS: "0x1a704B26159d9ae75CCd12b09c2D8E3C9bdcD7F6", // Updated vesting address
+    TOKEN_ADDRESS: "0x7ED77Dbd3f1ebEcd92dBFf6068Cc272f223B21d9", // New token address
+    TOKEN_LP_ADDRESS: "0x5f5099feFA7EC724b89992F176377Fdf9f86be76", // New LP address you just found
+    VESTING_ADDRESS: "0x383dEC383d35A09B3213aa7d8d6CEe9c43F97ee3", // Updated vesting address
     WETH: "0x4200000000000000000000000000000000000006", // WETH stays the same
     ROUTER_ADDRESS: "0x4752ba5dbc23f44d87826276bf6fd6b1c372ad24", // Keeping router the same unless you have a new address
-    SWAP_ADDRESS: "0x0eade3d8635E31740Dcda1fC8301150a3CbB35D3", // Updated swap address
+    SWAP_ADDRESS: "0xdb23E17b72b8bB637Da934D8cfD0815b267729eb", // Updated swap address
   },
 };
 

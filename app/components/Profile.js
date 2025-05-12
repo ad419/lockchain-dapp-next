@@ -19,38 +19,6 @@ export default function Profile() {
   const accStats = useAccountStats(updater);
   const signer = useEthersSigner();
 
-  // Refresh stats when address changes or after transactions
-  useEffect(() => {
-    if (address) {
-      setUpdater((prev) => prev + 1);
-    }
-  }, [address]);
-
-  // Function to manually refresh data
-  const refreshData = () => {
-    setUpdater((prev) => prev + 1);
-  };
-
-  // Add transaction listeners to auto-refresh after transactions
-  useEffect(() => {
-    if (!window.ethereum) return;
-
-    const handleNewBlock = () => {
-      refreshData();
-    };
-
-    // Listen for new blocks which may contain our transactions
-    window.ethereum.on("block", handleNewBlock);
-
-    // Listen for account changes
-    window.ethereum.on("accountsChanged", refreshData);
-
-    return () => {
-      window.ethereum.removeListener("block", handleNewBlock);
-      window.ethereum.removeListener("accountsChanged", refreshData);
-    };
-  }, []);
-
   const handleClaimReward = async () => {
     if (address) {
       if (chain && chain.id && SUPPORTED_CHAIN.includes(chain.id)) {
