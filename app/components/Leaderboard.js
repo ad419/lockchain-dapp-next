@@ -29,8 +29,10 @@ import Tooltip from "./Tooltip";
 import "../styles/Leaderboard.css";
 import Link from "next/link";
 import Image from "next/image";
+import Messages from "./Messages";
 import { useToast } from "../context/ToastContext";
 import { useWalletClaim } from "../context/WalletClaimContext";
+import { useRouter } from "next/navigation";
 
 const MAX_SUPPLY = 1_000_000_000;
 const DEFAULT_TOKEN_DATA = {
@@ -61,7 +63,7 @@ const RANK_TITLES = {
   10: { title: "Tier 3", color: "#7DA0FF", badge: "🛡️" },
 };
 
-const defaultTokenLogo = "https://i.ibb.co/xKJ4q07p/logo.png";
+const defaultTokenLogo = "../images/logo.png";
 
 const getRankTitle = (rank) => {
   if (rank <= 10) {
@@ -74,9 +76,9 @@ const getRankTitle = (rank) => {
 
 // Update your fetcher function to handle 304 responses
 
+// 1. Update the fetcher function to remove sessionStorage caching
 const fetcher = async (url, { refreshData } = {}) => {
   try {
-    // Add timestamp only when explicitly refreshing or in live mode
     const timestamp =
       refreshData || url.includes("live=true") ? `&t=${Date.now()}` : "";
     const fetchUrl = `${url}${
@@ -85,7 +87,6 @@ const fetcher = async (url, { refreshData } = {}) => {
 
     console.log(`Fetching ${fetchUrl}`);
 
-    // Add cache control headers to prevent browser caching
     const response = await fetch(fetchUrl, {
       headers: {
         "Cache-Control": "no-cache, no-store, must-revalidate",
@@ -94,7 +95,6 @@ const fetcher = async (url, { refreshData } = {}) => {
       },
     });
 
-    // Handle 404 Not Found specifically
     if (response.status === 404) {
       console.error(`API endpoint not found: ${fetchUrl}`);
       throw new Error(`API endpoint not found (404): ${url}`);
@@ -106,12 +106,13 @@ const fetcher = async (url, { refreshData } = {}) => {
 
     const data = await response.json();
 
+    // Only store the refresh timestamp, not the actual data
     try {
-      sessionStorage.setItem(`cache_${url}`, JSON.stringify(data));
-      sessionStorage.setItem(`cache_timestamp_${url}`, Date.now().toString());
+      // REMOVED: sessionStorage.setItem(`cache_${url}`, JSON.stringify(data));
+      // REMOVED: sessionStorage.setItem(`cache_timestamp_${url}`, Date.now().toString());
       localStorage.setItem("lastHoldersRefresh", Date.now().toString());
     } catch (e) {
-      console.warn("Could not cache data:", e);
+      console.warn("Could not update refresh timestamp:", e);
     }
 
     return data;
@@ -193,7 +194,70 @@ const isSafeUrl = (url) => {
   }
 };
 
+// Add this hook near the top of your component file
+
+// Custom hook for responsive address formatting
+const useResponsiveAddressFormat = () => {
+  const [format, setFormat] = useState({
+    prefixLength: 6,
+    suffixLength: 4,
+  });
+
+  useEffect(() => {
+    const updateFormat = () => {
+      if (window.innerWidth <= 320) {
+        setFormat({ prefixLength: 4, suffixLength: 3 });
+      } else if (window.innerWidth <= 375) {
+        setFormat({ prefixLength: 5, suffixLength: 3 });
+      } else {
+        setFormat({ prefixLength: 6, suffixLength: 4 });
+      }
+    };
+
+    // Initial format
+    updateFormat();
+
+    // Update on resize
+    window.addEventListener("resize", updateFormat);
+    return () => window.removeEventListener("resize", updateFormat);
+  }, []);
+
+  return format;
+};
+
 export default function LeaderboardClient({ initialData }) {
+  const router = useRouter();
+  // First, add these state variables at the top with your other state
+  const [isMobileView, setIsMobileView] = useState(false);
+  const [expandedRows, setExpandedRows] = useState(new Set());
+
+  // Add a new state variable
+  const [darkMode, setDarkMode] = useState(true);
+
+  // Add a toggle function
+  const toggleTheme = useCallback(() => {
+    setDarkMode((prev) => !prev);
+  }, []);
+
+  // Add this to keep track of expanded row heights
+  const expandedRowHeights = useRef(new Map());
+
+  // Add this effect with your other useEffect hooks
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobileView(window.innerWidth <= 768);
+    };
+
+    // Initial check
+    checkMobile();
+
+    // Add event listener
+    window.addEventListener("resize", checkMobile);
+
+    // Cleanup
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
   // =============================================
   // 1. ALL HOOKS DEFINITIONS FIRST (no conditionals)
   // =============================================
@@ -254,7 +318,8 @@ export default function LeaderboardClient({ initialData }) {
     return false;
   });
 
-  // Modify your useSWR hook to not handle polling - we'll do it manually
+  // 2. Update the SWR configuration
+  // 2. Update SWR configuration to have better control over revalidation
   const {
     data,
     error,
@@ -262,14 +327,35 @@ export default function LeaderboardClient({ initialData }) {
     mutate: refreshData,
   } = useSWR("/api/holders", fetcher, {
     fallbackData: { ...DEFAULT_TOKEN_DATA, ...initialData },
-    revalidateOnFocus: !liveMode,
+    // Only revalidate on focus if live mode is off AND we explicitly allow it
+    revalidateOnFocus: false, // ⚠️ Changed from !liveMode to always false
     revalidateOnReconnect: !liveMode,
-    dedupingInterval: liveMode ? 0 : 30000, // No deduping in live mode
+    dedupingInterval: liveMode ? 0 : 30000,
+    refreshInterval: undefined, // Manually controlled
+    revalidateIfStale: false, // ⚠️ Changed to false to prevent automatic revalidation
+    revalidateOnMount: true, // Always revalidate on mount
+    // Store a snapshot of the current data to localStorage when it changes
     onSuccess: (data) => {
-      // Only update last refresh time when data successfully loads
       if (data?.holders?.length > 0) {
         setLastRefreshTime(Date.now());
         setApiError(null);
+
+        // Store a snapshot of the successful data for recovery
+        try {
+          localStorage.setItem(
+            "leaderboard_last_data",
+            JSON.stringify({
+              timestamp: Date.now(),
+              data: {
+                totalSupply: data.totalSupply,
+                tokenPrice: data.tokenPrice,
+                holders: data.holders.slice(0, 200), // Store only first 200 holders to keep it manageable
+              },
+            })
+          );
+        } catch (e) {
+          console.warn("Could not store data snapshot:", e);
+        }
       }
     },
     onError: (err) => {
@@ -352,8 +438,54 @@ export default function LeaderboardClient({ initialData }) {
         setUpdateDetected(true);
         setTimeout(() => setUpdateDetected(false), 1500);
 
-        // Refresh the data
-        await refreshData();
+        // IMPORTANT CHANGE: Set isRefreshing to prevent competing updates
+        setIsRefreshing(true);
+
+        try {
+          // Directly fetch fresh data from the API
+          const freshDataResponse = await fetch(
+            `/api/holders?refresh=true&t=${Date.now()}&forceFresh=true`,
+            {
+              headers: {
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                Pragma: "no-cache",
+                Expires: "0",
+              },
+              cache: "no-store",
+            }
+          );
+
+          if (!freshDataResponse.ok) {
+            throw new Error(
+              `Failed to fetch fresh data: ${freshDataResponse.status}`
+            );
+          }
+
+          // Parse the fresh data
+          const freshData = await freshDataResponse.json();
+
+          // Clear any existing cache that might be causing the reversion
+          try {
+            sessionStorage.removeItem("cache_/api/holders");
+            localStorage.setItem(
+              "lastHoldersRefresh",
+              data.timestamp.toString()
+            );
+          } catch (e) {
+            console.warn("Could not clear cached data:", e);
+          }
+
+          // Update the SWR cache with fresh data and force it to revalidate
+          await refreshData(freshData, { revalidate: true });
+
+          // Update the last refresh time
+          setLastRefreshTime(Date.now());
+        } catch (error) {
+          console.error("Error refreshing data after update detection:", error);
+        } finally {
+          // Release the refresh lock after a short delay
+          setTimeout(() => setIsRefreshing(false), 500);
+        }
 
         // Check holder position if needed
         if (
@@ -363,13 +495,6 @@ export default function LeaderboardClient({ initialData }) {
           )
         ) {
           checkHolderPosition(true);
-        }
-
-        // Update the timestamp
-        try {
-          localStorage.setItem("lastHoldersRefresh", data.timestamp.toString());
-        } catch (e) {
-          console.warn("Could not update lastHoldersRefresh:", e);
         }
 
         return true;
@@ -387,6 +512,8 @@ export default function LeaderboardClient({ initialData }) {
     userHolderData,
     checkHolderPosition,
     isRefreshing,
+    setIsRefreshing,
+    setLastRefreshTime,
   ]);
 
   // Modify the handleRefresh function in Leaderboard.js
@@ -394,7 +521,7 @@ export default function LeaderboardClient({ initialData }) {
     const now = Date.now();
     const timeSinceLastRefresh = now - lastRefreshTime;
 
-    // Increase minimum refresh time to 15 seconds
+    // Throttle refreshes to prevent API abuse
     if (isRefreshing || timeSinceLastRefresh < 15000) {
       showToast(
         `Please wait ${Math.ceil(
@@ -410,20 +537,45 @@ export default function LeaderboardClient({ initialData }) {
     setApiError(null);
 
     try {
-      console.log("🔄 Manual refresh triggered");
+      console.log("🔄 Manual refresh triggered using direct API call");
 
-      // Pass refreshData=true to fetch fresh data
-      await refreshData(async () => {
-        const response = await fetch("/api/holders?refresh=true");
-        if (!response.ok) {
-          throw new Error(`Failed to refresh: ${response.status}`);
+      // Same approach as handleDirectRefresh - make a direct API call
+      const cacheBuster = Date.now();
+      const response = await fetch(
+        `/api/holders?refresh=true&t=${cacheBuster}&forceFresh=true`,
+        {
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+          // This next line is critical - it tells fetch to bypass the browser cache
+          cache: "no-store",
         }
-        return response.json();
-      });
+      );
 
-      // Only check position if necessary and not already checking
+      if (!response.ok) {
+        throw new Error(`Failed to refresh: ${response.status}`);
+      }
+
+      // Parse the fresh data
+      const freshData = await response.json();
+
+      // Clear any cached data in SessionStorage and LocalStorage
+      try {
+        sessionStorage.removeItem("cache_/api/holders");
+        localStorage.setItem("lastHoldersRefresh", Date.now().toString());
+      } catch (e) {
+        console.warn("Storage error:", e);
+      }
+
+      // Force SWR to completely revalidate with the fresh data
+      // revalidate: true is key here - it forces a full refresh
+      await refreshData(freshData, { revalidate: true });
+
+      // If we have wallet info, check holder position
       if (session && walletClaim && !isCheckingPosition) {
-        checkHolderPosition(true); // Add true to force refresh
+        checkHolderPosition(true); // Force a position refresh too
       }
 
       showToast("Leaderboard data refreshed!", "success");
@@ -482,7 +634,42 @@ export default function LeaderboardClient({ initialData }) {
     };
   }, [liveMode]);
 
-  // Add a direct refresh function that skips cache
+  // 1. Add this effect to preserve data state when tab becomes visible again
+  useEffect(() => {
+    // Handle tab visibility changes
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === "visible") {
+        console.log("Tab became visible - preserving current data state");
+
+        // Prevent automatic revalidation by SWR when tab gains focus
+        if (!liveMode) {
+          // Get the current data from SWR cache
+          const currentData = data;
+
+          // If we have data, immediately ensure it's preserved
+          if (
+            currentData &&
+            currentData.holders &&
+            currentData.holders.length > 0
+          ) {
+            // Use mutate to "refresh" with the exact same data we already have
+            // This tricks SWR into thinking it just got fresh data
+            await refreshData(currentData, false);
+          }
+        }
+      }
+    };
+
+    // Add visibility listener
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    // Cleanup
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [data, refreshData, liveMode]);
+
+  // 3. Update the handleDirectRefresh function
   const handleDirectRefresh = useCallback(async () => {
     if (isRefreshing || liveModeInCooldown) return;
 
@@ -524,13 +711,27 @@ export default function LeaderboardClient({ initialData }) {
         `📡 Direct API call #${apiCallsCount.current} - Fetching fresh data from Moralis`
       );
 
-      // Direct call to API with live=true to skip any caching
-      const response = await fetch(`/api/holders?live=true&t=${Date.now()}`, {
-        headers: {
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-          Pragma: "no-cache",
-        },
-      });
+      // Clear any cached data in SessionStorage before making the request
+      try {
+        sessionStorage.removeItem("cache_/api/holders");
+        localStorage.setItem("lastHoldersRefresh", Date.now().toString());
+      } catch (e) {
+        console.warn("Storage error:", e);
+      }
+
+      // Direct call to API with additional cache busting parameters
+      const cacheBuster = Date.now();
+      const response = await fetch(
+        `/api/holders?live=true&t=${cacheBuster}&forceFresh=true`,
+        {
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+          cache: "no-store", // Critical for bypassing browser cache
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`Failed to fetch: ${response.status}`);
@@ -538,15 +739,16 @@ export default function LeaderboardClient({ initialData }) {
 
       const freshData = await response.json();
 
-      // Update SWR cache with the fresh data
-      await refreshData(freshData, false);
+      // Properly use mutate with fresh data
+      // This is the key change - we're passing a function that returns a Promise resolving to fresh data
+      await refreshData(() => Promise.resolve(freshData), false);
 
       // Update last refresh time
       setLastRefreshTime(Date.now());
 
       // Check for user wallet position change
       if (session && walletClaim && !isCheckingPosition) {
-        checkHolderPosition();
+        checkHolderPosition(true); // Force refresh position data
       }
     } catch (error) {
       console.error("Live mode refresh failed:", error);
@@ -633,6 +835,8 @@ export default function LeaderboardClient({ initialData }) {
     // Update state if there are changes
     if (updates.size > 0) {
       console.log(`Found ${updates.size} holders with balance changes`);
+
+      // Store the updated addresses for highlighting
       setUpdatedHolders(updates);
 
       // If the changed address matches our wallet, refresh position
@@ -643,7 +847,13 @@ export default function LeaderboardClient({ initialData }) {
         checkHolderPosition(true);
       }
 
-      // Store timer ID for cleanup
+      // IMPORTANT: Make sure to update the previousHoldersRef AFTER setting updatedHolders
+      // This ensures we don't lose the updated state
+      previousHoldersRef.current = new Map(
+        data.holders.map((h) => [h.address.toLowerCase(), h.balance])
+      );
+
+      // Clear the highlighting after animation completes
       const timerId = setTimeout(() => {
         setUpdatedHolders(new Set());
       }, 4000);
@@ -652,10 +862,13 @@ export default function LeaderboardClient({ initialData }) {
       return () => clearTimeout(timerId);
     }
 
-    // Update reference for next comparison - use Map for better performance
-    previousHoldersRef.current = new Map(
-      data.holders.map((h) => [h.address.toLowerCase(), h.balance])
-    );
+    // Update reference for next comparison ONLY if no updates were found
+    // This prevents losing updated values
+    if (updates.size === 0) {
+      previousHoldersRef.current = new Map(
+        data.holders.map((h) => [h.address.toLowerCase(), h.balance])
+      );
+    }
 
     // Always return a function for cleanup
     return () => {};
@@ -788,17 +1001,65 @@ export default function LeaderboardClient({ initialData }) {
   const indexOfLastHolder = currentPage * holdersPerPage;
   const indexOfFirstHolder = indexOfLastHolder - holdersPerPage;
 
+  const holders = useMemo(() => {
+    if (!data?.holders) return [];
+    return data.holders
+      .map((holder, index) => ({ ...holder, rank: index + 1 }))
+      .slice(indexOfFirstHolder, indexOfLastHolder);
+  }, [data?.holders, indexOfFirstHolder, indexOfLastHolder]);
+
+  // Now add rowVirtualizer FIRST, without the toggleRowExpand dependency
   const rowVirtualizer = useVirtualizer({
     count: holdersPerPage,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => 60,
-    overscan: 5,
+    estimateSize: (index) => {
+      const holder = holders[index];
+      if (!holder) return 50;
+
+      // Add more height for expanded rows based on content
+      if (expandedRows.has(holder.address)) {
+        // Add extra space if social info is present
+        const hasSocial = holder.social && holder.social.twitter;
+        const isContract = holder.is_contract;
+
+        // Base height + additional height for social or contract info
+        return 150 + (hasSocial ? 40 : 0) + (isContract ? 30 : 0);
+      }
+
+      return 50; // Default height for collapsed rows
+    },
+    overscan: 10, // Increase overscan to prevent content jumping
     scrollToFn: (offset, { behavior }) => {
       if (scrollRef.current) {
-        scrollRef.current.scrollTop = 0;
+        scrollRef.current.scrollTo({ top: offset, behavior });
       }
     },
   });
+
+  // THEN add toggleRowExpand AFTER rowVirtualizer is defined
+  const toggleRowExpand = useCallback((address) => {
+    setExpandedRows((prevRows) => {
+      const newRows = new Set(prevRows);
+      if (newRows.has(address)) {
+        newRows.delete(address);
+      } else {
+        newRows.add(address);
+      }
+
+      // Force the virtualizer to recalculate sizes after expanding/collapsing
+      setTimeout(() => {
+        if (rowVirtualizer && rowVirtualizer.measure) {
+          try {
+            rowVirtualizer.measure();
+          } catch (err) {
+            console.error("Failed to measure virtualizer", err);
+          }
+        }
+      }, 50);
+
+      return newRows;
+    });
+  }, []);
 
   // Add this utility function near your other utility functions at the top
   const formatNumber = (value, decimals = 2) => {
@@ -852,13 +1113,6 @@ export default function LeaderboardClient({ initialData }) {
       return newMode;
     });
   }, [liveMode, liveModeInCooldown, cooldownEndTime, showToast]);
-
-  const holders = useMemo(() => {
-    if (!data?.holders) return [];
-    return data.holders
-      .map((holder, index) => ({ ...holder, rank: index + 1 }))
-      .slice(indexOfFirstHolder, indexOfLastHolder);
-  }, [data?.holders, indexOfFirstHolder, indexOfLastHolder]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -1089,11 +1343,266 @@ export default function LeaderboardClient({ initialData }) {
                 }}
               ></div>
             )}
+            {holder.rank <= 10 && (
+              <div className="holder-graph">
+                <div className="graph-label">Holdings % vs Average</div>
+                <div className="graph-container">
+                  <div
+                    className="graph-bar"
+                    style={{
+                      width: `${Math.min(100, (holder.percentage / 5) * 100)}%`,
+                      background: `linear-gradient(90deg, 
+                        rgba(98, 134, 252, 0.8),
+                        rgba(98, 134, 252, 0.4))`,
+                    }}
+                  />
+                  <div className="graph-avg-marker" style={{ left: "10%" }} />
+                </div>
+                <div className="graph-info">
+                  <span className="holder-value">
+                    {/* Use optional chaining and ensure we're working with a number */}
+                    {typeof holder?.percentage === "number"
+                      ? `Your: ${holder.percentage.toFixed(2)}%`
+                      : `Your: ${parseFloat(holder?.percentage || 0).toFixed(
+                          2
+                        )}%`}
+                  </span>
+                  <span className="avg-value">Avg: 0.5%</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       );
     });
   }, [mounted, holders, rowVirtualizer, walletClaim, isAnimating]);
+
+  // Move this line here - BEFORE the renderMobileVirtualizedList function
+  const addressFormat = useResponsiveAddressFormat();
+
+  // Add this function to your Leaderboard.js component
+  const renderMobileVirtualizedList = useCallback(() => {
+    if (!mounted) return null;
+
+    // Instead of using virtualization for mobile, render all rows directly
+    return holders.map((holder, index) => {
+      if (!holder) return null;
+
+      const rankTitle = getRankTitle(holder.rank);
+      const isUserWallet =
+        walletClaim &&
+        holder.address.toLowerCase() ===
+          walletClaim.walletAddress.toLowerCase();
+      const walletColor = isUserWallet
+        ? generateWalletColor(holder.address)
+        : null;
+      const isUpdated = updatedHolders.has(holder.address.toLowerCase());
+      const isExpanded = expandedRows.has(holder.address);
+
+      return (
+        <div
+          key={holder.address}
+          className="holder-row-mobile"
+          style={{
+            position: "relative", // Changed from absolute positioning
+            width: "100%",
+            minHeight: isExpanded ? "auto" : "50px",
+            marginBottom: "8px",
+            overflow: "visible",
+          }}
+        >
+          <div
+            className={`mobile-holder-card ${
+              isUserWallet ? "user-wallet" : ""
+            } ${holder.rank === 1 && isAnimating ? "animating" : ""} ${
+              isExpanded ? "expanded" : ""
+            }`}
+            onClick={() => toggleRowExpand(holder.address)}
+            onTouchStart={(e) => handleSwipeStart(e, holder.address)}
+            style={
+              isUserWallet ? { borderLeft: `4px solid ${walletColor}` } : {}
+            }
+          >
+            <div className="mobile-card-main">
+              <div className="mobile-rank">
+                <span className="rank-value">#{holder.rank}</span>
+                <span className="rank-badge">{rankTitle.badge}</span>
+              </div>
+
+              <div className="mobile-address">
+                <span className="address-text">
+                  {`${holder.address.substring(
+                    0,
+                    addressFormat.prefixLength
+                  )}...${holder.address.substring(
+                    holder.address.length - addressFormat.suffixLength
+                  )}`}
+                </span>
+                <div className="address-actions">
+                  <button
+                    className="mobile-copy-button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigator.clipboard.writeText(holder.address);
+                      showToast("Address copied", "success");
+                    }}
+                  >
+                    📋
+                  </button>
+                  <a
+                    href={`https://basescan.org/address/${holder.address}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mobile-view-link"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    🔍
+                  </a>
+                </div>
+              </div>
+
+              <div className="mobile-holdings">
+                <span className="holdings-value"></span>
+              </div>
+
+              <div className="mobile-dropdown">
+                <button
+                  className="expand-toggle"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleRowExpand(holder.address);
+                  }}
+                >
+                  {isExpanded ? "▲" : "▼"}
+                </button>
+              </div>
+            </div>
+
+            {isExpanded && (
+              <div
+                className="mobile-expanded-content"
+                style={{
+                  height: "auto",
+                  overflow: "visible",
+                  maxHeight: "none",
+                }}
+              >
+                <div className="mobile-stats-grid">
+                  <div className="mobile-stat-item">
+                    <span className="stat-label">Value</span>
+                    <span className="stat-value">
+                      <AnimatedNumber
+                        value={parseFloat(holder.usdValue).toFixed(2)}
+                        duration={1000}
+                        formatValue={(value) =>
+                          value.toLocaleString(undefined, {
+                            style: "currency",
+                            currency: "USD",
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })
+                        }
+                      />
+                    </span>
+                  </div>
+                  <div className="mobile-stat-item">
+                    <span className="stat-label">%</span>
+                    <span className="stat-value">
+                      {typeof holder.percentage === "number"
+                        ? `${holder.percentage.toFixed(2)}%`
+                        : `${parseFloat(holder?.percentage || 0).toFixed(2)}%`}
+                    </span>
+                  </div>
+                  <div className="mobile-stat-item">
+                    <span className="stat-label">Tokens</span>
+                    <span className="stat-value">
+                      {parseFloat(holder.balance_formatted).toFixed(2)}
+                    </span>
+                  </div>
+                  {holder.is_contract && (
+                    <div className="mobile-stat-item full-width">
+                      <span className="contract-note">Contract</span>
+                    </div>
+                  )}
+                </div>
+
+                {holder.social && holder.social.twitter && (
+                  <div className="mobile-social">
+                    <Link
+                      href={`/public-profile/${holder.social.twitter}`}
+                      className="twitter-profile-link"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {holder.social.profileImage ? (
+                        <img
+                          src={holder.social.profileImage}
+                          alt={holder.social.name || "User"}
+                          width={16}
+                          height={16}
+                          className="twitter-avatar"
+                        />
+                      ) : (
+                        <div className="avatar-placeholder"></div>
+                      )}
+                      <span className="twitter-username">
+                        @{holder.social.twitter}
+                      </span>
+                    </Link>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    });
+  }, [
+    mounted,
+    holders,
+    walletClaim,
+    isAnimating,
+    updatedHolders,
+    expandedRows,
+    toggleRowExpand,
+    showToast,
+    addressFormat, // Add this dependency
+  ]);
+
+  // Add this function to your Leaderboard.js component
+  const handleSwipeStart = useCallback(
+    (e, address) => {
+      const touchStartX = e.touches[0].clientX;
+      const touchThreshold = 50;
+
+      const handleTouchMove = (e) => {
+        const currentX = e.touches[0].clientX;
+        const diff = currentX - touchStartX;
+
+        // If swiped right significantly, expand the row
+        if (diff > touchThreshold) {
+          toggleRowExpand(address);
+          document.removeEventListener("touchmove", handleTouchMove);
+        }
+        // If swiped left significantly, collapse the row
+        else if (diff < -touchThreshold) {
+          if (expandedRows.has(address)) {
+            toggleRowExpand(address);
+          }
+          document.removeEventListener("touchmove", handleTouchMove);
+        }
+      };
+
+      document.addEventListener("touchmove", handleTouchMove);
+
+      const handleTouchEnd = () => {
+        document.removeEventListener("touchmove", handleTouchMove);
+        document.removeEventListener("touchend", handleTouchEnd);
+      };
+
+      document.addEventListener("touchend", handleTouchEnd);
+    },
+    [expandedRows, toggleRowExpand]
+  );
 
   // =============================================
   // 3. RENDER LOGIC - Using conditional rendering inside the return
@@ -1143,11 +1652,17 @@ export default function LeaderboardClient({ initialData }) {
     // Main content rendering
     return (
       <div
+        className={`leaderboard-container-bg ${
+          darkMode ? "dark-mode" : "light-mode"
+        }`}
         style={{
-          paddingTop: "68px",
+          marginTop: "20px",
         }}
-        className="leaderboard-container-bg"
       >
+        <div className="theme-toggle" onClick={toggleTheme}>
+          {darkMode ? "☀️" : "🌙"}
+        </div>
+
         <motion.div
           style={{
             overflowX: "hidden",
@@ -1242,15 +1757,13 @@ export default function LeaderboardClient({ initialData }) {
               ) : null}
             </>
           )}
-          <h2
+
+          <div
             style={{
-              marginTop: "15px",
+              marginTop: "20px",
             }}
-            className="leaderboard-title"
+            className="leaderboard-stats"
           >
-            Top 500 Token Holders
-          </h2>
-          <div className="leaderboard-stats">
             <div className="stat-item">
               <span className="stat-label">Total Supply</span>
               <span className="stat-value">
@@ -1311,8 +1824,13 @@ export default function LeaderboardClient({ initialData }) {
             </div> */}
           </div>
           <div className="token-stats-container">
-            <div className="token-info">
-              <Image
+            <div
+              style={{
+                position: "relative",
+              }}
+              className="token-info"
+            >
+              <img
                 src={defaultTokenLogo}
                 alt="Token Logo"
                 width={48}
@@ -1324,6 +1842,25 @@ export default function LeaderboardClient({ initialData }) {
                   {dexData?.mainPair?.baseToken?.name || "LockChain"} (
                   {dexData?.mainPair?.baseToken?.symbol || "LOCK"})
                 </h3>
+                <div
+                  style={{
+                    position: "absolute",
+                    right: "10px",
+                    top: "10px",
+                  }}
+                  className="leaderboard-title"
+                >
+                  {/* <h2>LockChain Holders</h2> */}
+                  {/* <div className="leaderboard-controls">
+                    <button
+                      className="theme-toggle"
+                      onClick={toggleTheme}
+                      aria-label="Toggle theme"
+                    >
+                      {darkMode ? "☀️" : "🌙"}
+                    </button>
+                  </div> */}
+                </div>
                 <div className="social-links">
                   {STATIC_SOCIAL_LINKS.map((social) => (
                     <Link
@@ -1500,30 +2037,50 @@ export default function LeaderboardClient({ initialData }) {
               scrollRef.current = el;
               tableContainerRef.current = el;
             }}
-            className="leaderboard-table-container"
+            className={`leaderboard-table-container ${
+              isMobileView ? "mobile-view" : ""
+            }`}
             style={{
-              height: "600px",
+              height: "600px", // Keep this consistent
               overflow: "auto",
               position: "relative",
               width: "100%",
               margin: "0 auto",
             }}
           >
-            {renderTableHeaders()}
-            <div
-              style={{
-                height: `${Math.min(
-                  rowVirtualizer.getTotalSize(),
-                  holders.length * 60
-                )}px`,
-                width: "100%",
-                position: "relative",
-                minWidth: "800px",
-                margin: "0 auto",
-              }}
-            >
-              {renderVirtualizedList()}
-            </div>
+            {isMobileView ? (
+              <div
+                style={{
+                  height: `${Math.min(
+                    rowVirtualizer.getTotalSize(),
+                    holders.length * 65 // Adjust to a more appropriate height
+                  )}px`,
+                  width: "100%",
+                  position: "relative",
+                  margin: "0 auto",
+                }}
+              >
+                {renderMobileVirtualizedList()}
+              </div>
+            ) : (
+              <>
+                {renderTableHeaders()}
+                <div
+                  style={{
+                    height: `${Math.min(
+                      rowVirtualizer.getTotalSize(),
+                      holders.length * 60
+                    )}px`,
+                    width: "100%",
+                    position: "relative",
+                    minWidth: "800px",
+                    margin: "0 auto",
+                  }}
+                >
+                  {renderVirtualizedList()}
+                </div>
+              </>
+            )}
           </div>
 
           <div ref={inViewRef} style={{ height: "20px" }} />
@@ -1635,5 +2192,3 @@ export default function LeaderboardClient({ initialData }) {
   // Final return
   return renderContent();
 }
-
-// Add this effect to clean up the cooldown timer

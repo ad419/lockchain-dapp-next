@@ -10,6 +10,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useSession } from "next-auth/react";
 import { useGlobalMessages } from "../context/GlobalMessagesContext";
 import "../styles/Messages.css";
+import { useWindowSize } from "../hooks/useWindowSize"; // Create this hook if you don't have it
 
 // Constants for message styling
 const MESSAGE_THEMES = [
@@ -124,6 +125,10 @@ const Message = forwardRef(({ msg, userWalletData, ...props }, ref) => {
     fontStyle: customStyle.fontStyle || "normal",
     fontSize: customStyle.fontSize || "inherit",
     border: customStyle.border,
+    // Add max width to prevent messages from being too wide on mobile
+    maxWidth: "85%", // Limit width on all devices
+    wordBreak: "break-word", // Ensure long words don't overflow
+    overflowWrap: "break-word",
   };
 
   // Add glow effect if specified
@@ -249,6 +254,10 @@ export default function Messages({
     isLoading,
   } = useGlobalMessages();
 
+  const windowSize = useWindowSize();
+  const isMobile = windowSize.width < 768;
+  const messagesContainerRef = useRef(null);
+
   useEffect(() => setIsMounted(true), []);
 
   const messagesToDisplay = (propMessages || globalMessages || []).filter(
@@ -276,8 +285,49 @@ export default function Messages({
   const formatDateLabel = (date) =>
     date === today ? "Today" : date === yesterday ? "Yesterday" : date;
 
+  useEffect(() => {
+    const messagesContainer = messagesContainerRef.current;
+    if (!messagesContainer || !isMobile) return;
+
+    // This function prevents scroll events from propagating beyond the container
+    const handleTouchMove = (e) => {
+      const isAtTop = messagesContainer.scrollTop === 0;
+      const isAtBottom =
+        messagesContainer.scrollHeight - messagesContainer.scrollTop <=
+        messagesContainer.clientHeight + 1;
+
+      // Allow scrolling within the container
+      if (
+        !(isAtTop && e.touches[0].clientY > 50) &&
+        !(isAtBottom && e.touches[0].clientY < 50)
+      ) {
+        e.stopPropagation();
+      }
+    };
+
+    messagesContainer.addEventListener("touchmove", handleTouchMove, {
+      passive: false,
+    });
+
+    return () => {
+      messagesContainer.removeEventListener("touchmove", handleTouchMove);
+    };
+  }, [isMobile]);
+
   return (
-    <div className="lc-messages-container">
+    <div
+      ref={messagesContainerRef}
+      className={`lc-messages-container ${
+        isMobile ? "lc-messages-mobile" : ""
+      }`}
+      style={{
+        overflowY: "auto",
+        WebkitOverflowScrolling: "touch", // For smooth iOS scrolling
+        maxHeight: isMobile ? "calc(70vh - 100px)" : "600px", // Adjust height on mobile
+        position: "relative",
+        isolation: "isolate", // Create stacking context
+      }}
+    >
       {globalConnectionStatus && globalConnectionStatus !== "connected" && (
         <div className="lc-message-system">
           <span>

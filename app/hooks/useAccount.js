@@ -7,14 +7,13 @@ import { DEFAULT_CHAIN, SUPPORTED_CHAIN, contract } from "../hooks/constant";
 import { getMultiCall, getWeb3Contract } from "../hooks/contractHelper";
 import swapABI from "../json/swap.json";
 import { useAccount, useNetwork } from "wagmi";
-import axios from "axios";
 import { getWeb3 } from "./connectors";
 import { usePrices } from "../context/PriceContext";
 
 export const useAccountStats = (updater) => {
   const { chain } = useNetwork();
   let { address } = useAccount();
-  address = "0x7aF3116867A208184F34c65e74a6b17E64f53160";
+  // address = "0x7aF3116867A208184F34c65e74a6b17E64f53160";
 
   const [stats, setStats] = useState({
     eth_balance: 0,

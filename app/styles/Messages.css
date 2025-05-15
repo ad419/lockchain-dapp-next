@@ -52,16 +52,17 @@
 
 /* Cyberpunk scrollbar */
 .lc-messages-container::-webkit-scrollbar {
-  width: 4px;
+  width: 5px;
+  height: 5px;
 }
 
 .lc-messages-container::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.2);
+  background: transparent;
 }
 
 .lc-messages-container::-webkit-scrollbar-thumb {
-  background: linear-gradient(to bottom, #6286fc, #9c27b0);
-  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
 }
 
 /* Futuristic message container */
@@ -222,6 +223,8 @@
   padding: 12px 16px;
   border-radius: 16px;
   word-break: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
   font-size: 14px;
   line-height: 1.5;
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
@@ -674,4 +677,87 @@
   25% { clip-path: inset(0% 0 75% 0); }
   50% { clip-path: inset(25% 0 50% 0); }
   75% { clip-path: inset(50% 0 25% 0); }
+}
+
+/* Mobile-specific styles */
+.lc-messages-mobile {
+  /* Ensure message container has proper scroll behavior */
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  /* Create a scrollable container that doesn't affect page scroll */
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  /* Better visual indicators for scrollable area */
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.1);
+}
+
+/* Make message bubbles more mobile-friendly */
+.lc-messages-mobile .lc-message-bubble {
+  max-width: 85%;
+  padding: 8px 12px;
+  border-radius: 16px;
+  margin-bottom: 4px;
+}
+
+/* Adjust avatar size on mobile */
+.lc-messages-mobile .lc-message-avatar {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  font-size: 14px;
+}
+
+/* Make user info more compact on mobile */
+.lc-messages-mobile .lc-message-meta {
+  flex-direction: row;
+  align-items: center;
+  font-size: 11px;
+}
+
+.lc-messages-mobile .lc-message-username {
+  margin-right: 6px;
+}
+
+.lc-messages-mobile .lc-message-wallet {
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+/* Fix for the overall app to prevent unwanted scroll bleed */
+@media (max-width: 767px) {
+  body, html {
+    overscroll-behavior: none;
+  }
+  
+  .lc-messages-container {
+    overscroll-behavior: contain;
+    position: relative; 
+    z-index: 5;
+  }
+}
+
+/* Add a helper class for input area on mobile */
+.lc-message-input-mobile {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(14, 14, 14, 0.95);
+  padding: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  z-index: 10;
+}
+
+.lc-message-input-mobile input,
+.lc-message-input-mobile textarea {
+  font-size: 16px !important; /* Prevent iOS zoom on focus */
+}
+
+/* Adjust date divider for mobile */
+.lc-messages-mobile .lc-message-date-divider {
+  margin: 6px 0;
+  font-size: 11px;
 }
