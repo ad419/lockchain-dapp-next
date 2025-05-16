@@ -217,6 +217,64 @@ export default function GlobalMessageBubble() {
     }
   }, []);
 
+  // Handle viewport height for mobile browsers
+  useEffect(() => {
+    // Set initial viewport height as a CSS variable
+    const setViewportHeight = () => {
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty("--vh", `${vh}px`);
+    };
+
+    // Set it initially
+    setViewportHeight();
+
+    // Update on resize and orientation change
+    window.addEventListener("resize", setViewportHeight);
+    window.addEventListener("orientationchange", setViewportHeight);
+
+    return () => {
+      window.removeEventListener("resize", setViewportHeight);
+      window.removeEventListener("orientationchange", setViewportHeight);
+    };
+  }, []);
+
+  // Handle focusing on the input field
+  useEffect(() => {
+    const handleFocus = () => {
+      // Add a slight delay to ensure the keyboard is fully up
+      setTimeout(() => {
+        // Scroll to the input field when it receives focus
+        if (inputRef.current) {
+          inputRef.current.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+
+          // On iOS specifically, we may need to scroll the entire page
+          window.scrollTo(0, document.body.scrollHeight);
+        }
+
+        // Scroll messages to bottom as well
+        if (messagesContainerRef.current) {
+          messagesContainerRef.current.scrollTop =
+            messagesContainerRef.current.scrollHeight;
+        }
+      }, 300);
+    };
+
+    // Add focus listener to input field
+    const inputElement = inputRef.current;
+    if (inputElement) {
+      inputElement.addEventListener("focus", handleFocus);
+    }
+
+    return () => {
+      if (inputElement) {
+        inputElement.removeEventListener("focus", handleFocus);
+      }
+    };
+  }, [isMinimized]); // Re-add listeners when chat is opened/closed
+
   // Handle login animation
   const handleLoginPrompt = () => {
     setShowLoginAnimation(true);

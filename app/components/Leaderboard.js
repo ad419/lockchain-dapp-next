@@ -29,7 +29,7 @@ import Tooltip from "./Tooltip";
 import "../styles/Leaderboard.css";
 import Link from "next/link";
 import Image from "next/image";
-
+import Messages from "./Messages";
 import { useToast } from "../context/ToastContext";
 import { useWalletClaim } from "../context/WalletClaimContext";
 import { useRouter } from "next/navigation";
