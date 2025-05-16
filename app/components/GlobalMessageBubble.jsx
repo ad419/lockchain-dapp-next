@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useGlobalMessages } from "../context/GlobalMessagesContext";
 import { useSession } from "next-auth/react";
 import "../styles/GlobalMessageBubble.css";
+import "../styles/Messages.css";
 
 // Define style constants inside the component file
 // This ensures they are available where needed
@@ -86,6 +87,8 @@ const formatMessageTime = (timestamp) => {
     minute: "2-digit",
   });
 };
+
+console.log("GlobalMessageBubble.jsx MessageItem component rendered!");
 
 // Updated MessageItem component with background animations
 
@@ -187,6 +190,8 @@ export default function GlobalMessageBubble() {
         messagesContainerRef.current.scrollHeight;
     }
   }, [messages.length]);
+
+  console.log("GlobalMessageBubble.jsx MessageItem component rendered!");
 
   // Load saved style on component mount
   useEffect(() => {

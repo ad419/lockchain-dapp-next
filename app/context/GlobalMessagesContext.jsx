@@ -33,7 +33,7 @@ export function GlobalMessagesProvider({ children }) {
   // Basic state
   const [messages, setMessages] = useState([]);
   const [isMinimized, setIsMinimized] = useState(true);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadCount, setUnreadCount] = useState(0); // Confirm this is 0, not '0'
   const [isLoading, setIsLoading] = useState(true);
   const [connectionStatus, setConnectionStatus] = useState("connecting");
 
@@ -90,10 +90,14 @@ export function GlobalMessagesProvider({ children }) {
         if (isMinimized) {
           const newMessages = formattedMessages.filter(
             (msg) =>
-              new Date(msg.timestamp) > new Date(lastSeenTimestampRef.current)
+              new Date(msg.timestamp) >
+                new Date(lastSeenTimestampRef.current) &&
+              msg.walletAddress !== address // Don't count your own messages
           );
+
+          // Only increment by 1 if there are any new messages, regardless of count
           if (newMessages.length > 0) {
-            setUnreadCount((prev) => prev + newMessages.length);
+            setUnreadCount((prev) => Number(prev) + 1); // Always increment by 1
           }
         }
       },
@@ -197,6 +201,21 @@ export function GlobalMessagesProvider({ children }) {
         setMessages(formattedMessages);
         setIsLoading(false);
         setConnectionStatus("connected");
+
+        // If you're counting unread messages here too, add the same filter:
+        if (isMinimized) {
+          const newMessages = formattedMessages.filter(
+            (msg) =>
+              new Date(msg.timestamp) >
+                new Date(lastSeenTimestampRef.current) &&
+              msg.walletAddress !== address // Don't count your own messages
+          );
+
+          // Only increment by 1 if there are any new messages, regardless of count
+          if (newMessages.length > 0) {
+            setUnreadCount((prev) => Number(prev) + 1); // Always increment by 1
+          }
+        }
       },
       (error) => {
         console.error("Firestore error on retry:", error);
