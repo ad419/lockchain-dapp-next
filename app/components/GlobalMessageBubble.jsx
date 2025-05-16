@@ -162,13 +162,19 @@ export default function GlobalMessageBubble() {
     gradientColor1: "#627eea",
     gradientColor2: "#3c58c4",
   });
+  // Add this to your component state declarations (around line 163)
+  const [gradientAngle, setGradientAngle] = useState(135);
+  const [gradientOrientation, setGradientOrientation] = useState("linear"); // linear or radial
   const [showCustomThemeCreator, setShowCustomThemeCreator] = useState(false);
   const [customThemeName, setCustomThemeName] = useState("My Custom Theme");
   const [savedThemes, setSavedThemes] = useState([]);
+  const [selectedThemeId, setSelectedThemeId] = useState(null);
 
   // Refs
   const inputRef = useRef(null);
   const messagesContainerRef = useRef(null);
+  // Add this ref near your other refs (around line 175)
+  const styleOptionsRef = useRef(null);
 
   // Get user session instead of wallet
   const { data: session, status } = useSession();
@@ -314,6 +320,31 @@ export default function GlobalMessageBubble() {
     };
   }, [isMinimized]);
 
+  // Add this useEffect to handle clicking outside the style panel (after your other useEffects)
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        showStyleOptions &&
+        styleOptionsRef.current &&
+        !styleOptionsRef.current.contains(event.target) &&
+        // Don't close if clicking on the style toggle button
+        !event.target.closest(".lc-chat-tool-btn")
+      ) {
+        setShowStyleOptions(false);
+      }
+    };
+
+    // Add event listener when style options are shown
+    if (showStyleOptions) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    // Clean up
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showStyleOptions]);
+
   // Handle login animation
   const handleLoginPrompt = () => {
     setShowLoginAnimation(true);
@@ -326,7 +357,10 @@ export default function GlobalMessageBubble() {
   };
 
   // Select a theme
-  const handleSelectTheme = (theme) => {
+  const handleSelectTheme = (theme, themeId = null) => {
+    // Store the selected theme ID
+    setSelectedThemeId(themeId);
+
     const newStyle = {
       ...customStyle,
       textColor: theme.textColor,
@@ -420,7 +454,12 @@ export default function GlobalMessageBubble() {
     };
 
     if (updatedColors.gradient) {
-      previewStyle.previewGradient = `linear-gradient(135deg, ${updatedColors.gradientColor1}, ${updatedColors.gradientColor2})`;
+      const gradientString =
+        gradientOrientation === "linear"
+          ? `linear-gradient(${gradientAngle}deg, ${updatedColors.gradientColor1}, ${updatedColors.gradientColor2})`
+          : `radial-gradient(circle, ${updatedColors.gradientColor1}, ${updatedColors.gradientColor2})`;
+
+      previewStyle.previewGradient = gradientString;
     } else {
       previewStyle.previewBgColor = updatedColors.background;
     }
@@ -469,11 +508,20 @@ export default function GlobalMessageBubble() {
     delete newStyle.previewBgColor;
 
     if (customThemeColors.gradient) {
-      newStyle.gradient = `linear-gradient(135deg, ${customThemeColors.gradientColor1}, ${customThemeColors.gradientColor2})`;
+      const gradientString =
+        gradientOrientation === "linear"
+          ? `linear-gradient(${gradientAngle}deg, ${customThemeColors.gradientColor1}, ${customThemeColors.gradientColor2})`
+          : `radial-gradient(circle, ${customThemeColors.gradientColor1}, ${customThemeColors.gradientColor2})`;
+
+      newStyle.gradient = gradientString;
+      newStyle.gradientType = gradientOrientation;
+      newStyle.gradientAngle = gradientAngle;
       delete newStyle.bgColor;
     } else {
       newStyle.bgColor = customThemeColors.background;
       delete newStyle.gradient;
+      delete newStyle.gradientType;
+      delete newStyle.gradientAngle;
     }
 
     setCustomStyle(newStyle);
@@ -484,12 +532,13 @@ export default function GlobalMessageBubble() {
     if (applyButton) {
       applyButton.textContent = "✓ Theme Applied!";
       setTimeout(() => {
-        applyButton.textContent = "Apply Theme";
+        applyButton.textContent = "Apply";
       }, 1500);
     }
   };
 
-  // Save custom theme
+  // Update saveCustomTheme function (around line 466)
+
   const saveCustomTheme = () => {
     // Create theme object
     const newTheme = {
@@ -500,6 +549,8 @@ export default function GlobalMessageBubble() {
       textColor: customThemeColors.textColor,
       gradientColor1: customThemeColors.gradientColor1,
       gradientColor2: customThemeColors.gradientColor2,
+      gradientOrientation: gradientOrientation,
+      gradientAngle: gradientAngle,
     };
 
     // Add to saved themes
@@ -535,8 +586,12 @@ export default function GlobalMessageBubble() {
     localStorage.setItem("savedChatThemes", JSON.stringify(updatedThemes));
   };
 
-  // Apply saved theme
+  // Update applySavedTheme function (around line 503)
+
   const applySavedTheme = (theme) => {
+    // Set the selected theme ID
+    setSelectedThemeId(theme.id);
+
     // Update custom theme colors with the saved theme
     setCustomThemeColors({
       gradient: theme.gradient,
@@ -546,13 +601,36 @@ export default function GlobalMessageBubble() {
       gradientColor2: theme.gradientColor2,
     });
 
+    // Update gradient angle and orientation if available
+    if (theme.gradientAngle !== undefined) {
+      setGradientAngle(theme.gradientAngle);
+    } else {
+      setGradientAngle(135); // Default
+    }
+
+    if (theme.gradientOrientation) {
+      setGradientOrientation(theme.gradientOrientation);
+    } else {
+      setGradientOrientation("linear"); // Default
+    }
+
     // Apply the theme styling
     const themeStyle = {
       textColor: theme.textColor,
     };
 
     if (theme.gradient) {
-      themeStyle.gradient = `linear-gradient(135deg, ${theme.gradientColor1}, ${theme.gradientColor2})`;
+      // Use saved gradient settings if available
+      const gradientString =
+        theme.gradientOrientation === "radial"
+          ? `radial-gradient(circle, ${theme.gradientColor1}, ${theme.gradientColor2})`
+          : `linear-gradient(${theme.gradientAngle || 135}deg, ${
+              theme.gradientColor1
+            }, ${theme.gradientColor2})`;
+
+      themeStyle.gradient = gradientString;
+      themeStyle.gradientType = theme.gradientOrientation || "linear";
+      themeStyle.gradientAngle = theme.gradientAngle || 135;
     } else {
       themeStyle.bgColor = theme.bgColor;
     }
@@ -569,12 +647,6 @@ export default function GlobalMessageBubble() {
         ...themeStyle,
       })
     );
-  };
-
-  // Reset styles
-  const handleResetStyle = () => {
-    setCustomStyle({});
-    localStorage.removeItem("chatCustomStyle");
   };
 
   // Toggle custom theme creator
@@ -619,6 +691,45 @@ export default function GlobalMessageBubble() {
   // Get current user walletAddress
   const userWalletAddress =
     currentUser?.walletAddress || session?.user?.walletAddress;
+
+  // Add this function with your other handler functions (around line 600)
+
+  // Reset style to defaults
+  const handleResetStyle = () => {
+    // Create default style (no customizations)
+    const defaultStyle = {};
+
+    // Update state
+    setCustomStyle(defaultStyle);
+
+    // Reset theme selection
+    setSelectedThemeId(null);
+
+    // Clear from localStorage
+    localStorage.removeItem("chatCustomStyle");
+
+    // Reset custom theme colors to defaults
+    setCustomThemeColors({
+      background: "#1E1E2E",
+      textColor: "#FFFFFF",
+      gradient: false,
+      gradientColor1: "#627eea",
+      gradientColor2: "#3c58c4",
+    });
+
+    // Reset other style-related states
+    setGradientAngle(135);
+    setGradientOrientation("linear");
+
+    // Provide visual feedback
+    const resetButton = document.querySelector(".lc-style-reset");
+    if (resetButton) {
+      resetButton.textContent = "✓ Reset";
+      setTimeout(() => {
+        resetButton.textContent = "Reset";
+      }, 1500);
+    }
+  };
 
   return (
     <div
@@ -769,14 +880,37 @@ export default function GlobalMessageBubble() {
 
           {/* Style options panel */}
           {showStyleOptions && (
-            <div className="lc-style-options-panel">
+            <div className="lc-style-options-panel" ref={styleOptionsRef}>
               <div className="lc-style-panel-header">
-                <h3 className="lc-style-panel-title">Message Style</h3>
-                <p className="lc-style-panel-subtitle">
-                  Customize how your messages appear
-                </p>
+                <div className="lc-style-panel-header-content">
+                  <h3 className="lc-style-panel-title">Message Style</h3>
+                  <p className="lc-style-panel-subtitle">
+                    Customize how your messages appear
+                  </p>
+                </div>
+                <button
+                  className="lc-style-panel-close"
+                  onClick={() => setShowStyleOptions(false)}
+                  aria-label="Close style panel"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
               </div>
 
+              {/* Rest of your style panel content remains the same */}
               <div className="lc-style-tabs">
                 <button
                   className={`lc-style-tab ${
@@ -817,8 +951,7 @@ export default function GlobalMessageBubble() {
                       <div
                         key={index}
                         className={`lc-theme-option ${
-                          customStyle.gradient === theme.gradient ||
-                          customStyle.bgColor === theme.bgColor
+                          selectedThemeId === `preset-${index}`
                             ? "selected"
                             : ""
                         }`}
@@ -826,7 +959,9 @@ export default function GlobalMessageBubble() {
                           background: theme.gradient || theme.bgColor,
                           color: theme.textColor,
                         }}
-                        onClick={() => handleSelectTheme(theme)}
+                        onClick={() =>
+                          handleSelectTheme(theme, `preset-${index}`)
+                        }
                       >
                         <span>{theme.name}</span>
                       </div>
@@ -837,13 +972,7 @@ export default function GlobalMessageBubble() {
                       <div
                         key={theme.id}
                         className={`lc-theme-option ${
-                          (theme.gradient &&
-                            customStyle.gradient ===
-                              `linear-gradient(135deg, ${theme.gradientColor1}, ${theme.gradientColor2})`) ||
-                          (!theme.gradient &&
-                            customStyle.bgColor === theme.bgColor)
-                            ? "selected"
-                            : ""
+                          selectedThemeId === theme.id ? "selected" : ""
                         }`}
                         style={{
                           background: theme.gradient
@@ -932,6 +1061,7 @@ export default function GlobalMessageBubble() {
                       {/* Color Inputs - Vertical Layout */}
                       {customThemeColors.gradient ? (
                         <div className="lc-gradient-colors-container">
+                          {/* Gradient Colors */}
                           <div className="lc-color-input-group">
                             <label>Gradient Start Color</label>
                             <div className="lc-color-picker">
@@ -984,8 +1114,139 @@ export default function GlobalMessageBubble() {
                               />
                             </div>
                           </div>
+
+                          {/* Gradient Type */}
+                          <div className="lc-gradient-type">
+                            <label>Gradient Type</label>
+                            <div className="lc-gradient-type-options">
+                              <button
+                                className={`lc-gradient-type-btn ${
+                                  gradientOrientation === "linear"
+                                    ? "active"
+                                    : ""
+                                }`}
+                                onClick={() => setGradientOrientation("linear")}
+                              >
+                                <svg
+                                  width="24"
+                                  height="24"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                >
+                                  <rect
+                                    x="2"
+                                    y="4"
+                                    width="20"
+                                    height="16"
+                                    rx="2"
+                                    fill="url(#linear-gradient)"
+                                  />
+                                  <defs>
+                                    <linearGradient
+                                      id="linear-gradient"
+                                      x1="2"
+                                      y1="12"
+                                      x2="22"
+                                      y2="12"
+                                      gradientUnits="userSpaceOnUse"
+                                    >
+                                      <stop
+                                        stopColor={
+                                          customThemeColors.gradientColor1
+                                        }
+                                      />
+                                      <stop
+                                        offset="1"
+                                        stopColor={
+                                          customThemeColors.gradientColor2
+                                        }
+                                      />
+                                    </linearGradient>
+                                  </defs>
+                                </svg>
+                                <span>Linear</span>
+                              </button>
+                              <button
+                                className={`lc-gradient-type-btn ${
+                                  gradientOrientation === "radial"
+                                    ? "active"
+                                    : ""
+                                }`}
+                                onClick={() => setGradientOrientation("radial")}
+                              >
+                                <svg
+                                  width="24"
+                                  height="24"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                >
+                                  <rect
+                                    x="2"
+                                    y="4"
+                                    width="20"
+                                    height="16"
+                                    rx="2"
+                                    fill="url(#radial-gradient)"
+                                  />
+                                  <defs>
+                                    <radialGradient
+                                      id="radial-gradient"
+                                      cx="12"
+                                      cy="12"
+                                      r="10"
+                                      gradientUnits="userSpaceOnUse"
+                                    >
+                                      <stop
+                                        stopColor={
+                                          customThemeColors.gradientColor1
+                                        }
+                                      />
+                                      <stop
+                                        offset="1"
+                                        stopColor={
+                                          customThemeColors.gradientColor2
+                                        }
+                                      />
+                                    </radialGradient>
+                                  </defs>
+                                </svg>
+                                <span>Radial</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Angle Slider (only for linear gradients) */}
+                          {gradientOrientation === "linear" && (
+                            <div className="lc-gradient-angle">
+                              <label>Gradient Angle: {gradientAngle}°</label>
+                              <div className="lc-gradient-angle-control">
+                                <input
+                                  type="range"
+                                  min="0"
+                                  max="360"
+                                  value={gradientAngle}
+                                  onChange={(e) =>
+                                    setGradientAngle(Number(e.target.value))
+                                  }
+                                  className="lc-gradient-slider"
+                                />
+                                <div
+                                  className="lc-gradient-angle-preview"
+                                  style={{
+                                    transform: `rotate(${gradientAngle}deg)`,
+                                    background: `linear-gradient(to right, ${customThemeColors.gradientColor1}, ${customThemeColors.gradientColor2})`,
+                                  }}
+                                >
+                                  <div className="lc-gradient-angle-arrow"></div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ) : (
+                        // Keep your existing solid color picker code
                         <div className="lc-custom-theme-row">
                           <div className="lc-color-input-group">
                             <label>Background Color</label>

@@ -63,7 +63,7 @@ const RANK_TITLES = {
   10: { title: "Tier 3", color: "#7DA0FF", badge: "🛡️" },
 };
 
-const defaultTokenLogo = "../images/logo.png";
+const defaultTokenLogo = "https://i.ibb.co/fY6cgSpf/logo.png";
 
 const getRankTitle = (rank) => {
   if (rank <= 10) {
