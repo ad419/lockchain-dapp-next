@@ -735,62 +735,66 @@ export default function GlobalMessageBubble() {
   useEffect(() => {
     // Function to handle visibility changes (when browser UI shows/hides)
     const handleVisibilityChange = () => {
-      setTimeout(() => {
-        // Force redraw of chat container to adjust to new viewport
-        const chatContainer = document.querySelector(".lc-chat-container");
-        if (chatContainer && !isMinimized) {
-          // Calculate visible viewport height
-          const viewportHeight = window.innerHeight;
+      // We don't need the setTimeout that might be causing delayed layout shifts
+      // Instead, use requestAnimationFrame for smoother handling
+      requestAnimationFrame(() => {
+        // Instead of setting explicit pixel heights which can cause issues,
+        // rely more on CSS and just ensure the viewport is properly calculated
+        if (!isMinimized) {
+          // Update the viewport height variable
+          const vh = window.innerHeight * 0.01;
+          document.documentElement.style.setProperty("--vh", `${vh}px`);
 
-          // Apply a specific height for the chat panel
-          const chatPanel = document.querySelector(".lc-chat-panel");
-          if (chatPanel) {
-            chatPanel.style.height = `${viewportHeight - 60}px`; // 60px for navbar
-
-            // Force scroll to bottom
-            if (messagesContainerRef.current) {
-              messagesContainerRef.current.scrollTop =
-                messagesContainerRef.current.scrollHeight;
-            }
-
-            // Ensure input is visible
-            inputRef.current?.scrollIntoView({
-              behavior: "smooth",
-              block: "center",
-            });
+          // Scroll messages to bottom
+          if (messagesContainerRef.current) {
+            messagesContainerRef.current.scrollTop =
+              messagesContainerRef.current.scrollHeight;
           }
         }
-      }, 300); // Small delay to let the browser UI settle
+      });
     };
 
-    // When chat is opened, handle potential browser UI changes
     if (!isMinimized) {
+      // Run once on initial render
       handleVisibilityChange();
+
+      // Then set up event listeners
       window.addEventListener("resize", handleVisibilityChange);
       window.addEventListener("scroll", handleVisibilityChange);
 
-      // For iOS Safari specifically
-      window.visualViewport?.addEventListener("resize", handleVisibilityChange);
-      window.visualViewport?.addEventListener("scroll", handleVisibilityChange);
-
-      // When keyboard appears or disappears
-      inputRef.current?.addEventListener("focus", handleVisibilityChange);
-      inputRef.current?.addEventListener("blur", handleVisibilityChange);
+      // Use VisualViewport API which is better for keyboard changes
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener(
+          "resize",
+          handleVisibilityChange
+        );
+        window.visualViewport.addEventListener(
+          "scroll",
+          handleVisibilityChange
+        );
+      }
     }
 
     return () => {
       window.removeEventListener("resize", handleVisibilityChange);
       window.removeEventListener("scroll", handleVisibilityChange);
-      window.visualViewport?.removeEventListener(
-        "resize",
-        handleVisibilityChange
-      );
-      window.visualViewport?.removeEventListener(
-        "scroll",
-        handleVisibilityChange
-      );
-      inputRef.current?.removeEventListener("focus", handleVisibilityChange);
-      inputRef.current?.removeEventListener("blur", handleVisibilityChange);
+
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener(
+          "resize",
+          handleVisibilityChange
+        );
+        window.visualViewport.removeEventListener(
+          "scroll",
+          handleVisibilityChange
+        );
+      }
+
+      // Remove any dynamic inline styles when unmounting
+      const chatPanel = document.querySelector(".lc-chat-panel");
+      if (chatPanel) {
+        chatPanel.style.height = "";
+      }
     };
   }, [isMinimized]);
 

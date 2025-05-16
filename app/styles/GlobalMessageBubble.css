@@ -173,6 +173,11 @@
   padding-bottom: 0; /* Remove padding at bottom */
   display: flex;
   flex-direction: column;
+  position: relative;
+  height: auto !important; /* Prevent JS from setting explicit height */
+  max-height: calc(100% - env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
 }
 
 .lc-chat-panel.lc-minimized {
@@ -287,6 +292,11 @@
   min-height: 100px; /* Ensure there's always space for messages */
   padding-bottom: 10px; /* Reduce bottom padding */
   min-height: 0; /* Allow container to shrink */
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  position: relative;
+  z-index: 10;
 }
 
 .lc-chat-messages::-webkit-scrollbar {
@@ -491,19 +501,19 @@
 
 /* ===== MESSAGE INPUT SECTION ===== */
 .lc-chat-input-area {
-  padding: 10px 15px;  /* Reduce padding to minimal comfortable amount */
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(30, 30, 50, 0.9);
+  padding: 8px 12px; /* Reduce padding further */
+  position: sticky;
+  bottom: 0;
+  background: rgba(14, 14, 14, 0.95);
+  z-index: 20;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   align-items: center;
   gap: 10px;
-  position: sticky;
-  bottom: 0;
-  z-index: 10;
-  margin-top: 0; /* Remove auto margin */
-  
-  /* Fix iOS specific padding */
-  padding-bottom: env(safe-area-inset-bottom, 10px); /* Use reasonable fallback */
+  /* Critical fix: prevent transient margin/padding changes */
+  transition: none !important; /* Disable any transitions that might be causing the shift */
+  margin-bottom: 0 !important; /* Force bottom margin to always be 0 */
+  padding-bottom: 8px !important; /* Set consistent padding */
 }
 
 /* For iOS specifically - remove the extra margin */
