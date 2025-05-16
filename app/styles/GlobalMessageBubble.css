@@ -40,6 +40,10 @@
   width: 350px;
   height: calc(100vh - 60px); /* Full viewport height minus navbar */
   position: fixed;
+  height: 100vh; /* Full height */
+  height: calc(var(--vh, 1vh) * 100);
+  display: flex;
+  flex-direction: column;
 }
 
 /* Main chat bubble button */
@@ -157,6 +161,11 @@
   display: flex;
   flex-direction: column;
   max-height: 100%;
+  height: calc(100vh - 60px); /* Subtract navbar height */
+  height: calc(var(--vh, 1vh) * 100 - 60px);
+  max-height: calc(var(--vh, 1vh) * 100 - 60px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  position: relative;
 }
 
 .lc-chat-panel.lc-minimized {
@@ -268,6 +277,7 @@
   flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch; /* Better scroll on iOS */
+  min-height: 100px; /* Ensure there's always space for messages */
 }
 
 .lc-chat-messages::-webkit-scrollbar {
@@ -480,12 +490,20 @@
   gap: 10px;
   position: relative;
   padding-bottom: env(safe-area-inset-bottom, 0px); /* Support for notched iPhones */
+  position: sticky;
+  bottom: 0;
+  padding-bottom: max(8px, env(safe-area-inset-bottom, 8px));
+  background-color: rgba(14, 14, 14, 0.95); /* Match your chat background */
+  z-index: 10;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: auto; /* Push to the bottom */
 }
 
 /* Add this for iOS specifically */
 @supports (-webkit-touch-callout: none) {
   .lc-chat-input-area {
     padding-bottom: max(8px, env(safe-area-inset-bottom, 8px));
+    margin-bottom: env(safe-area-inset-bottom, 0px);
   }
 }
 
@@ -2818,4 +2836,56 @@ input:checked + .lc-toggle-slider:before {
   margin: 0;
   font-size: 13px;
   opacity: 0.7;
+}
+
+/* Add these styles to handle the browser bottom bar */
+
+.lc-chat-panel {
+  /* Keep existing styles */
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 60px); /* Subtract navbar height */
+  height: calc(var(--vh, 1vh) * 100 - 60px);
+  max-height: calc(var(--vh, 1vh) * 100 - 60px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  position: relative;
+}
+
+.lc-chat-input-area {
+  position: sticky;
+  bottom: 0;
+  padding-bottom: max(8px, env(safe-area-inset-bottom, 8px));
+  background-color: rgba(14, 14, 14, 0.95); /* Match your chat background */
+  z-index: 10;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: auto; /* Push to the bottom */
+}
+
+/* For iOS devices specifically */
+@supports (-webkit-touch-callout: none) {
+  .lc-chat-input-area {
+    margin-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+/* Make sure the chat panel fills the available space */
+.lc-chat-container.expanded {
+  height: 100vh; /* Full height */
+  height: calc(var(--vh, 1vh) * 100);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ensure messages area fills available space but allows scrolling */
+.lc-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* For smooth scrolling on iOS */
+  min-height: 100px; /* Ensure there's always space for messages */
+}
+
+/* Add special styling for when keyboard is active on mobile */
+.lc-keyboard-active .lc-chat-panel {
+  height: calc(var(--vh, 1vh) * 100 - 60px - var(--keyboard-height, 0px));
+  max-height: calc(var(--vh, 1vh) * 100 - 60px - var(--keyboard-height, 0px));
 }

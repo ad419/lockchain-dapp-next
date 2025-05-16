@@ -731,6 +731,116 @@ export default function GlobalMessageBubble() {
     }
   };
 
+  // Add this browser navigation bar handler inside the component body
+  useEffect(() => {
+    // Function to handle visibility changes (when browser UI shows/hides)
+    const handleVisibilityChange = () => {
+      setTimeout(() => {
+        // Force redraw of chat container to adjust to new viewport
+        const chatContainer = document.querySelector(".lc-chat-container");
+        if (chatContainer && !isMinimized) {
+          // Calculate visible viewport height
+          const viewportHeight = window.innerHeight;
+
+          // Apply a specific height for the chat panel
+          const chatPanel = document.querySelector(".lc-chat-panel");
+          if (chatPanel) {
+            chatPanel.style.height = `${viewportHeight - 60}px`; // 60px for navbar
+
+            // Force scroll to bottom
+            if (messagesContainerRef.current) {
+              messagesContainerRef.current.scrollTop =
+                messagesContainerRef.current.scrollHeight;
+            }
+
+            // Ensure input is visible
+            inputRef.current?.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
+          }
+        }
+      }, 300); // Small delay to let the browser UI settle
+    };
+
+    // When chat is opened, handle potential browser UI changes
+    if (!isMinimized) {
+      handleVisibilityChange();
+      window.addEventListener("resize", handleVisibilityChange);
+      window.addEventListener("scroll", handleVisibilityChange);
+
+      // For iOS Safari specifically
+      window.visualViewport?.addEventListener("resize", handleVisibilityChange);
+      window.visualViewport?.addEventListener("scroll", handleVisibilityChange);
+
+      // When keyboard appears or disappears
+      inputRef.current?.addEventListener("focus", handleVisibilityChange);
+      inputRef.current?.addEventListener("blur", handleVisibilityChange);
+    }
+
+    return () => {
+      window.removeEventListener("resize", handleVisibilityChange);
+      window.removeEventListener("scroll", handleVisibilityChange);
+      window.visualViewport?.removeEventListener(
+        "resize",
+        handleVisibilityChange
+      );
+      window.visualViewport?.removeEventListener(
+        "scroll",
+        handleVisibilityChange
+      );
+      inputRef.current?.removeEventListener("focus", handleVisibilityChange);
+      inputRef.current?.removeEventListener("blur", handleVisibilityChange);
+    };
+  }, [isMinimized]);
+
+  // Add visual viewport handler inside the component body as well
+  useEffect(() => {
+    if (typeof window.visualViewport === "undefined") return;
+
+    const handleViewportChange = () => {
+      // Calculate keyboard height
+      const viewportHeight = window.visualViewport.height;
+      const windowHeight = window.innerHeight;
+      const keyboardHeight = windowHeight - viewportHeight;
+
+      // Set a CSS variable for keyboard height
+      document.documentElement.style.setProperty(
+        "--keyboard-height",
+        `${keyboardHeight}px`
+      );
+
+      // Add class if keyboard is likely open (keyboard is usually > 150px)
+      if (keyboardHeight > 150) {
+        document.body.classList.add("lc-keyboard-active");
+      } else {
+        document.body.classList.remove("lc-keyboard-active");
+      }
+
+      // When keyboard is shown, ensure input is visible
+      if (keyboardHeight > 150 && inputRef.current) {
+        // Use requestAnimationFrame to wait for layout changes
+        requestAnimationFrame(() => {
+          inputRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        });
+      }
+    };
+
+    // Only add listeners when chat is open
+    if (!isMinimized) {
+      window.visualViewport.addEventListener("resize", handleViewportChange);
+      window.visualViewport.addEventListener("scroll", handleViewportChange);
+    }
+
+    return () => {
+      window.visualViewport.removeEventListener("resize", handleViewportChange);
+      window.visualViewport.removeEventListener("scroll", handleViewportChange);
+    };
+  }, [isMinimized]);
+
   return (
     <div
       className={`lc-chat-container ${isMinimized ? "minimized" : "expanded"}`}
