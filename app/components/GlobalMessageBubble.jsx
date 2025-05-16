@@ -717,51 +717,51 @@ export default function GlobalMessageBubble() {
   // Add right after your viewport height useEffect (around line 233)
 
   // Handle visual viewport changes (especially virtual keyboard)
-  useEffect(() => {
-    if (typeof window.visualViewport === "undefined") return;
+  // useEffect(() => {
+  //   if (typeof window.visualViewport === "undefined") return;
 
-    const handleViewportChange = () => {
-      // Calculate keyboard height
-      const viewportHeight = window.visualViewport.height;
-      const windowHeight = window.innerHeight;
-      const keyboardHeight = windowHeight - viewportHeight;
+  //   const handleViewportChange = () => {
+  //     // Calculate keyboard height
+  //     const viewportHeight = window.visualViewport.height;
+  //     const windowHeight = window.innerHeight;
+  //     const keyboardHeight = windowHeight - viewportHeight;
 
-      // Set a CSS variable for keyboard height
-      document.documentElement.style.setProperty(
-        "--keyboard-height",
-        `${keyboardHeight}px`
-      );
+  //     // Set a CSS variable for keyboard height
+  //     document.documentElement.style.setProperty(
+  //       "--keyboard-height",
+  //       `${keyboardHeight}px`
+  //     );
 
-      // Add class if keyboard is likely open (keyboard is usually > 150px)
-      if (keyboardHeight > 150) {
-        document.body.classList.add("lc-keyboard-active");
-      } else {
-        document.body.classList.remove("lc-keyboard-active");
-      }
+  //     // Add class if keyboard is likely open (keyboard is usually > 150px)
+  //     if (keyboardHeight > 150) {
+  //       document.body.classList.add("lc-keyboard-active");
+  //     } else {
+  //       document.body.classList.remove("lc-keyboard-active");
+  //     }
 
-      // When keyboard is shown, ensure input is visible
-      if (keyboardHeight > 150 && inputRef.current) {
-        // Use requestAnimationFrame to wait for layout changes
-        requestAnimationFrame(() => {
-          inputRef.current?.scrollIntoView({
-            behavior: "smooth",
-            block: "center",
-          });
-        });
-      }
-    };
+  //     // When keyboard is shown, ensure input is visible
+  //     if (keyboardHeight > 150 && inputRef.current) {
+  //       // Use requestAnimationFrame to wait for layout changes
+  //       requestAnimationFrame(() => {
+  //         inputRef.current?.scrollIntoView({
+  //           behavior: "smooth",
+  //           block: "center",
+  //         });
+  //       });
+  //     }
+  //   };
 
-    // Only add listeners when chat is open
-    if (!isMinimized) {
-      window.visualViewport.addEventListener("resize", handleViewportChange);
-      window.visualViewport.addEventListener("scroll", handleViewportChange);
-    }
+  //   // Only add listeners when chat is open
+  //   if (!isMinimized) {
+  //     window.visualViewport.addEventListener("resize", handleViewportChange);
+  //     window.visualViewport.addEventListener("scroll", handleViewportChange);
+  //   }
 
-    return () => {
-      window.visualViewport.removeEventListener("resize", handleViewportChange);
-      window.visualViewport.removeEventListener("scroll", handleViewportChange);
-    };
-  }, [isMinimized]);
+  //   return () => {
+  //     window.visualViewport.removeEventListener("resize", handleViewportChange);
+  //     window.visualViewport.removeEventListener("scroll", handleViewportChange);
+  //   };
+  // }, [isMinimized]);
 
   // Toggle custom theme creator
   const toggleCustomThemeCreator = () => {
