@@ -275,6 +275,45 @@ export default function GlobalMessageBubble() {
     };
   }, [isMinimized]); // Re-add listeners when chat is opened/closed
 
+  // Add this effect after your other useEffect blocks
+
+  // Prevent zoom on touch devices
+  useEffect(() => {
+    const preventZoom = (e) => {
+      if (e.touches.length > 1) {
+        e.preventDefault();
+      }
+    };
+
+    const preventFocusZoom = () => {
+      // Add a very slight delay before setting the font size back
+      setTimeout(() => {
+        const viewportMeta = document.querySelector('meta[name="viewport"]');
+        if (viewportMeta) {
+          viewportMeta.setAttribute(
+            "content",
+            "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+          );
+        }
+      }, 100);
+    };
+
+    document.addEventListener("touchstart", preventZoom, { passive: false });
+
+    // Apply to your input element
+    const inputElement = inputRef.current;
+    if (inputElement) {
+      inputElement.addEventListener("focus", preventFocusZoom);
+    }
+
+    return () => {
+      document.removeEventListener("touchstart", preventZoom);
+      if (inputElement) {
+        inputElement.removeEventListener("focus", preventFocusZoom);
+      }
+    };
+  }, [isMinimized]);
+
   // Handle login animation
   const handleLoginPrompt = () => {
     setShowLoginAnimation(true);
@@ -628,13 +667,16 @@ export default function GlobalMessageBubble() {
               </div>
             ) : (
               <div className="message-stream">
-                {messages.map((msg) => (
-                  <MessageItem
-                    key={msg.id}
-                    message={msg}
-                    isOwnMessage={msg.walletAddress === userWalletAddress}
-                  />
-                ))}
+                {messages
+                  .slice() // Create a copy of the array to avoid mutating the original
+                  .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)) // Sort by timestamp ascending
+                  .map((msg) => (
+                    <MessageItem
+                      key={msg.id}
+                      message={msg}
+                      isOwnMessage={msg.walletAddress === userWalletAddress}
+                    />
+                  ))}
               </div>
             )}
           </div>
@@ -675,6 +717,7 @@ export default function GlobalMessageBubble() {
               value={messageText}
               onChange={(e) => setMessageText(e.target.value)}
               onKeyPress={handleKeyPress}
+              style={{ fontSize: "16px" }} // Add this to prevent zoom on iOS
               disabled={
                 isSending || connectionStatus === "disconnected" || !isConnected
               }

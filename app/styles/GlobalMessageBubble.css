@@ -24,6 +24,7 @@
   max-height: calc(var(--vh, 1vh) * 100);
   position: fixed;
   bottom: 0;
+  touch-action: manipulation;
 }
 
 /* Container states */
@@ -54,7 +55,9 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  position: relative;
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
   pointer-events: auto;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   z-index: 10000;
@@ -67,6 +70,24 @@
 
 .lc-chat-bubble:active {
   transform: scale(0.95);
+}
+
+/* Ensure the bubble stays in place on mobile devices */
+@media (max-width: 480px) {
+  .lc-chat-bubble {
+    bottom: 20px;
+    right: 20px;
+    left: auto;
+    transform: none;
+  }
+}
+
+/* Support for notch devices */
+@supports (padding: max(0px)) {
+  .lc-chat-bubble {
+    bottom: max(20px, env(safe-area-inset-bottom));
+    right: max(20px, env(safe-area-inset-right));
+  }
 }
 
 /* Chat bubble icon */
@@ -507,6 +528,9 @@
   font-size: 14px;
   outline: none;
   transition: all 0.2s ease;
+  font-size: 16px !important; /* Minimum font size to prevent zoom */
+  transform: scale(1); /* Ensures rendering without zoom */
+  touch-action: manipulation; /* Prevents browser-specific touch behaviors */
 }
 
 .lc-chat-input:focus {
