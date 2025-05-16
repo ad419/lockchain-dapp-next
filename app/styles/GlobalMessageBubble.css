@@ -514,6 +514,8 @@
   transition: none !important; /* Disable any transitions that might be causing the shift */
   margin-bottom: 0 !important; /* Force bottom margin to always be 0 */
   padding-bottom: 8px !important; /* Set consistent padding */
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+  z-index: 30; /* Higher z-index to ensure it stays on top */
 }
 
 /* For iOS specifically - remove the extra margin */
@@ -2898,4 +2900,54 @@ input:checked + .lc-toggle-slider:before {
 .lc-keyboard-active .lc-chat-panel {
   height: calc(var(--vh, 1vh) * 100 - 60px - var(--keyboard-height, 0px));
   max-height: calc(var(--vh, 1vh) * 100 - 60px - var(--keyboard-height, 0px));
+}
+
+/* Chat input area adjustments for mobile keyboards */
+
+/* Input area position */
+.lc-chat-input-area {
+  position: sticky;
+  bottom: 0;
+  padding: 8px;
+  background: rgba(14, 14, 14, 0.95);
+  z-index: 30; /* Higher z-index to ensure it stays on top */
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Fix for iOS keyboard issues */
+@supports (-webkit-touch-callout: none) {
+  .lc-keyboard-active .lc-chat-panel {
+    /* When keyboard is active, push everything up */
+    padding-bottom: 0 !important;
+    height: auto !important;
+  }
+  
+  .lc-keyboard-active .lc-chat-input-area {
+    /* Make sure the input stays at the bottom even with keyboard */
+    position: sticky;
+    bottom: 0;
+    z-index: 30;
+    background: rgba(14, 14, 14, 0.95);
+  }
+  
+  .lc-keyboard-active .lc-chat-messages {
+    /* Allow messages container to shrink when keyboard appears */
+    min-height: 50px;
+    max-height: 40vh;
+  }
+}
+
+/* Make chat panel flexible */
+.lc-chat-panel {
+  display: flex;
+  flex-direction: column;
+  height: auto !important;
+  max-height: 100%;
+}
+
+/* Messages container should be flexible */
+.lc-chat-messages {
+  flex: 1;
+  overflow-y: auto;
 }

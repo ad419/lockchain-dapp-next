@@ -798,52 +798,60 @@ export default function GlobalMessageBubble() {
     };
   }, [isMinimized]);
 
-  // Add visual viewport handler inside the component body as well
+  // Replace the visual viewport handler with this simplified version
+
+  // Simple keyboard detection
   useEffect(() => {
-    if (typeof window.visualViewport === "undefined") return;
+    // Only for mobile devices
+    if (typeof window === "undefined" || window.innerWidth > 768) return;
 
-    const handleViewportChange = () => {
-      // Calculate keyboard height
-      const viewportHeight = window.visualViewport.height;
-      const windowHeight = window.innerHeight;
-      const keyboardHeight = windowHeight - viewportHeight;
+    // Focus handler
+    const handleInputFocus = () => {
+      // Mark body as having keyboard open
+      document.body.classList.add("lc-keyboard-active");
 
-      // Set a CSS variable for keyboard height
-      document.documentElement.style.setProperty(
-        "--keyboard-height",
-        `${keyboardHeight}px`
-      );
+      // Small delay to ensure keyboard is fully up
+      setTimeout(() => {
+        // Scroll to make input visible
+        inputRef.current?.scrollIntoView({ block: "center" });
 
-      // Add class if keyboard is likely open (keyboard is usually > 150px)
-      if (keyboardHeight > 150) {
-        document.body.classList.add("lc-keyboard-active");
-      } else {
-        document.body.classList.remove("lc-keyboard-active");
-      }
-
-      // When keyboard is shown, ensure input is visible
-      if (keyboardHeight > 150 && inputRef.current) {
-        // Use requestAnimationFrame to wait for layout changes
-        requestAnimationFrame(() => {
-          inputRef.current?.scrollIntoView({
-            behavior: "smooth",
-            block: "center",
-          });
-        });
-      }
+        // Also scroll messages to bottom
+        if (messagesContainerRef.current) {
+          messagesContainerRef.current.scrollTop =
+            messagesContainerRef.current.scrollHeight;
+        }
+      }, 300);
     };
 
-    // Only add listeners when chat is open
-    if (!isMinimized) {
-      window.visualViewport.addEventListener("resize", handleViewportChange);
-      window.visualViewport.addEventListener("scroll", handleViewportChange);
+    // Blur handler
+    const handleInputBlur = () => {
+      // Remove keyboard open class
+      document.body.classList.remove("lc-keyboard-active");
+
+      // Delay to let layout adjust
+      setTimeout(() => {
+        // Scroll messages to bottom after keyboard closes
+        if (messagesContainerRef.current && !isMinimized) {
+          messagesContainerRef.current.scrollTop =
+            messagesContainerRef.current.scrollHeight;
+        }
+      }, 100);
+    };
+
+    // Add listeners to input field
+    const inputElement = inputRef.current;
+    if (inputElement) {
+      inputElement.addEventListener("focus", handleInputFocus);
+      inputElement.addEventListener("blur", handleInputBlur);
     }
 
     return () => {
-      window.visualViewport.removeEventListener("resize", handleViewportChange);
-      window.visualViewport.removeEventListener("scroll", handleViewportChange);
+      if (inputElement) {
+        inputElement.removeEventListener("focus", handleInputFocus);
+        inputElement.removeEventListener("blur", handleInputBlur);
+      }
     };
-  }, [isMinimized]);
+  }, [isMinimized, inputRef]);
 
   return (
     <div
@@ -943,6 +951,10 @@ export default function GlobalMessageBubble() {
               onChange={(e) => setMessageText(e.target.value)}
               onKeyPress={handleKeyPress}
               style={{ fontSize: "16px" }} // Add this to prevent zoom on iOS
+              onFocus={() => document.body.classList.add("lc-keyboard-active")}
+              onBlur={() =>
+                document.body.classList.remove("lc-keyboard-active")
+              }
               disabled={
                 isSending || connectionStatus === "disconnected" || !isConnected
               }
