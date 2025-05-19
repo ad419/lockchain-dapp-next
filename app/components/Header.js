@@ -735,6 +735,20 @@ export default function Header() {
                     <i className="angle fe fe-chevron-right"></i>
                   </Link>
                 </li>
+
+                {/* Add Create Token Link here */}
+                <li
+                  className={`nav-item ${
+                    pathname === "/create-token" ? "active" : ""
+                  }`}
+                >
+                  <Link href="/create-token" className="nav-link">
+                    <i className="ti-plus sidemenu-icon menu-icon"></i>
+                    <span className="sidemenu-label">Create Token</span>
+                    <i className="angle fe fe-chevron-right"></i>
+                  </Link>
+                </li>
+
                 <li className="nav-header active">
                   <span
                     style={{

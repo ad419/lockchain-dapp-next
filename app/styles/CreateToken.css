@@ -1,0 +1,1233 @@
+:root {
+  --token-build-primary: #1253ff;
+  --token-build-secondary: #7da0ff;
+  --token-build-dark: #141414;
+  --token-build-darker: rgba(20, 20, 20, 0.8);
+  --token-build-light: #d1d1d1;
+  --token-build-border: rgba(255, 255, 255, 0.1);
+  --token-build-highlight: rgba(18, 83, 255, 0.15);
+  --token-build-shadow: rgba(0, 0, 0, 0.2);
+}
+
+/* Main containers */
+.token-build-container {
+  width: 100%;
+  margin: 0 auto; 
+  color: #fff;
+  padding: 60px 0 0 0; /* Keep 60px top padding for all screen sizes */
+  min-height: initial;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  background: var(--gradient-bg);
+}
+
+/* Add this to ensure content extends to the footer */
+.token-build-container::after {
+  content: '';
+  display: block;
+  height: 1px; /* Just a minimal height */
+  margin-bottom: -1px; /* Pull the footer up */
+}
+
+.token-build-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: 100%;
+  max-width: 1200px; /* Limit maximum width */
+  margin: 0 auto;
+}
+
+.token-build-col {
+  position: relative;
+  width: 100%;
+  padding: 0 15px;
+  flex: 0 0 100%;
+  max-width: 100%;
+}
+
+@media (min-width: 992px) {
+  .token-build-col {
+    flex: 0 0 90%;
+    max-width: 90%;
+  }
+}
+
+@media (min-width: 1200px) {
+  .token-build-col {
+    flex: 0 0 80%;
+    max-width: 80%;
+  }
+}
+
+/* Card styling */
+.token-build-card {
+  position: relative;
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+  background: radial-gradient(at 50% 0%, rgba(18, 83, 255, 0.15) 0%, rgba(20, 20, 20, 0.2) 50%);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.token-build-card-body {
+  padding: 2rem;
+}
+
+@media (min-width: 992px) {
+  .token-build-card-body {
+    padding: 3rem;
+  }
+}
+
+/* Text elements */
+.token-build-heading {
+  margin-bottom: 1rem;
+  font-weight: 700;
+  color: #fff;
+  text-align: center;
+}
+
+.token-build-subheading {
+  margin-bottom: 2rem;
+  color: #a0a0a0;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.token-build-section-title {
+  color: var(--token-build-primary);
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  position: relative;
+  display: inline-block;
+}
+
+.token-build-section-title::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  width: 40px;
+  height: 3px;
+  background: var(--token-build-primary);
+  border-radius: 2px;
+}
+
+/* Form elements */
+.token-build-form {
+  width: 100%;
+}
+
+.token-build-form-group {
+  margin-bottom: 1.5rem;
+}
+
+.token-build-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #fff;
+}
+
+.token-build-input {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: #fff;
+  background: var(--token-build-darker);
+  border: 1px solid var(--token-build-border);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.token-build-input:focus {
+  outline: none;
+  border-color: var(--token-build-primary);
+  box-shadow: 0 0 0 2px rgba(18, 83, 255, 0.2);
+}
+
+.token-build-select {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: #fff;
+  background-color: var(--token-build-darker);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 16px 12px;
+  border: 1px solid var(--token-build-border);
+  border-radius: 8px;
+  appearance: none;
+  transition: all 0.2s ease;
+}
+
+.token-build-select:focus {
+  outline: none;
+  border-color: var(--token-build-primary);
+  box-shadow: 0 0 0 2px rgba(18, 83, 255, 0.2);
+}
+
+.token-build-textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+/* Grid layout */
+.token-build-flex-row {
+  display: flex;
+  flex-wrap: wrap;
+  margin-right: -15px;
+  margin-left: -15px;
+}
+
+.token-build-col-half {
+  position: relative;
+  width: 100%;
+  padding-right: 15px;
+  padding-left: 15px;
+}
+
+@media (min-width: 768px) {
+  .token-build-col-half {
+    flex: 0 0 50%;
+    max-width: 50%;
+  }
+}
+
+/* Buttons */
+.token-build-btn {
+  display: inline-block;
+  font-weight: 500;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: middle;
+  user-select: none;
+  border: 1px solid transparent;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  border-radius: 8px;
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
+}
+
+.token-build-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.token-build-btn-primary {
+  color: #fff;
+  background-color: var(--token-build-primary);
+  border-color: var(--token-build-primary);
+}
+
+.token-build-btn-primary:hover:not(:disabled) {
+  background-color: #0045e5;
+  border-color: #0045e5;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(18, 83, 255, 0.3);
+}
+
+.token-build-btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.token-build-btn-outline {
+  color: #fff;
+  background-color: transparent;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.token-build-btn-outline:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Progress indicator */
+.token-build-progress {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.token-build-progress-step {
+  display: flex;
+  align-items: center;
+}
+
+.token-build-progress-dot {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  margin-right: 8px;
+  transition: all 0.3s ease;
+}
+
+.token-build-progress-line {
+  height: 2px;
+  width: 50px;
+  transition: all 0.3s ease;
+  margin-right: 8px;
+}
+
+.token-build-progress-labels {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 0.5rem;
+}
+
+.token-build-progress-label {
+  font-size: 0.75rem;
+  color: #a0a0a0;
+}
+
+/* Feature cards */
+.token-build-features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.token-build-feature-card {
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 1rem;
+}
+
+.token-build-feature-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.token-build-feature-card-selected {
+  border: 1px solid #1253ff !important;
+  background: rgba(18, 83, 255, 0.1) !important;
+}
+
+.token-build-feature-check {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  margin-right: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.token-build-check-icon {
+  color: white;
+  font-size: 12px;
+}
+
+/* Summary container */
+.token-build-summary {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.token-build-summary-title {
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.token-build-summary-row {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.token-build-summary-col {
+  flex: 0 0 100%;
+  max-width: 100%;
+}
+
+@media (min-width: 768px) {
+  .token-build-summary-col {
+    flex: 0 0 50%;
+    max-width: 50%;
+  }
+}
+
+/* Checkbox */
+.token-build-checkbox-container {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.token-build-checkbox {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  margin-right: 8px;
+  cursor: pointer;
+  position: relative;
+  top: 2px;
+}
+
+.token-build-checkbox:checked {
+  background-color: #1253ff;
+  border-color: #1253ff;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m6 10 3 3 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.token-build-checkbox-label {
+  color: var(--token-build-light);
+  cursor: pointer;
+}
+
+/* Utilities */
+.token-build-text-center {
+  text-align: center;
+}
+
+.token-build-mt-1 { margin-top: 0.25rem; }
+.token-build-mt-2 { margin-top: 0.5rem; }
+.token-build-mt-3 { margin-top: 1rem; }
+.token-build-mt-4 { margin-top: 1.5rem; }
+.token-build-mt-5 { margin-top: 3rem; }
+
+.token-build-mb-1 { margin-bottom: 0.25rem; }
+.token-build-mb-2 { margin-bottom: 0.5rem; }
+.token-build-mb-3 { margin-bottom: 1rem; }
+.token-build-mb-4 { margin-bottom: 1.5rem; }
+.token-build-mb-5 { margin-bottom: 3rem; }
+
+.token-build-flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.token-build-flex-center {
+  display: flex;
+  align-items: center;
+}
+
+.token-build-ml-2 { margin-left: 0.5rem; }
+.token-build-mr-2 { margin-right: 0.5rem; }
+
+/* Update the last element's margin */
+.token-build-text-center.token-build-mt-4.token-build-mb-5 {
+  margin-bottom: 0 !important;
+}
+
+/* Animation keyframes */
+@keyframes token-build-fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.token-build-animate-in {
+  animation: token-build-fadeIn 0.5s forwards;
+}
+
+/* Add these responsive styles to match your Leaderboard.css breakpoints */
+
+/* Large screens (1629px and below) */
+@media (max-width: 1629px) {
+  .token-build-container {
+    padding: 60px 1rem 0 1rem; /* Keep 60px top padding */
+    margin-left: 0;
+  }
+
+  .token-build-row {
+    max-width: 1000px;
+    margin: 1rem auto;
+    margin-left: 280px; /* Add space for sidebar */
+  }
+}
+
+/* Medium-large screens (1400px and below) */
+@media (max-width: 1400px) {
+  .token-build-row {
+    max-width: 900px;
+    margin-left: 280px; /* Maintain sidebar space */
+  }
+}
+
+/* Medium screens (1200px and below) */
+@media (max-width: 1200px) {
+  .token-build-row {
+    max-width: 800px;
+    margin-left: 280px; /* Maintain sidebar space */
+  }
+}
+
+/* Medium-small screens (1100px and below) */
+@media (max-width: 1100px) {
+  .token-build-row {
+    max-width: 700px;
+    margin-left: 250px; /* Reduced margin for smaller screens */
+  }
+}
+
+/* Small screens (991px and below) - tablet/mobile */
+@media (max-width: 991px) {
+  .token-build-container {
+    margin-left: 0;
+    padding: 60px 1rem 0 1rem; /* Keep 60px top padding */
+  }
+
+  .token-build-row {
+    max-width: 100%;
+    margin: 1rem auto;
+    margin-left: 0; /* Remove sidebar space when sidebar is closed */
+  }
+
+  .token-build-col {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+}
+
+/* Smaller screens (900px and below) */
+@media (max-width: 900px) {
+  .token-build-container {
+    padding: 60px 0.5rem 0 0.5rem; /* Keep 60px top padding */
+  }
+
+  .token-build-row {
+    margin: 0.5rem auto;
+  }
+
+  .token-build-card-body {
+    padding: 1.5rem;
+  }
+}
+
+/* Mobile screens (768px and below) */
+@media (max-width: 768px) {
+  .token-build-container {
+    padding: 60px 0.5rem 0 0.5rem; /* Keep 60px top padding */
+  }
+
+  .token-build-row {
+    margin: 0.5rem auto;
+  }
+
+  .token-build-card {
+    margin: 1rem 0;
+  }
+
+  /* .token-build-card-body {
+    padding: 1rem;
+  } */
+
+  /* Fix padding for inputs and selects */
+  .token-build-input, 
+  .token-build-select {
+    padding: 0.75rem 1rem !important; /* Force consistent padding */
+    font-size: 1rem;
+    min-height: 50px; /* Ensure minimum height for touch targets */
+  }
+
+  .token-build-heading {
+    font-size: 1.5rem;
+  }
+
+  .token-build-progress {
+    margin-bottom: 1.5rem;
+  }
+
+  .token-build-section-title {
+    font-size: 1.2rem;
+  }
+
+  .token-build-flex-row {
+    flex-direction: column;
+  }
+
+  .token-build-col-half {
+    flex: 0 0 100%;
+    max-width: 100%;
+    padding-right: 0;
+    padding-left: 0;
+  }
+  
+  /* Improve form element spacing on mobile */
+  .token-build-form-group {
+    margin-bottom: 1.25rem;
+  }
+  
+  /* Ensure form elements have proper margins */
+  .token-build-label {
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+  }
+}
+
+/* Small mobile screens (480px and below) */
+@media (max-width: 480px) {
+  .token-build-container {
+    padding: 60px 0.25rem 0 0.25rem; /* Keep 60px top padding */
+  }
+
+  .token-build-row {
+    margin: 0.25rem auto;
+  }
+
+  /* .token-build-card-body {
+    padding: 0.75rem;
+  } */
+
+  /* Maintain consistent padding even on smallest screens */
+  .token-build-input, 
+  .token-build-select {
+    padding: 0.75rem 0.85rem !important; /* Force consistent padding */
+    font-size: 0.95rem;
+  }
+
+  .token-build-heading {
+    font-size: 1.25rem;
+  }
+
+  .token-build-subheading {
+    font-size: 0.9rem;
+  }
+
+  .token-build-progress-dot {
+    width: 12px;
+    height: 12px;
+  }
+
+  .token-build-progress-line {
+    width: 30px;
+  }
+
+  .token-build-btn {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+  }
+
+  /* Make features grid single column */
+  .token-build-features-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  /* Fix form spacing */
+  .token-build-form-group {
+    margin-bottom: 1rem;
+  }
+}
+
+/* Very small screens (375px and below) */
+@media (max-width: 375px) {
+  /* .token-build-card-body {
+    padding: 0.5rem;
+  } */
+
+  .token-build-heading {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .token-build-subheading {
+    font-size: 0.8rem;
+    margin-bottom: 1rem;
+  }
+
+  .token-build-progress-dot {
+    width: 10px;
+    height: 10px;
+  }
+
+  .token-build-progress-line {
+    width: 25px;
+  }
+
+  .token-build-progress-label {
+    font-size: 0.65rem;
+  }
+
+  .token-build-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+  }
+}
+
+/* Add these new styles to your CSS file */
+
+/* Success & Error modal overlays */
+.token-build-success-overlay,
+.token-build-error-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(5px);
+}
+
+.token-build-success-modal,
+.token-build-error-modal {
+  background: var(--token-build-dark);
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--token-build-border);
+}
+
+.token-build-success-modal {
+  background: linear-gradient(145deg, #141e30, #243b55);
+  border: 1px solid rgba(125, 160, 255, 0.2);
+}
+
+.token-build-error-modal {
+  background: linear-gradient(145deg, #1a1a1a, #2c1e22);
+  border: 1px solid rgba(255, 107, 107, 0.2);
+}
+
+.token-build-success-icon,
+.token-build-error-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  display: inline-block;
+}
+
+.token-build-success-modal h2,
+.token-build-error-modal h2 {
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+  color: #fff;
+}
+
+.token-build-success-modal p,
+.token-build-error-modal p {
+  margin-bottom: 1.5rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.token-build-success-modal button,
+.token-build-error-modal button {
+  margin: 0 auto;
+}
+
+/* Pulse animation for success button */
+.token-build-success-modal button {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(18, 83, 255, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(18, 83, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(18, 83, 255, 0);
+  }
+}
+
+/* Responsive styles for modals */
+@media (max-width: 480px) {
+  .token-build-success-modal,
+  .token-build-error-modal {
+    max-width: 90%;
+    padding: 1.5rem;
+  }
+  
+  .token-build-success-icon,
+  .token-build-error-icon {
+    font-size: 3rem;
+  }
+  
+  .token-build-success-modal h2,
+  .token-build-error-modal h2 {
+    font-size: 1.4rem;
+  }
+}
+
+/* Add at the end of your existing CSS */
+
+/* Enhanced Overlays and Animations */
+.token-build-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Cosmic Success Theme */
+.token-build-overlay.cosmic {
+  background: linear-gradient(135deg, rgba(2, 0, 36, 0.95) 0%, rgba(9, 9, 121, 0.95) 35%, rgba(0, 33, 80, 0.95) 100%);
+  transition: all 0.5s ease;
+  animation: cosmicPulse 15s infinite alternate;
+}
+
+@keyframes cosmicPulse {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* Cosmos Animation */
+.token-build-cosmos-background {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.token-build-stars,
+.token-build-stars-2,
+.token-build-stars-3 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  animation: twinkle 8s ease-in-out infinite;
+  background-image: 
+    radial-gradient(1px 1px at 25px 5px, white, rgba(255, 255, 255, 0)),
+    radial-gradient(1px 1px at 50px 25px, white, rgba(255, 255, 255, 0)),
+    radial-gradient(1px 1px at 125px 20px, white, rgba(255, 255, 255, 0)),
+    radial-gradient(1.5px 1.5px at 50px 75px, white, rgba(255, 255, 255, 0));
+  background-size: 200px 200px;
+}
+
+.token-build-stars-2 {
+  animation-delay: 1s;
+  background-size: 300px 300px;
+}
+
+.token-build-stars-3 {
+  animation-delay: 2s;
+  background-size: 400px 400px;
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 0.2; }
+}
+
+.token-build-shooting-stars {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-45deg);
+  animation: shootingStars 5s linear infinite;
+}
+
+.token-build-shooting-stars:before {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 100%);
+  box-shadow: 0 0 10px 2px rgba(255, 255, 255, 0.7);
+  animation: shootingStar 3s ease-in-out infinite;
+  top: -100px;
+  left: -100px;
+}
+
+.token-build-shooting-stars:after {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 100%);
+  box-shadow: 0 0 10px 2px rgba(255, 255, 255, 0.7);
+  animation: shootingStar 5s ease-in-out infinite;
+  animation-delay: 1.5s;
+  top: -100px;
+  left: -100px;
+}
+
+@keyframes shootingStar {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  40% {
+    transform: translate(400px, 400px);
+    opacity: 0;
+  }
+  100% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+}
+
+/* Glassmorphism Success Modal */
+.token-build-success-modal.glassmorphism {
+  background: rgba(20, 20, 40, 0.5);
+  border-radius: 24px;
+  padding: 2.5rem;
+  box-shadow: 0 20px 80px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  max-width: 450px;
+  width: 100%;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(20px);
+}
+
+.token-build-success-modal.glassmorphism:before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 70%);
+  animation: pulse 15s infinite;
+  z-index: -1;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: translate(0%, 0%) rotate(0deg); }
+  25% { transform: translate(-10%, -10%) rotate(90deg); }
+  50% { transform: translate(5%, 5%) rotate(180deg); }
+  75% { transform: translate(-5%, 10%) rotate(270deg); }
+}
+
+.token-build-token-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 2rem;
+  width: 120px;
+  height: 120px;
+  position: relative;
+}
+
+.token-build-token-ring {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 25px 5px rgba(18, 83, 255, 0.8);
+}
+
+.token-build-token-circle {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: linear-gradient(45deg, #1253ff, #7da0ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+}
+
+.token-build-glow-text {
+  text-shadow: 0 0 10px rgba(125, 160, 255, 0.8);
+  color: white;
+  margin-bottom: 1rem;
+  font-size: 2rem;
+}
+
+.token-build-success-progress {
+  height: 2px;
+  background: linear-gradient(to right, #1253ff, #43f6ff);
+  margin: 1.5rem 0;
+  width: 0%;
+  border-radius: 2px;
+  box-shadow: 0 0 8px rgba(67, 246, 255, 0.8);
+}
+
+.token-build-btn-glow {
+  background: linear-gradient(45deg, #1253ff, #43f6ff);
+  border: none;
+  border-radius: 30px;
+  padding: 0.8rem 2rem;
+  font-weight: 600;
+  color: white;
+  box-shadow: 0 0 15px rgba(18, 83, 255, 0.5);
+  margin-top: 1.5rem;
+  font-size: 1.1rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.token-build-btn-shine {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: rotate(30deg);
+  animation: shine 4s infinite;
+}
+
+@keyframes shine {
+  0% {
+    transform: translateX(-100%) rotate(30deg);
+  }
+  20%, 100% {
+    transform: translateX(100%) rotate(30deg);
+  }
+}
+
+/* Error Theme */
+.token-build-overlay.error-theme {
+  background: rgba(30, 10, 14, 0.92);
+}
+
+.token-build-glitch-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(255, 59, 88, 0.1),
+    rgba(255, 59, 88, 0.1) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+  pointer-events: none;
+  animation: glitch 3s infinite;
+  opacity: 0.3;
+}
+
+@keyframes glitch {
+  0%, 100% { opacity: 0.3; background-position: 0 0; }
+  92% { opacity: 0.3; background-position: 0 0; }
+  93% { opacity: 0.8; background-position: 3px 0; }
+  94% { opacity: 0.4; background-position: -3px 0; }
+  95% { opacity: 0.7; background-position: 0 0; }
+  96% { opacity: 0.3; }
+}
+
+.token-build-error-modal {
+  background: rgba(25, 8, 12, 0.9);
+  border-radius: 15px;
+  border: 1px solid rgba(255, 59, 88, 0.3);
+  padding: 2.5rem;
+  max-width: 450px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(255, 59, 88, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.token-build-error-symbol {
+  margin: 0 auto 1.5rem;
+  position: relative;
+}
+
+.token-build-digital-lines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.token-build-digital-line {
+  position: absolute;
+  height: 1px;
+  width: 100%;
+  background: linear-gradient(to right, 
+    rgba(255, 59, 88, 0),
+    rgba(255, 59, 88, 0.2),
+    rgba(255, 59, 88, 0.5),
+    rgba(255, 59, 88, 0.2),
+    rgba(255, 59, 88, 0)
+  );
+  opacity: 0.4;
+}
+
+.token-build-digital-line:nth-child(1) {
+  top: 25%;
+  animation: scanline 3s linear infinite;
+}
+
+.token-build-digital-line:nth-child(2) {
+  top: 55%;
+  animation: scanline 3s linear infinite;
+  animation-delay: 1s;
+}
+
+.token-build-digital-line:nth-child(3) {
+  top: 75%;
+  animation: scanline 3s linear infinite;
+  animation-delay: 2s;
+}
+
+@keyframes scanline {
+  0% {
+    transform: translateY(-100px);
+  }
+  100% {
+    transform: translateY(500px);
+  }
+}
+
+.token-build-error-modal h2 {
+  color: #ff3b58;
+  font-size: 1.8rem;
+  margin: 1.5rem 0 1rem;
+}
+
+.token-build-error-modal p {
+  color: #ffabb6;
+  margin-bottom: 1.5rem;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.token-build-error-debug {
+  background: rgba(255, 59, 88, 0.1);
+  border-left: 3px solid rgba(255, 59, 88, 0.5);
+  padding: 0.8rem;
+  margin: 1.5rem 0;
+  text-align: left;
+  border-radius: 0 5px 5px 0;
+  overflow: hidden;
+}
+
+.token-build-error-debug code {
+  color: rgba(255, 255, 255, 0.7);
+  font-family: monospace;
+  font-size: 0.9rem;
+}
+
+.token-build-btn-group {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.token-build-btn-error {
+  background: rgba(255, 59, 88, 0.8);
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 0.7rem 1.5rem;
+  font-weight: 500;
+}
+
+.token-build-btn-retry {
+  background: transparent;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 5px;
+  padding: 0.7rem 1.5rem;
+  font-weight: 500;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .token-build-success-modal.glassmorphism,
+  .token-build-error-modal {
+    max-width: 85%;
+    padding: 2rem;
+  }
+  
+  .token-build-token-container {
+    width: 100px;
+    height: 100px;
+    margin-bottom: 1.5rem;
+  }
+  
+  .token-build-token-ring {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .token-build-token-circle {
+    width: 75px;
+    height: 75px;
+    font-size: 2rem;
+  }
+  
+  .token-build-glow-text {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .token-build-success-modal.glassmorphism,
+  .token-build-error-modal {
+    max-width: 90%;
+    padding: 1.5rem;
+  }
+  
+  .token-build-token-container {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .token-build-token-ring {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .token-build-token-circle {
+    width: 60px;
+    height: 60px;
+    font-size: 1.5rem;
+  }
+  
+  .token-build-error-symbol svg {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .token-build-btn-group {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
