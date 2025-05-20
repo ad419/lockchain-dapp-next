@@ -59,7 +59,6 @@ export const contract = {
   //   TOKEN_LP_ADDRESS: "0xa6adfd4da5669596531faae98af4a2a686a319d0",
   //   VESTING_ADDRESS : "0xe135b252828C1D989e2ce58aC0Bb328f90429f5b",
   //   WETH : "0xae13d989dac2f0debff460ac112a837c89baa7cd",
-
   // }
 
   8453: {
