@@ -53,30 +53,6 @@ const getTimeUntilElevenPMEST = () => {
   return Math.floor((localElevenPM - now) / 1000); // seconds until 11 PM EST today
 };
 
-// Calculate time remaining until 11 PM CEST
-const getTimeUntilElevenPMCEST = () => {
-  const now = new Date();
-
-  // Create a date object for 11 PM CEST today
-  const cestTime = new Date(
-    now.toLocaleString("en-US", { timeZone: "Europe/Paris" })
-  );
-  const elevenPMCEST = new Date(cestTime);
-  elevenPMCEST.setHours(23, 0, 0, 0); // Set to 11 PM CEST (23:00)
-
-  // Convert back to local time
-  const localElevenPM = new Date(elevenPMCEST.toLocaleString("en-US"));
-
-  // If it's already past 11 PM CEST, set to 11 PM CEST tomorrow
-  if (now > localElevenPM) {
-    elevenPMCEST.setDate(elevenPMCEST.getDate() + 1);
-    const nextDayLocalElevenPM = new Date(elevenPMCEST.toLocaleString("en-US"));
-    return Math.floor((nextDayLocalElevenPM - now) / 1000); // seconds until 11 PM CEST tomorrow
-  }
-
-  return Math.floor((localElevenPM - now) / 1000); // seconds until 11 PM CEST today
-};
-
 // Check if user is within the valid window (11 PM EST to 11:10 PM EST)
 const isWithinValidTimeWindow = () => {
   if (TEST_MODE) return true; // Always valid in test mode
@@ -171,20 +147,20 @@ export default function Welcome({ onComplete }) {
       if (!valid) {
         const now = new Date();
 
-        // Get current time in CEST
-        const cestTime = new Date(
-          now.toLocaleString("en-US", { timeZone: "Europe/Paris" })
+        // Get current time in EST
+        const estTime = new Date(
+          now.toLocaleString("en-US", { timeZone: "America/New_York" })
         );
-        const elevenPMCEST = new Date(cestTime);
-        elevenPMCEST.setHours(23, 0, 0, 0); // Set to 11 PM CEST (23:00)
+        const ninePMEST = new Date(estTime);
+        ninePMEST.setHours(21, 0, 0, 0); // Set to 9 PM EST
 
         // Convert back to local time
-        const localElevenPM = new Date(elevenPMCEST.toLocaleString("en-US"));
+        const localNinePM = new Date(ninePMEST.toLocaleString("en-US"));
 
-        if (now < localElevenPM) {
-          // If it's before 11 PM CEST, show countdown until 11 PM CEST
+        if (now < localNinePM) {
+          // If it's before 9 PM EST, show countdown until 9 PM EST
           setWaitingForNinePM(true);
-          setTimeUntilStart(getTimeUntilElevenPMCEST());
+          setTimeUntilStart(getTimeUntilElevenPMEST());
         } else {
           // User arrived too late
           // Skip welcome screen after a brief message
@@ -201,7 +177,7 @@ export default function Welcome({ onComplete }) {
     if (!waitingForNinePM) return;
 
     const timer = setInterval(() => {
-      const remaining = getTimeUntilElevenPMCEST();
+      const remaining = getTimeUntilElevenPMEST();
       setTimeUntilStart(remaining);
 
       if (remaining <= 1) {
