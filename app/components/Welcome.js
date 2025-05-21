@@ -14,7 +14,7 @@ const MATCH_LINK =
 const LOCKSWAP_LINK = "/swap";
 
 // Add or modify these constants at the top of your file (after existing imports)
-const TEST_MODE = false; // Change to false for actual 9 PM EST launch
+const TEST_MODE = false; // Set to false for actual 11:20 PM CEST launch
 const TEST_DURATION = 10; // Shorter countdown for testing (seconds)
 const ACTUAL_DURATION = 10 * 60; // 10 minutes in seconds
 
@@ -29,59 +29,65 @@ const generateStars = (count) => {
   }));
 };
 
-// Calculate time remaining until 11 PM EST
-const getTimeUntilElevenPMEST = () => {
+// Replace the getTimeUntilElevenPMEST function with this 11:20 PM CEST version
+const getTimeUntilElevenTwentyPMCEST = () => {
   const now = new Date();
 
-  // Create a date object for 11 PM EST today
-  const estTime = new Date(
-    now.toLocaleString("en-US", { timeZone: "America/New_York" })
+  // Create a date object for 11:20 PM CEST today
+  const cestTime = new Date(
+    now.toLocaleString("en-US", { timeZone: "Europe/Paris" })
   );
-  const elevenPMEST = new Date(estTime);
-  elevenPMEST.setHours(23, 0, 0, 0); // Set to 11 PM EST (23:00)
+  const elevenTwentyPMCEST = new Date(cestTime);
+  elevenTwentyPMCEST.setHours(23, 20, 0, 0); // Set to 11:20 PM CEST (23:20)
 
   // Convert back to local time
-  const localElevenPM = new Date(elevenPMEST.toLocaleString("en-US"));
+  const localElevenTwentyPM = new Date(
+    elevenTwentyPMCEST.toLocaleString("en-US")
+  );
 
-  // If it's already past 11 PM EST, set to 11 PM EST tomorrow
-  if (now > localElevenPM) {
-    elevenPMEST.setDate(elevenPMEST.getDate() + 1);
-    const nextDayLocalElevenPM = new Date(elevenPMEST.toLocaleString("en-US"));
-    return Math.floor((nextDayLocalElevenPM - now) / 1000); // seconds until 11 PM EST tomorrow
+  // If it's already past 11:20 PM CEST, set to 11:20 PM CEST tomorrow
+  if (now > localElevenTwentyPM) {
+    elevenTwentyPMCEST.setDate(elevenTwentyPMCEST.getDate() + 1);
+    const nextDayLocalElevenTwentyPM = new Date(
+      elevenTwentyPMCEST.toLocaleString("en-US")
+    );
+    return Math.floor((nextDayLocalElevenTwentyPM - now) / 1000); // seconds until 11:20 PM CEST tomorrow
   }
 
-  return Math.floor((localElevenPM - now) / 1000); // seconds until 11 PM EST today
+  return Math.floor((localElevenTwentyPM - now) / 1000); // seconds until 11:20 PM CEST today
 };
 
-// Check if user is within the valid window (11 PM EST to 11:10 PM EST)
+// Replace the isWithinValidTimeWindow function
 const isWithinValidTimeWindow = () => {
   if (TEST_MODE) return true; // Always valid in test mode
 
   const now = new Date();
 
-  // Get current time in EST
-  const estTime = new Date(
-    now.toLocaleString("en-US", { timeZone: "America/New_York" })
+  // Get current time in CEST
+  const cestTime = new Date(
+    now.toLocaleString("en-US", { timeZone: "Europe/Paris" })
   );
-  const elevenPMEST = new Date(estTime);
-  elevenPMEST.setHours(23, 0, 0, 0); // Set to 11 PM EST (23:00)
+  const elevenTwentyPMCEST = new Date(cestTime);
+  elevenTwentyPMCEST.setHours(23, 20, 0, 0); // Set to 11:20 PM CEST (23:20)
 
   // Convert back to local time
-  const localElevenPM = new Date(elevenPMEST.toLocaleString("en-US"));
+  const localElevenTwentyPM = new Date(
+    elevenTwentyPMCEST.toLocaleString("en-US")
+  );
 
-  // If 11 PM EST is in the future, user is too early
-  if (now < localElevenPM) return false;
+  // If 11:20 PM CEST is in the future, user is too early
+  if (now < localElevenTwentyPM) return false;
 
-  // Calculate 11:10 PM EST
-  const tenMinutesAfterEST = new Date(elevenPMEST);
-  tenMinutesAfterEST.setMinutes(elevenPMEST.getMinutes() + 10);
+  // Calculate 11:30 PM CEST (10 min window)
+  const tenMinutesAfterCEST = new Date(elevenTwentyPMCEST);
+  tenMinutesAfterCEST.setMinutes(elevenTwentyPMCEST.getMinutes() + 10);
 
   // Convert to local time
   const localTenMinutesAfter = new Date(
-    tenMinutesAfterEST.toLocaleString("en-US")
+    tenMinutesAfterCEST.toLocaleString("en-US")
   );
 
-  // If current time is after 11:10 PM EST, user is too late
+  // If current time is after 11:30 PM CEST, user is too late
   if (now > localTenMinutesAfter) return false;
 
   // User is within the valid window
@@ -147,20 +153,22 @@ export default function Welcome({ onComplete }) {
       if (!valid) {
         const now = new Date();
 
-        // Get current time in EST
-        const estTime = new Date(
-          now.toLocaleString("en-US", { timeZone: "America/New_York" })
+        // Get current time in CEST
+        const cestTime = new Date(
+          now.toLocaleString("en-US", { timeZone: "Europe/Paris" })
         );
-        const ninePMEST = new Date(estTime);
-        ninePMEST.setHours(21, 0, 0, 0); // Set to 9 PM EST
+        const elevenTwentyPMCEST = new Date(cestTime);
+        elevenTwentyPMCEST.setHours(23, 20, 0, 0); // Set to 11:20 PM CEST (23:20)
 
         // Convert back to local time
-        const localNinePM = new Date(ninePMEST.toLocaleString("en-US"));
+        const localElevenTwentyPM = new Date(
+          elevenTwentyPMCEST.toLocaleString("en-US")
+        );
 
-        if (now < localNinePM) {
-          // If it's before 9 PM EST, show countdown until 9 PM EST
+        if (now < localElevenTwentyPM) {
+          // If it's before 11:20 PM CEST, show countdown until 11:20 PM CEST
           setWaitingForNinePM(true);
-          setTimeUntilStart(getTimeUntilElevenPMEST());
+          setTimeUntilStart(getTimeUntilElevenTwentyPMCEST());
         } else {
           // User arrived too late
           // Skip welcome screen after a brief message
@@ -177,7 +185,7 @@ export default function Welcome({ onComplete }) {
     if (!waitingForNinePM) return;
 
     const timer = setInterval(() => {
-      const remaining = getTimeUntilElevenPMEST();
+      const remaining = getTimeUntilElevenTwentyPMCEST();
       setTimeUntilStart(remaining);
 
       if (remaining <= 1) {
