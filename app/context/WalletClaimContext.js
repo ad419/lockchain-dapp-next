@@ -25,6 +25,14 @@ import {
 } from "firebase/firestore";
 import { db } from "../lib/firebase"; // Import the existing db instance
 
+// Add these at the top level with your other caches
+const listenerTimestamps = new LRUCache({
+  max: 500,
+  ttl: 600000, // 10 minutes
+});
+
+const MAX_LISTENER_SETUPS = 3; // Maximum number of setups allowed in the cooldown period
+
 // Create context
 const WalletClaimContext = createContext(null);
 
@@ -100,7 +108,32 @@ export function WalletClaimProvider({ children }) {
       if (!claimId || typeof window === "undefined") return;
 
       try {
-        console.log("Setting up real-time listener for claim:", claimId);
+        // Check if we've already set up this listener too many times
+        const listenerKey = `listener_${claimId}`;
+        const listenerData = listenerTimestamps.get(listenerKey) || {
+          count: 0,
+          timestamps: [],
+        };
+
+        // Check if we've hit the limit in the cooldown period
+        if (listenerData.count >= MAX_LISTENER_SETUPS) {
+          console.log(
+            `Skipping listener setup for ${claimId} - limit reached (${MAX_LISTENER_SETUPS} in 10 minutes)`
+          );
+          return;
+        }
+
+        console.log(
+          `Setting up real-time listener for claim: ${claimId} (setup ${
+            listenerData.count + 1
+          }/${MAX_LISTENER_SETUPS})`
+        );
+
+        // Update listener tracking
+        const now = Date.now();
+        listenerData.count += 1;
+        listenerData.timestamps.push(now);
+        listenerTimestamps.set(listenerKey, listenerData);
 
         // Use the imported db instance directly
         const unsubscribe = onSnapshot(
@@ -161,6 +194,11 @@ export function WalletClaimProvider({ children }) {
     [username]
   );
 
+  // Add this helper function to the provider component
+  const hasActiveListener = useCallback((claimId) => {
+    return unsubscribeRef.current !== null;
+  }, []);
+
   // Function to check wallet claim status
   const checkWalletClaim = useCallback(
     async (forceRefresh = false) => {
@@ -190,7 +228,7 @@ export function WalletClaimProvider({ children }) {
         }
 
         // Even with cached data, set up listener if we have a claim ID
-        if (cachedData.claim?.id && !unsubscribeRef.current) {
+        if (cachedData.claim?.id && !hasActiveListener(cachedData.claim.id)) {
           setupFirestoreListener(cachedData.claim.id);
         }
 
@@ -237,7 +275,11 @@ export function WalletClaimProvider({ children }) {
         }
 
         // Set up Firestore listener for the claimed wallet
-        if (data.hasClaimed && data.claim?.id) {
+        if (
+          data.hasClaimed &&
+          data.claim?.id &&
+          !hasActiveListener(data.claim.id)
+        ) {
           setupFirestoreListener(data.claim.id);
         }
 
@@ -256,7 +298,7 @@ export function WalletClaimProvider({ children }) {
         setIsCheckingClaim(false);
       }
     },
-    [username, setupFirestoreListener]
+    [username, setupFirestoreListener, hasActiveListener]
   );
 
   // Function to check holder position

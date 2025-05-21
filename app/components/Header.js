@@ -50,8 +50,6 @@ export default function Header() {
     claimWallet: contextClaimWallet,
     checkWalletClaim, // Add this
   } = useWalletClaim();
-
-  console.log(hasClaimedWallet);
   const { clearCache } = useWalletClaim();
 
   useEffect(() => {

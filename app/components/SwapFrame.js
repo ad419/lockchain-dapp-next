@@ -29,6 +29,12 @@ import ReferralShare from "./ReferralShare";
 import { useSwapStats } from "../hooks/useAccount";
 import LoadingModal from "./LoadingModal";
 import Image from "next/image";
+// Add these imports for animations
+import { motion, AnimatePresence } from "framer-motion";
+import ReactConfetti from "react-confetti";
+// Import CSS for swap animations
+import "../styles/SwapAnimations.css";
+import "../styles/LoadingModal.css";
 
 // Create a client component for the swap interface
 function SwapInterface({ searchParams }) {
@@ -45,6 +51,16 @@ function SwapInterface({ searchParams }) {
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [initialized, setInitialized] = useState(false);
+
+  // Add these state variables to your component
+  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+  const [showErrorAnimation, setShowErrorAnimation] = useState(false);
+  const [txHash, setTxHash] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [windowSize, setWindowSize] = useState({
+    width: typeof window !== "undefined" ? window.innerWidth : 0,
+    height: typeof window !== "undefined" ? window.innerHeight : 0,
+  });
 
   // Handle component mounting
   useEffect(() => {
@@ -87,6 +103,38 @@ function SwapInterface({ searchParams }) {
 
     initialize();
   }, [mounted, searchParams]);
+
+  // Add this useEffect for handling window size
+  useEffect(() => {
+    if (!mounted) return;
+
+    const handleResize = () => {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [mounted]);
+
+  // Add this useEffect for clearing animations after they play
+  useEffect(() => {
+    if (showSuccessAnimation) {
+      const timer = setTimeout(() => {
+        setShowSuccessAnimation(false);
+      }, 8000); // 8 seconds
+      return () => clearTimeout(timer);
+    }
+
+    if (showErrorAnimation) {
+      const timer = setTimeout(() => {
+        setShowErrorAnimation(false);
+      }, 6000); // 6 seconds
+      return () => clearTimeout(timer);
+    }
+  }, [showSuccessAnimation, showErrorAnimation]);
 
   const handleFromAmountChange = async (amount) => {
     if (!mounted || !initialized || !contract || !contract[DEFAULT_CHAIN])
@@ -145,7 +193,7 @@ function SwapInterface({ searchParams }) {
   };
 
   const handleSubmit = async () => {
-    // if (!mounted) return;
+    if (!mounted) return;
 
     if (address) {
       if (chain && chain.id && SUPPORTED_CHAIN.includes(chain.id)) {
@@ -178,6 +226,9 @@ function SwapInterface({ searchParams }) {
             );
           }
 
+          // Save transaction hash for displaying in success modal
+          setTxHash(tx.hash);
+
           toast.loading("Waiting for confirmation...");
           var interval = setInterval(async function () {
             if (!mounted) {
@@ -191,37 +242,47 @@ function SwapInterface({ searchParams }) {
               clearInterval(interval);
               if (response.status === true) {
                 toast.dismiss();
-                toast.success("Your last transaction is success!!");
+                // Show success animation instead of toast
+                setShowSuccessAnimation(true);
                 setLoading(false);
-                if (mounted) {
-                  window.location.reload();
-                }
+                // Update data after a delay
+                setTimeout(() => {
+                  if (mounted) {
+                    setUpdater(Math.random());
+                  }
+                }, 8500); // Wait a bit longer than the animation duration
               } else if (response.status === false) {
-                toast.error("error ! Your last transaction is failed.");
+                toast.dismiss();
+                // Show error animation
+                setErrorMessage(
+                  "Transaction failed. Please check the blockchain explorer for details."
+                );
+                setShowErrorAnimation(true);
                 setLoading(false);
-                if (mounted) {
-                  window.location.reload();
-                }
               } else {
-                toast.error("error ! something went wrong.");
+                toast.dismiss();
+                setErrorMessage("Something went wrong with your transaction.");
+                setShowErrorAnimation(true);
                 setLoading(false);
-                if (mounted) {
-                  window.location.reload();
-                }
               }
             }
           }, 5000);
         } catch (err) {
           console.log(err.message);
-          toast.error(err.reason ? err.reason : err.message);
+          // Show error animation with caught error
+          setErrorMessage(err.reason ? err.reason : err.message);
+          setShowErrorAnimation(true);
+          toast.dismiss();
           setLoading(false);
         }
       } else {
-        toast.error("Please select Base Mainnet !");
+        setErrorMessage("Please select Base Mainnet!");
+        setShowErrorAnimation(true);
         setLoading(false);
       }
     } else {
-      toast.error("Please Connect Wallet!");
+      setErrorMessage("Please connect your wallet first!");
+      setShowErrorAnimation(true);
       setLoading(false);
     }
   };
@@ -245,7 +306,10 @@ function SwapInterface({ searchParams }) {
             { from: address }
           );
 
-          toast.loading("Waiting for confirmation...");
+          // Save transaction hash for displaying in success modal
+          setTxHash(tx.hash);
+
+          toast.loading("Waiting for approval confirmation...");
           var interval = setInterval(async function () {
             if (!mounted) {
               clearInterval(interval);
@@ -258,28 +322,41 @@ function SwapInterface({ searchParams }) {
               clearInterval(interval);
               if (response.status === true) {
                 toast.dismiss();
-                toast.success("Your last transaction is success!!");
+                // Show success animation
+                setShowSuccessAnimation(true);
                 setLoading(false);
-                setUpdater(Math.random());
+                setTimeout(() => {
+                  if (mounted) {
+                    setUpdater(Math.random());
+                  }
+                }, 8500);
               } else if (response.status === false) {
-                toast.error("error ! Your last transaction is failed.");
+                toast.dismiss();
+                setErrorMessage("Approval failed. Please try again.");
+                setShowErrorAnimation(true);
                 setLoading(false);
               } else {
-                toast.error("error ! something went wrong.");
+                toast.dismiss();
+                setErrorMessage("Something went wrong with your approval.");
+                setShowErrorAnimation(true);
                 setLoading(false);
               }
             }
           }, 5000);
         } catch (err) {
-          toast.error(err.reason ? err.reason : err.message);
+          toast.dismiss();
+          setErrorMessage(err.reason ? err.reason : err.message);
+          setShowErrorAnimation(true);
           setLoading(false);
         }
       } else {
-        toast.error("Please select Base Mainnet !");
+        setErrorMessage("Please select Base Mainnet!");
+        setShowErrorAnimation(true);
         setLoading(false);
       }
     } else {
-      toast.error("Please Connect Wallet!");
+      setErrorMessage("Please connect your wallet first!");
+      setShowErrorAnimation(true);
       setLoading(false);
     }
   };
@@ -577,6 +654,256 @@ function SwapInterface({ searchParams }) {
               show={loading}
               message="Please wait while we process your request..."
             />
+
+            {/* Success Animation Overlay */}
+            <AnimatePresence>
+              {showSuccessAnimation && (
+                <motion.div
+                  className="swap-animation-overlay swap-success-overlay"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  {/* Confetti Effect */}
+                  <ReactConfetti
+                    width={windowSize.width}
+                    height={windowSize.height}
+                    recycle={false}
+                    numberOfPieces={500}
+                    gravity={0.15}
+                    colors={[
+                      "#1253ff",
+                      "#7da0ff",
+                      "#25c26e",
+                      "#43f6ff",
+                      "#fff",
+                    ]}
+                  />
+
+                  <motion.div
+                    className="swap-success-modal"
+                    initial={{ scale: 0.8, y: 30, opacity: 0 }}
+                    animate={{ scale: 1, y: 0, opacity: 1 }}
+                    transition={{ type: "spring", damping: 15, delay: 0.3 }}
+                  >
+                    {/* Token Exchange Animation */}
+                    <motion.div
+                      className="swap-token-exchange"
+                      initial={{ rotateY: 0 }}
+                      animate={{ rotateY: 360 }}
+                      transition={{ duration: 3, repeat: 1, repeatDelay: 1 }}
+                    >
+                      <motion.div
+                        className="swap-token-from"
+                        initial={{ x: 0 }}
+                        animate={{ x: [0, -20, 60], scale: [1, 0.9, 1] }}
+                        transition={{
+                          duration: 1.5,
+                          times: [0, 0.5, 1],
+                          delay: 0.5,
+                        }}
+                      >
+                        <Image
+                          src={fromCurrency === "ETH" ? ethImg : tokenImg}
+                          alt={fromCurrency}
+                          width="30"
+                          height="30"
+                        />
+                      </motion.div>
+
+                      <motion.div
+                        className="swap-success-arrow"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: [0, 1.2, 1] }}
+                        transition={{ duration: 0.6, delay: 1 }}
+                      >
+                        <svg
+                          width="20"
+                          height="20"
+                          viewBox="0 0 20 20"
+                          fill="none"
+                        >
+                          <path
+                            d="M16.6666 5L7.49998 14.1667L3.33331 10"
+                            stroke="white"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                        <motion.div
+                          className="swap-success-glow"
+                          animate={{
+                            opacity: [0, 0.8, 0],
+                            scale: [1, 1.5, 1],
+                          }}
+                          transition={{
+                            duration: 2,
+                            repeat: Infinity,
+                            repeatType: "loop",
+                          }}
+                        />
+                      </motion.div>
+
+                      <motion.div
+                        className="swap-token-to"
+                        initial={{ x: 0 }}
+                        animate={{ x: [0, 20, -60], scale: [1, 0.9, 1] }}
+                        transition={{
+                          duration: 1.5,
+                          times: [0, 0.5, 1],
+                          delay: 0.5,
+                        }}
+                      >
+                        <Image
+                          src={toCurrency === "ETH" ? ethImg : tokenImg}
+                          alt={toCurrency}
+                          width="30"
+                          height="30"
+                        />
+                      </motion.div>
+                    </motion.div>
+
+                    <motion.h2
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.7 }}
+                    >
+                      Swap Successful!
+                    </motion.h2>
+
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 1 }}
+                    >
+                      <div className="swap-amount-badge">
+                        {fromAmount} {fromCurrency} →{" "}
+                        {parseFloat(toAmount).toFixed(6)} {toCurrency}
+                      </div>
+
+                      <p className="mt-3">
+                        Your transaction has been successfully processed and
+                        confirmed on the blockchain.
+                      </p>
+
+                      <div className="swap-success-hash">
+                        TX Hash: {txHash.substring(0, 20)}...
+                        {txHash.substring(txHash.length - 4)}
+                      </div>
+
+                      <motion.a
+                        href={`https://basescan.org/tx/${txHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="swap-success-btn"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <span className="swap-success-btn-shine"></span>
+                        View on Explorer
+                      </motion.a>
+                    </motion.div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Error Animation Overlay */}
+            <AnimatePresence>
+              {showErrorAnimation && (
+                <motion.div
+                  className="swap-animation-overlay swap-error-overlay"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <div className="swap-glitch"></div>
+                  <div className="swap-digital-lines">
+                    <div className="swap-digital-line"></div>
+                    <div className="swap-digital-line"></div>
+                    <div className="swap-digital-line"></div>
+                  </div>
+
+                  <motion.div
+                    className="swap-error-modal"
+                    initial={{ scale: 0.8, y: 30, opacity: 0 }}
+                    animate={{ scale: 1, y: 0, opacity: 1 }}
+                    transition={{ type: "spring", damping: 15 }}
+                  >
+                    <motion.div
+                      className="swap-error-icon"
+                      initial={{ rotate: 0 }}
+                      animate={{ rotate: [0, -5, 10, -10, 5, 0] }}
+                      transition={{ duration: 0.6, delay: 0.3 }}
+                    >
+                      <svg
+                        width="40"
+                        height="40"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                      >
+                        <motion.circle
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="#eb3b5a"
+                          strokeWidth="2"
+                          fill="none"
+                          initial={{ pathLength: 0 }}
+                          animate={{ pathLength: 1 }}
+                          transition={{ duration: 0.8 }}
+                        />
+                        <motion.path
+                          d="M15 9l-6 6M9 9l6 6"
+                          stroke="#eb3b5a"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          initial={{ pathLength: 0 }}
+                          animate={{ pathLength: 1 }}
+                          transition={{ duration: 0.5, delay: 0.5 }}
+                        />
+                      </svg>
+                    </motion.div>
+
+                    <motion.h2
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.6 }}
+                      style={{ color: "#eb3b5a" }}
+                    >
+                      Transaction Failed
+                    </motion.h2>
+
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.8 }}
+                    >
+                      <p>
+                        We couldn't complete your{" "}
+                        {fromCurrency === "ETH" ? "buy" : "sell"} transaction.
+                      </p>
+
+                      <div className="swap-error-details">
+                        <span>Error: {errorMessage}</span>
+                      </div>
+
+                      <motion.button
+                        className="swap-error-btn"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setShowErrorAnimation(false)}
+                      >
+                        Try Again
+                      </motion.button>
+                    </motion.div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </div>

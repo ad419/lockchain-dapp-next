@@ -197,8 +197,6 @@ export default function GlobalMessageBubble() {
     }
   }, [messages.length]);
 
-  console.log("GlobalMessageBubble.jsx MessageItem component rendered!");
-
   // Load saved style on component mount
   useEffect(() => {
     try {

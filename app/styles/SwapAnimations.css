@@ -1,0 +1,310 @@
+/* Swap Animations CSS */
+.swap-animation-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Success Animation Styles */
+.swap-success-overlay {
+  background: radial-gradient(circle at center, rgba(18, 83, 255, 0.15) 0%, rgba(0, 0, 0, 0.95) 100%);
+}
+
+.swap-success-modal {
+  background: rgba(10, 15, 25, 0.9);
+  border: 1px solid rgba(18, 83, 255, 0.3);
+  box-shadow: 0 0 30px rgba(18, 83, 255, 0.4);
+  border-radius: 16px;
+  padding: 40px;
+  text-align: center;
+  max-width: 500px;
+  backdrop-filter: blur(10px);
+  color: white;
+}
+
+.swap-token-exchange {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  margin: 0 auto 30px;
+}
+
+.swap-token-from, .swap-token-to {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #142a63, #1253ff);
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 15px rgba(18, 83, 255, 0.5);
+}
+
+.swap-token-from {
+  top: 10px;
+  left: 10px;
+  z-index: 1;
+}
+
+.swap-token-to {
+  bottom: 10px;
+  right: 10px;
+  z-index: 1;
+}
+
+.swap-success-arrow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #25c26e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 20px rgba(37, 194, 110, 0.7);
+  z-index: 2;
+}
+
+.swap-success-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: transparent;
+  border: 2px solid #25c26e;
+  box-shadow: 0 0 20px #25c26e, inset 0 0 10px #25c26e;
+  opacity: 0;
+}
+
+.swap-success-hash {
+  font-family: monospace;
+  background-color: rgba(18, 83, 255, 0.1);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  word-break: break-all;
+  margin-top: 15px;
+}
+
+.swap-success-btn {
+  background: linear-gradient(135deg, #1253ff, #2c76ff);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 30px;
+  font-weight: 500;
+  margin-top: 20px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.swap-success-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 7px 15px rgba(18, 83, 255, 0.3);
+}
+
+.swap-success-btn-shine {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: rotate(30deg);
+  animation: shine 3s infinite;
+}
+
+@keyframes shine {
+  0% {
+    left: -100%;
+    opacity: 0;
+  }
+  10% {
+    left: -100%;
+    opacity: 0.5;
+  }
+  50% {
+    left: 100%;
+    opacity: 0.5;
+  }
+  51% {
+    opacity: 0;
+  }
+  100% {
+    left: 100%;
+    opacity: 0;
+  }
+}
+
+.swap-amount-badge {
+  background: rgba(37, 194, 110, 0.2);
+  color: #25c26e;
+  padding: 4px 12px;
+  border-radius: 30px;
+  font-weight: 600;
+  display: inline-block;
+}
+
+/* Error Animation Styles */
+.swap-error-overlay {
+  background: radial-gradient(circle at center, rgba(235, 59, 90, 0.15) 0%, rgba(0, 0, 0, 0.95) 100%);
+}
+
+.swap-error-modal {
+  background: rgba(20, 10, 15, 0.9);
+  border: 1px solid rgba(235, 59, 90, 0.3);
+  box-shadow: 0 0 30px rgba(235, 59, 90, 0.4);
+  border-radius: 16px;
+  padding: 40px;
+  text-align: center;
+  max-width: 500px;
+  backdrop-filter: blur(10px);
+  color: white;
+}
+
+.swap-error-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+  background: rgba(235, 59, 90, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 20px rgba(235, 59, 90, 0.4);
+}
+
+.swap-error-btn {
+  background: linear-gradient(135deg, #eb3b5a, #fc5c65);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 30px;
+  font-weight: 500;
+  margin-top: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.swap-error-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 7px 15px rgba(235, 59, 90, 0.3);
+}
+
+.swap-error-details {
+  background: rgba(235, 59, 90, 0.1);
+  border-radius: 8px;
+  padding: 15px;
+  margin: 15px 0;
+  font-family: monospace;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  text-align: left;
+}
+
+.swap-glitch {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    rgba(235, 59, 90, 0.05) 1px,
+    transparent 2px
+  );
+  pointer-events: none;
+  opacity: 0.5;
+  animation: glitch 5s infinite linear;
+}
+
+@keyframes glitch {
+  0% {
+    opacity: 0.3;
+    transform: translateX(-10px);
+  }
+  20% {
+    opacity: 0.5;
+    transform: translateX(10px);
+  }
+  40% {
+    opacity: 0.2;
+  }
+  60% {
+    opacity: 0.4;
+    transform: translateX(-5px);
+  }
+  80% {
+    opacity: 0.3;
+    transform: translateX(5px);
+  }
+  100% {
+    opacity: 0.3;
+    transform: translateX(-10px);
+  }
+}
+
+/* Digital lines animation for error state */
+.swap-digital-lines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.swap-digital-line {
+  position: absolute;
+  width: 100%;
+  height: 1px;
+  background-color: rgba(235, 59, 90, 0.3);
+  animation: digitalLine 3s infinite linear;
+}
+
+.swap-digital-line:nth-child(1) {
+  top: 25%;
+  animation-delay: 0s;
+}
+
+.swap-digital-line:nth-child(2) {
+  top: 50%;
+  animation-delay: 0.5s;
+}
+
+.swap-digital-line:nth-child(3) {
+  top: 75%;
+  animation-delay: 1s;
+}
+
+@keyframes digitalLine {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}

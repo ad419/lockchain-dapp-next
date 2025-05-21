@@ -1,0 +1,146 @@
+/* Loading Modal Animation Styles with prefixed class names */
+.ld-sw-animation-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(5px);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.ld-sw-modal {
+  background: rgba(10, 15, 30, 0.9);
+  border: 1px solid rgba(18, 83, 255, 0.3);
+  box-shadow: 0 0 30px rgba(18, 83, 255, 0.2);
+  border-radius: 16px;
+  padding: 30px;
+  text-align: center;
+  max-width: 400px;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+}
+
+.ld-sw-animation-container {
+  position: relative;
+  height: 100px;
+  margin: 10px auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.ld-sw-circle-container {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  align-items: center;
+  z-index: 2;
+}
+
+.ld-sw-circle {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #1253ff;
+  box-shadow: 0 0 15px rgba(18, 83, 255, 0.7);
+}
+
+.ld-sw-circle-1 {
+  background: #1253ff;
+}
+
+.ld-sw-circle-2 {
+  background: #43f6ff;
+}
+
+.ld-sw-circle-3 {
+  background: #25c26e;
+}
+
+.ld-sw-pulse {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: transparent;
+  border: 2px solid rgba(18, 83, 255, 0.3);
+  box-shadow: 0 0 20px rgba(18, 83, 255, 0.3), inset 0 0 10px rgba(18, 83, 255, 0.2);
+}
+
+.ld-sw-scan-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #1253ff, transparent);
+  box-shadow: 0 0 8px #1253ff;
+  opacity: 0.7;
+}
+
+.ld-sw-title {
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 20px 0 15px;
+}
+
+.ld-sw-subtitle {
+  color: #7da0ff;
+  font-size: 14px;
+  margin-top: 20px;
+  opacity: 0.8;
+}
+
+.ld-sw-progress {
+  height: 2px;
+  background: linear-gradient(90deg, #1253ff, #43f6ff);
+  border-radius: 4px;
+  margin: 20px 0 10px;
+  box-shadow: 0 0 8px rgba(18, 83, 255, 0.5);
+}
+
+/* Add cyberpunk-style grid lines */
+.ld-sw-modal::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    linear-gradient(rgba(18, 83, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(18, 83, 255, 0.03) 1px, transparent 1px);
+  background-size: 20px 20px;
+  pointer-events: none;
+}
+
+/* Digital bytes effect */
+.ld-sw-modal::after {
+  content: '101010101010101010';
+  position: absolute;
+  font-family: monospace;
+  font-size: 8px;
+  color: rgba(18, 83, 255, 0.2);
+  bottom: 10px;
+  right: 10px;
+  letter-spacing: 2px;
+}
+
+@media (max-width: 576px) {
+  .ld-sw-modal {
+    padding: 25px 15px;
+  }
+  
+  .ld-sw-animation-container {
+    height: 80px;
+  }
+}
