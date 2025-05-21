@@ -5,7 +5,7 @@ import admin from "firebase-admin";
 import { getMoralisClient } from "../../lib/moralis-client";
 import { redis, redisCache } from "../../lib/redis";
 
-const CONTRACT_ADDRESS = "0xa69EC9EA8555d56b94C6Ec3D363a7FeB89039aA9";
+const CONTRACT_ADDRESS = "0xB7403A562A8F2cD9d5115E1c59E247f305A010f0";
 const MAX_SUPPLY = 1_000_000_000;
 
 // We're removing LRU cache and using Redis instead

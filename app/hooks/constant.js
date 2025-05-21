@@ -71,12 +71,12 @@ export const contract = {
     EXPLORE: "https://basescan.org/",
     MULTICALL_ADDRESS: "0xfEE958Fa595B4478cea7560C91400A98b83d6C91",
     WETH_ADDRESS: "0x4200000000000000000000000000000000000006",
-    TOKEN_ADDRESS: "0xa69EC9EA8555d56b94C6Ec3D363a7FeB89039aA9", // New token address
-    TOKEN_LP_ADDRESS: "0x27e2cf419053cd75f0bea2b6b2a74ff486f64529", // New LP address you just found
-    VESTING_ADDRESS: "0xE876227488937AD900635b0BDe5639aEdf7633E4", // Updated vesting address
+    TOKEN_ADDRESS: "0xB7403A562A8F2cD9d5115E1c59E247f305A010f0", // New token address
+    TOKEN_LP_ADDRESS: "0x9130ce510889b014e592605fcc234d89f4927f56", // New LP address you just found
+    VESTING_ADDRESS: "0x8BE1e53a93Eee446Dd88a1F7581f5eEB731b70E8", // Updated vesting address
     WETH: "0x4200000000000000000000000000000000000006", // WETH stays the same
     ROUTER_ADDRESS: "0x4752ba5dbc23f44d87826276bf6fd6b1c372ad24", // Keeping router the same unless you have a new address
-    SWAP_ADDRESS: "0x542C2F7f7b96E63503E3744Cd764316FB5ee498b", // Updated swap address
+    SWAP_ADDRESS: "0x40CE6e240e470d51939F2CE5174405cF53884E0F", // Updated swap address
   },
 };
 
@@ -90,9 +90,9 @@ export const PROJECT_ID = "27b9720018bf7f8740936e6a6eb28604";
 export const BUY_TAX = 40;
 export const SELL_TAX = 3;
 export const DEX_CHART_FRAME =
-  "https://dexscreener.com/base/0x27e2cf419053cd75f0bea2b6b2a74ff486f64529?embed=1&amp;theme=dark&amp;info=0"; // lp adress
+  "https://dexscreener.com/base/0x9130ce510889b014e592605fcc234d89f4927f56?embed=1&amp;theme=dark&amp;info=0"; // lp adress
 export const SIDEBAR_CHART_LINK =
-  "https://www.dextools.io/app/en/base/pair-explorer/0x27e2cf419053cd75f0bea2b6b2a74ff486f64529"; // Use LP address for pair explorer
+  "https://www.dextools.io/app/en/base/pair-explorer/0x9130ce510889b014e592605fcc234d89f4927f56"; // Use LP address for pair explorer
 export const SIDEBAR_TOKEN_LINK =
   "https://basescan.org/address/0xA0B5B9fd540c381dDfdf56c832Bae4173b33096c";
 

@@ -1,0 +1,770 @@
+/* Welcome Full Screen Experience */
+.welcomeFullScreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10000;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(5, 9, 20, 0.98) 0%, rgba(1, 3, 12, 0.99) 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Digital Rain Canvas */
+.digitalRainCanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  opacity: 0.2;
+}
+
+/* Background Elements */
+.backgroundElements {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: 0;
+}
+
+/* Dark Overlay */
+.darkOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 3, 15, 0.7);
+  z-index: 2;
+}
+
+/* Animated Stars */
+.star {
+  position: absolute;
+  background-color: #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
+  z-index: 3;
+}
+
+/* Floating Particles */
+.floatingParticle {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(79, 188, 255, 0.8) 0%, rgba(79, 188, 255, 0) 70%);
+  filter: blur(1px);
+  z-index: 3;
+  pointer-events: none;
+}
+
+.glowOrb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  z-index: 3;
+}
+
+.glowOrbPrimary {
+  top: 10%;
+  left: 5%;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(79, 188, 255, 0.1) 0%, rgba(79, 188, 255, 0) 70%);
+}
+
+.glowOrbSecondary {
+  bottom: 10%;
+  right: 5%;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(79, 188, 255, 0.08) 0%, rgba(79, 188, 255, 0) 70%);
+}
+
+.particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background-color: rgba(79, 188, 255, 0.5);
+  border-radius: 50%;
+  pointer-events: none;
+  box-shadow: 0 0 10px rgba(79, 188, 255, 0.5);
+  z-index: 3;
+}
+
+.gridLines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.08;
+  z-index: 3;
+}
+
+.horizontalLine, .verticalLine {
+  position: absolute;
+  background-color: rgba(79, 188, 255, 0.5);
+}
+
+.horizontalLine {
+  width: 100%;
+  height: 1px;
+}
+
+.verticalLine {
+  height: 100%;
+  width: 1px;
+}
+
+/* Main Container */
+.welcomeContainer {
+  width: 100%;
+  height: 100vh;
+  padding: 20px;
+  position: relative;
+  z-index: 5;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Welcome Card */
+.welcomeCard {
+  background: rgba(12, 18, 30, 0.85);
+  backdrop-filter: blur(15px);
+  border-radius: 24px;
+  padding: 28px;
+  color: white;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(79, 188, 255, 0.15);
+  width: 92%;
+  max-width: 850px; /* Increased from 800px */
+  max-height: 800px; /* Increased from 700px */
+  position: relative;
+  overflow: visible; /* Changed from hidden to allow content to show fully */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 18px; /* Increased from 16px */
+  z-index: 5;
+}
+
+/* Lock Animation */
+.lockAnimation {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+}
+
+.lockIconContainer {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+}
+
+.lockIcon {
+  stroke: #4FBCFF;
+  filter: drop-shadow(0 0 5px rgba(79, 188, 255, 0.8));
+}
+
+.lockPulse {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(79, 188, 255, 0.3) 0%, rgba(79, 188, 255, 0) 70%);
+}
+
+/* Logo Section */
+.logoSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.logoContainer {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.logoWrapper {
+  position: relative;
+  z-index: 2;
+}
+
+.logo {
+  filter: drop-shadow(0 0 15px rgba(79, 188, 255, 0.7));
+}
+
+.logoGlow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(79, 188, 255, 0.4) 0%, rgba(79, 188, 255, 0) 70%);
+  z-index: 1;
+  filter: blur(10px);
+}
+
+.welcomeTitle {
+  font-size: 2rem;
+  font-weight: 700;
+  color: white;
+  text-align: center;
+  margin: 10px 0 0;
+  text-shadow: 0 0 15px rgba(79, 188, 255, 0.5);
+}
+
+/* Countdown Section */
+.countdownContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+  position: relative;
+  z-index: 10;
+}
+
+.countdownLabel {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.9);
+  text-align: center;
+  margin-bottom: 10px;
+  font-weight: 500;
+  text-shadow: 0 0 10px rgba(79, 188, 255, 0.4);
+}
+
+.countdownTimer {
+  background: rgba(10, 18, 35, 0.8);
+  border-radius: 16px;
+  padding: 12px 30px;
+  color: #4fbcff;
+  font-size: 2.4rem;
+  font-weight: 700;
+  box-shadow: 0 0 20px rgba(79, 188, 255, 0.5),
+              inset 0 0 10px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(79, 188, 255, 0.3);
+  position: relative;
+  overflow: hidden;
+  min-width: 200px;
+  text-align: center;
+}
+
+.countdownDigits {
+  position: relative;
+  z-index: 2;
+  text-shadow: 0 0 12px rgba(79, 188, 255, 0.8);
+}
+
+.countdownProgress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 4px;
+  background: linear-gradient(90deg, rgba(79, 188, 255, 0.3) 0%, rgba(79, 188, 255, 1) 100%);
+  transition: width 1s linear;
+  z-index: 1;
+  box-shadow: 0 0 10px rgba(79, 188, 255, 0.8);
+}
+
+/* Slider Container */
+.sliderContainer {
+  margin: 10px 0;
+  padding: 18px;
+  background: rgba(10, 18, 35, 0.8);
+  border-radius: 16px;
+  border: 1px solid rgba(79, 188, 255, 0.15);
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 250px;
+  position: relative;
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.2);
+  margin-bottom: 0px; /* Increased to make room for slider dots */
+  overflow: visible;
+}
+
+/* Contract Links Section */
+.contractLinksSection {
+  margin-top: 20px;
+  margin-bottom: 10px; /* Add bottom margin */
+  width: 100%;
+}
+
+.contractLinks {
+  padding: 18px;
+  background: rgba(10, 18, 35, 0.8);
+  border-radius: 16px;
+  text-align: center;
+  border: 1px solid rgba(79, 188, 255, 0.15);
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.2);
+}
+
+.sectionTitle {
+  color: white;
+  font-size: 1.15rem;
+  margin: 0 0 12px;
+  font-weight: 500;
+  text-shadow: 0 0 10px rgba(79, 188, 255, 0.3);
+}
+
+.addressContainer {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+  width: 100%;
+}
+
+.contractAddressWrapper {
+  display: flex;
+  align-items: center;
+  background: rgba(8, 15, 30, 0.95);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(79, 188, 255, 0.1);
+  width: auto;
+  max-width: 90%;
+  margin: 0 auto;
+}
+
+.contractAddress {
+  font-family: monospace;
+  font-size: 1rem;
+  color: #4fbcff;
+  padding: 10px 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.copyButton {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(79, 188, 255, 0.15);
+  border: none;
+  color: white;
+  padding: 8px 12px;
+  border-left: 1px solid rgba(79, 188, 255, 0.2);
+  cursor: pointer;
+  font-size: 0.9rem;
+  height: 100%;
+  transition: background 0.3s;
+}
+
+.buttonIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.copiedNotification {
+  background: rgba(79, 188, 255, 0.8);
+  color: white;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  margin-top: 8px;
+  display: inline-block;
+  box-shadow: 0 0 15px rgba(79, 188, 255, 0.5);
+}
+
+.platformLinks {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 15px;
+}
+
+.platformLink {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(79, 188, 255, 0.15);
+  color: white;
+  text-decoration: none;
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  transition: all 0.3s;
+  border: 1px solid rgba(79, 188, 255, 0.2);
+  font-weight: 500;
+}
+
+.platformIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Skip Button */
+.skipContainer {
+  display: flex;
+  justify-content: center;
+  margin-top: 15px;
+  margin-bottom: 5px;
+}
+
+.skipButton {
+  background: rgba(79, 188, 255, 0.15);
+  border: 1px solid rgba(79, 188, 255, 0.3);
+  color: rgba(255, 255, 255, 0.9);
+  border-radius: 12px;
+  padding: 8px 24px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+
+.skipButton:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(79, 188, 255, 0.2),
+    transparent
+  );
+  transition: 0.5s;
+}
+
+.skipButton:hover:before {
+  left: 100%;
+}
+
+.skipButton:hover {
+  background: rgba(79, 188, 255, 0.25);
+  color: rgba(255, 255, 255, 1);
+  box-shadow: 0 0 15px rgba(79, 188, 255, 0.3);
+}
+
+/* Locked Content Overlay - Blocks access to main content */
+.lockedContentOverlay {
+  display: none; /* Hide this element completely */
+}
+
+.lockTextContainer {
+  display: none; /* Hide this element completely */
+}
+
+.lockTextIcon {
+  display: none; /* Hide this element completely */
+}
+
+/* Add final countdown animation styles */
+.finalCountdown {
+  animation: pulse 0.75s infinite alternate;
+}
+
+@keyframes pulse {
+  from {
+    transform: scale(1);
+    box-shadow: 0 0 20px rgba(79, 188, 255, 0.6),
+                inset 0 0 10px rgba(0, 0, 0, 0.3);
+  }
+  to {
+    transform: scale(1.05);
+    box-shadow: 0 0 30px rgba(79, 188, 255, 0.9),
+                inset 0 0 15px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* Completion Message */
+.completionMessage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(10, 18, 35, 0.95);
+  border-radius: 18px;
+  padding: 25px 40px;
+  text-align: center;
+  z-index: 100;
+  box-shadow: 0 0 30px rgba(79, 188, 255, 0.8);
+  border: 1px solid rgba(79, 188, 255, 0.4);
+  animation: glow 2s infinite alternate;
+}
+
+.completionMessage h2 {
+  color: #4fbcff;
+  font-size: 2rem;
+  margin: 0 0 15px;
+  text-shadow: 0 0 10px rgba(79, 188, 255, 0.8);
+}
+
+.completionMessage p {
+  color: white;
+  font-size: 1.2rem;
+  margin: 0;
+}
+
+@keyframes glow {
+  from {
+    box-shadow: 0 0 20px rgba(79, 188, 255, 0.6);
+  }
+  to {
+    box-shadow: 0 0 35px rgba(79, 188, 255, 0.9);
+  }
+}
+
+/* Test Mode Indicator */
+.testModeIndicator {
+  background-color: rgba(255, 87, 34, 0.8);
+  color: white;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+/* Waiting and Late Message Styles */
+.waitingMessage, .lateMessage {
+  text-align: center;
+  padding: 20px;
+  background: rgba(10, 18, 35, 0.8);
+  border-radius: 16px;
+  margin: 20px 0;
+  border: 1px solid rgba(79, 188, 255, 0.15);
+}
+
+.waitingMessage p, .lateMessage p {
+  color: rgba(255, 255, 255, 0.8);
+  margin: 10px 0;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.lateMessage h2 {
+  color: #4fbcff;
+  margin-bottom: 15px;
+  font-size: 1.5rem;
+}
+
+/* Loading Indicator */
+.loadingIndicator {
+  display: inline-block;
+  width: 30px;
+  height: 30px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #4fbcff;
+  animation: spin 1s ease-in-out infinite;
+  margin-top: 15px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Final Countdown Animation */
+.finalCountdown {
+  animation: pulse 0.75s infinite alternate;
+}
+
+@keyframes pulse {
+  from {
+    transform: scale(1);
+    box-shadow: 0 0 20px rgba(79, 188, 255, 0.6),
+                inset 0 0 10px rgba(0, 0, 0, 0.3);
+  }
+  to {
+    transform: scale(1.05);
+    box-shadow: 0 0 30px rgba(79, 188, 255, 0.9),
+                inset 0 0 15px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* Add these styles for the shake effect */
+
+@keyframes glitch {
+  0% {
+    transform: translate(0);
+  }
+  20% {
+    transform: translate(-2px, 2px);
+  }
+  40% {
+    transform: translate(-2px, -2px);
+  }
+  60% {
+    transform: translate(2px, 2px);
+  }
+  80% {
+    transform: translate(2px, -2px);
+  }
+  100% {
+    transform: translate(0);
+  }
+}
+
+/* When the countdown completes, apply glitch animation to certain elements */
+.welcomeFullScreen.shaking .welcomeCard,
+.welcomeFullScreen.shaking .countdownTimer,
+.welcomeFullScreen.shaking .logoContainer {
+  animation: glitch 0.3s cubic-bezier(.25,.46,.45,.94) both;
+  animation-iteration-count: 3;
+}
+
+/* Also add more dramatic effects for when the countdown is complete */
+.welcomeFullScreen.shaking .digitalRainCanvas {
+  filter: brightness(1.2) contrast(1.1);
+  transition: filter 0.5s ease;
+}
+
+/* Enhanced confetti styles */
+.welcomeFullScreen.confetti-active .welcomeCard {
+  box-shadow: 0 0 30px rgba(79, 188, 255, 0.9), 0 0 50px rgba(83, 102, 250, 0.6);
+  transition: box-shadow 0.5s ease;
+}
+
+/* Media Queries */
+@media (max-width: 768px) {
+  .welcomeCard {
+    padding: 20px;
+    max-height: 90vh;
+  }
+  
+  .welcomeTitle {
+    font-size: 1.6rem;
+  }
+  
+  .countdownTimer {
+    font-size: 1.8rem;
+    padding: 6px 20px;
+  }
+  
+  .logoContainer {
+    width: 70px;
+    height: 70px;
+  }
+  
+  .contractAddress {
+    font-size: 0.9rem;
+    padding: 6px 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .welcomeContainer {
+    padding: 15px;
+  }
+  
+  .welcomeCard {
+    padding: 15px;
+    border-radius: 16px;
+    max-height: 85vh;
+  }
+  
+  .welcomeTitle {
+    font-size: 1.4rem;
+  }
+  
+  .countdownTimer {
+    font-size: 1.6rem;
+    padding: 5px 15px;
+  }
+  
+  .contractLinks {
+    padding: 10px;
+  }
+  
+  .sectionTitle {
+    font-size: 1rem;
+  }
+  
+  .contractAddress {
+    font-size: 0.8rem;
+    padding: 6px 10px;
+  }
+  
+  .copyButton, .platformLink {
+    font-size: 0.8rem;
+    padding: 6px 10px;
+  }
+  
+  .sliderContainer {
+    padding: 8px;
+    margin: 5px 15px;
+  }
+  
+  .logoContainer {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 5px;
+  }
+}
+
+/* Additional adjustments for very small screens */
+@media (max-height: 600px) {
+  .welcomeCard {
+    justify-content: flex-start;
+    gap: 10px;
+  }
+
+  .logoSection {
+    margin-bottom: 5px;
+  }
+  
+  .logoContainer {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .welcomeTitle {
+    font-size: 1.2rem;
+    margin: 5px 0 0;
+  }
+  
+  .countdownContainer {
+    margin-bottom: 5px;
+  }
+  
+  .countdownTimer {
+    font-size: 1.4rem;
+    padding: 3px 10px;
+  }
+  
+  .sliderContainer {
+    padding: 5px;
+    min-height: 200px;
+  }
+  
+  .contractLinksSection {
+    margin-top: 5px;
+  }
+  
+  .skipContainer {
+    margin-top: 5px;
+  }
+}
