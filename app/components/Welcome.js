@@ -14,9 +14,10 @@ const MATCH_LINK =
 const LOCKSWAP_LINK = "/swap";
 
 // Add or modify these constants at the top of your file (after existing imports)
-const TEST_MODE = false; // Set to false for actual 11:20 PM CEST launch
+const TEST_MODE = false; // Set to false for actual 9:00 PM UTC launch
 const TEST_DURATION = 10; // Shorter countdown for testing (seconds)
 const ACTUAL_DURATION = 10 * 60; // 10 minutes in seconds
+const MAX_USERS = 700; // Maximum number of users to display
 
 // Generate random stars for background
 const generateStars = (count) => {
@@ -29,66 +30,57 @@ const generateStars = (count) => {
   }));
 };
 
-// Replace the getTimeUntilElevenPMEST function with this 11:20 PM CEST version
-const getTimeUntilElevenTwentyPMCEST = () => {
+// New function that gets time until 9:00 PM UTC
+const getTimeUntilNinePMUTC = () => {
   const now = new Date();
 
-  // Create a date object for 11:20 PM CEST today
-  const cestTime = new Date(
-    now.toLocaleString("en-US", { timeZone: "Europe/Paris" })
+  // Create a date object for 9:00 PM UTC today
+  const ninePMUTC = new Date(
+    Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate(),
+      21,
+      0,
+      0 // 21:00 in 24-hour format is 9:00 PM UTC
+    )
   );
-  const elevenTwentyPMCEST = new Date(cestTime);
-  elevenTwentyPMCEST.setHours(23, 0, 0, 0); // Set to 11:20 PM CEST (23:20)
 
-  // Convert back to local time
-  const localElevenTwentyPM = new Date(
-    elevenTwentyPMCEST.toLocaleString("en-US")
-  );
-
-  // If it's already past 11:20 PM CEST, set to 11:20 PM CEST tomorrow
-  if (now > localElevenTwentyPM) {
-    elevenTwentyPMCEST.setDate(elevenTwentyPMCEST.getDate() + 1);
-    const nextDayLocalElevenTwentyPM = new Date(
-      elevenTwentyPMCEST.toLocaleString("en-US")
-    );
-    return Math.floor((nextDayLocalElevenTwentyPM - now) / 1000); // seconds until 11:20 PM CEST tomorrow
+  // If it's already past 9:00 PM UTC, set to 9:00 PM UTC tomorrow
+  if (now > ninePMUTC) {
+    ninePMUTC.setUTCDate(ninePMUTC.getUTCDate() + 1);
   }
 
-  return Math.floor((localElevenTwentyPM - now) / 1000); // seconds until 11:20 PM CEST today
+  return Math.floor((ninePMUTC - now) / 1000); // seconds until 9:00 PM UTC
 };
 
-// Replace the isWithinValidTimeWindow function
+// New function to check if user is within valid time window
 const isWithinValidTimeWindow = () => {
   if (TEST_MODE) return true; // Always valid in test mode
 
   const now = new Date();
 
-  // Get current time in CEST
-  const cestTime = new Date(
-    now.toLocaleString("en-US", { timeZone: "Europe/Paris" })
-  );
-  const elevenTwentyPMCEST = new Date(cestTime);
-  elevenTwentyPMCEST.setHours(23, 0, 0, 0); // Set to 11:20 PM CEST (23:20)
-
-  // Convert back to local time
-  const localElevenTwentyPM = new Date(
-    elevenTwentyPMCEST.toLocaleString("en-US")
-  );
-
-  // If 11:20 PM CEST is in the future, user is too early
-  if (now < localElevenTwentyPM) return false;
-
-  // Calculate 11:30 PM CEST (10 min window)
-  const tenMinutesAfterCEST = new Date(elevenTwentyPMCEST);
-  tenMinutesAfterCEST.setMinutes(elevenTwentyPMCEST.getMinutes() + 10);
-
-  // Convert to local time
-  const localTenMinutesAfter = new Date(
-    tenMinutesAfterCEST.toLocaleString("en-US")
+  // Get 9:00 PM UTC today
+  const ninePMUTC = new Date(
+    Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate(),
+      21,
+      0,
+      0 // 21:00 in 24-hour format is 9:00 PM UTC
+    )
   );
 
-  // If current time is after 11:30 PM CEST, user is too late
-  if (now > localTenMinutesAfter) return false;
+  // If 9:00 PM UTC is in the future, user is too early
+  if (now < ninePMUTC) return false;
+
+  // Calculate 9:10 PM UTC (10 min window)
+  const tenMinutesAfterUTC = new Date(ninePMUTC);
+  tenMinutesAfterUTC.setUTCMinutes(tenMinutesAfterUTC.getUTCMinutes() + 10);
+
+  // If current time is after 9:10 PM UTC, user is too late
+  if (now > tenMinutesAfterUTC) return false;
 
   // User is within the valid window
   return true;
@@ -136,9 +128,10 @@ export default function Welcome({ onComplete }) {
   // Add this new state and effect to handle the active users count
 
   // Add these to your existing state declarations:
-  const [activeUsers, setActiveUsers] = useState(136); // Starting with a lower number
+  const [activeUsers, setActiveUsers] = useState(42); // Starting with a much lower number
   const [usersTrend, setUsersTrend] = useState("up"); // Default trend is up as we're growing
   const [lastUserChange, setLastUserChange] = useState(0); // Track last change for animation
+  const [countdownProgress, setCountdownProgress] = useState(0);
 
   // Check if user is within valid time window
   useEffect(() => {
@@ -153,22 +146,22 @@ export default function Welcome({ onComplete }) {
       if (!valid) {
         const now = new Date();
 
-        // Get current time in CEST
-        const cestTime = new Date(
-          now.toLocaleString("en-US", { timeZone: "Europe/Paris" })
+        // Get 9:00 PM UTC today
+        const ninePMUTC = new Date(
+          Date.UTC(
+            now.getUTCFullYear(),
+            now.getUTCMonth(),
+            now.getUTCDate(),
+            21,
+            0,
+            0 // 21:00 in 24-hour format is 9:00 PM UTC
+          )
         );
-        const elevenTwentyPMCEST = new Date(cestTime);
-        elevenTwentyPMCEST.setHours(23, 0, 0, 0); // Set to 11:20 PM CEST (23:20)
 
-        // Convert back to local time
-        const localElevenTwentyPM = new Date(
-          elevenTwentyPMCEST.toLocaleString("en-US")
-        );
-
-        if (now < localElevenTwentyPM) {
-          // If it's before 11:20 PM CEST, show countdown until 11:20 PM CEST
+        if (now < ninePMUTC) {
+          // If it's before 9:00 PM UTC, show countdown until 9:00 PM UTC
           setWaitingForNinePM(true);
-          setTimeUntilStart(getTimeUntilElevenTwentyPMCEST());
+          setTimeUntilStart(getTimeUntilNinePMUTC());
         } else {
           // User arrived too late
           // Skip welcome screen after a brief message
@@ -185,7 +178,7 @@ export default function Welcome({ onComplete }) {
     if (!waitingForNinePM) return;
 
     const timer = setInterval(() => {
-      const remaining = getTimeUntilElevenTwentyPMCEST();
+      const remaining = getTimeUntilNinePMUTC();
       setTimeUntilStart(remaining);
 
       if (remaining <= 1) {
@@ -266,33 +259,53 @@ export default function Welcome({ onComplete }) {
   useEffect(() => {
     if (!isValidUser) return;
 
-    // Calculate remaining time for the countdown based on current time vs 11:30 PM CEST
-    // This ensures all users see the same countdown to 11:30 PM CEST regardless of when they join
+    // Calculate remaining time for the countdown based on current time vs 9:10 PM UTC
+    // This ensures all users see the same countdown to 9:10 PM UTC regardless of when they join
     const calculateRemainingTime = () => {
       const now = new Date();
 
-      // Get the target time - 11:30 PM CEST (11:20 PM CEST + 10 minutes)
-      const cestTime = new Date(
-        now.toLocaleString("en-US", { timeZone: "Europe/Paris" })
+      // Get the target time - 9:10 PM UTC (9:00 PM UTC + 10 minutes)
+      const nineTenPMUTC = new Date(
+        Date.UTC(
+          now.getUTCFullYear(),
+          now.getUTCMonth(),
+          now.getUTCDate(),
+          21,
+          10,
+          0 // 21:10 in 24-hour format is 9:10 PM UTC
+        )
       );
-      const elevenThirtyPMCEST = new Date(cestTime);
-      elevenThirtyPMCEST.setHours(23, 30, 0, 0); // 11:30 PM CEST - when the countdown should end
 
-      // Convert back to local time
-      const localElevenThirtyPM = new Date(
-        elevenThirtyPMCEST.toLocaleString("en-US")
-      );
+      // If it's already past 9:00 PM UTC today, but we're counting down,
+      // make sure we're using today's 9:10 PM UTC, not tomorrow's
+      if (now.getUTCHours() >= 21 && nineTenPMUTC < now) {
+        nineTenPMUTC.setUTCDate(nineTenPMUTC.getUTCDate() + 1);
+      }
 
       // Calculate seconds remaining
-      return Math.max(0, Math.floor((localElevenThirtyPM - now) / 1000));
+      return Math.max(0, Math.floor((nineTenPMUTC - now) / 1000));
     };
 
     // Set initial time remaining
-    setTimeLeft(calculateRemainingTime());
+    const initialTimeLeft = TEST_MODE
+      ? TEST_DURATION
+      : calculateRemainingTime();
+    setTimeLeft(initialTimeLeft);
+
+    // Calculate countdown progress (0 to 1) where 1 means countdown complete
+    const totalDuration = TEST_MODE ? TEST_DURATION : ACTUAL_DURATION;
+    setCountdownProgress(1 - initialTimeLeft / totalDuration);
 
     const timer = setInterval(() => {
-      const remaining = calculateRemainingTime();
+      const remaining = TEST_MODE
+        ? timeLeft - 1 // Simple countdown for test mode
+        : calculateRemainingTime(); // Dynamic time for real mode
+
       setTimeLeft(remaining);
+
+      // Update countdown progress
+      const progress = 1 - remaining / totalDuration;
+      setCountdownProgress(progress);
 
       if (remaining <= 0) {
         clearInterval(timer);
@@ -331,35 +344,81 @@ export default function Welcome({ onComplete }) {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isValidUser, onComplete, screenShakeControls, contractRevealControls]);
+  }, [
+    isValidUser,
+    onComplete,
+    screenShakeControls,
+    contractRevealControls,
+    timeLeft,
+  ]);
 
-  // Final countdown animation effect
+  // Replace user count update effect with one that scales with countdown progress
   useEffect(() => {
-    // Update user count at regular intervals to show growth
+    if (countdownComplete) return; // Stop updating when countdown is done
+
+    // Calculate target user count based on countdown progress (0 to 1)
+    const calculateTargetUsers = () => {
+      // Use a non-linear growth curve that accelerates toward the end
+      // Start from 42 users and gradually approach MAX_USERS
+      const progressCurve = Math.pow(countdownProgress, 1.5); // Makes growth more dramatic near the end
+      return Math.floor(42 + (MAX_USERS - 42) * progressCurve);
+    };
+
+    // Update user count at regular intervals
     const interval = setInterval(() => {
-      // Generate a number around 10 with small variations (8-12 range)
-      const baseIncrease = 10;
-      const variation = Math.floor(Math.random() * 5) - 2; // Random number between -2 and +2
-      const increase = baseIncrease + variation;
+      const targetCount = calculateTargetUsers();
 
-      // Very occasionally show a small decrease to make it look natural (10% chance)
-      const shouldDecrease = Math.random() < 0.1;
-      const change = shouldDecrease ? -Math.floor(Math.random() * 3) : increase;
-
-      // Update the count with a cap at 2100 to keep it realistic
       setActiveUsers((prevCount) => {
-        const newCount = prevCount + change;
-        if (newCount > 2100) return 2100; // Cap at 2100
-        return newCount;
-      });
+        // If we're already at or near the target, make small adjustments
+        if (Math.abs(prevCount - targetCount) < 5) {
+          // Small random adjustments for visual interest
+          const shouldDecrease = Math.random() < 0.3; // 30% chance to decrease
+          if (shouldDecrease) {
+            const decrease = Math.floor(Math.random() * 2) + 1; // 1-2 decrease
+            setUsersTrend("down");
+            setLastUserChange(-decrease);
+            return Math.max(prevCount - decrease, targetCount - 5);
+          } else {
+            const increase = Math.floor(Math.random() * 2) + 1; // 1-2 increase
+            setUsersTrend("up");
+            setLastUserChange(increase);
+            return Math.min(prevCount + increase, targetCount + 5);
+          }
+        }
+        // If we're below target, make larger increases as people "join"
+        else if (prevCount < targetCount) {
+          const gap = targetCount - prevCount;
+          // Larger jumps when we're further from target
+          const baseIncrease = Math.min(Math.ceil(gap / 10), 15);
+          const variation = Math.floor(Math.random() * (baseIncrease / 2));
+          const increase = baseIncrease + variation;
 
-      // Set trend direction for animation
-      setUsersTrend(change >= 0 ? "up" : "down");
-      setLastUserChange(change);
-    }, 2500 + Math.random() * 1000); // Random interval between 2.5-3.5 seconds
+          // Small chance of a decrease for realism
+          const shouldDecrease = Math.random() < 0.1;
+          if (shouldDecrease) {
+            const decrease = Math.floor(Math.random() * 3) + 1;
+            setUsersTrend("down");
+            setLastUserChange(-decrease);
+            return Math.max(prevCount - decrease, 40);
+          } else {
+            setUsersTrend("up");
+            setLastUserChange(increase);
+            return Math.min(prevCount + increase, targetCount);
+          }
+        }
+        // If we're above target, gradually decrease
+        else {
+          const gap = prevCount - targetCount;
+          const decrease = Math.min(Math.ceil(gap / 8), 5);
+          setUsersTrend("down");
+          setLastUserChange(-decrease);
+          return prevCount - decrease;
+        }
+      });
+    }, 2000 + Math.random() * 1000); // Update every 2-3 seconds
 
     return () => clearInterval(interval);
-  }, []);
+  }, [countdownProgress, countdownComplete]);
 
   // Format time as MM:SS or HH:MM:SS
   const formatTime = (seconds) => {
