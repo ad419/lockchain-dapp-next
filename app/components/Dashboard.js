@@ -13,7 +13,6 @@ import LoadingSpinner from "./LoadingSpinner";
 import SpeedometerComponent from "./SpeedometerComponent";
 import Image from "next/image";
 import styles from "../styles/dashboard.module.css";
-import Welcome from "./Welcome"; // Import the Welcome component
 
 const ReactSpeedometer = dynamic(() => import("./SpeedometerComponent"), {
   ssr: false,
@@ -31,7 +30,6 @@ export default function Dashboard() {
   const fearc = useRef(0);
   const [fear, setFear] = useState(0);
   const [isClient, setIsClient] = useState(false);
-  const [showWelcome, setShowWelcome] = useState(true); // Always show welcome screen initially
 
   useEffect(() => {
     async function fetch() {
@@ -213,7 +211,7 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    if (!isClient || showWelcome) return;
+    if (!isClient) return;
 
     const timer = setTimeout(() => {
       buytax();
@@ -221,39 +219,12 @@ export default function Dashboard() {
     }, 100); // Small delay to ensure DOM elements are ready
 
     return () => clearTimeout(timer);
-  }, [isClient, showWelcome]); // Depend on isClient and showWelcome
-
-  // Handle welcome screen completion with a smoother transition
-  const handleWelcomeComplete = () => {
-    // Longer delay for transition to ensure confetti and shake effects have time to play out
-    setTimeout(() => {
-      setShowWelcome(false);
-      console.log("Welcome screen completed, now showing dashboard");
-
-      // Ensure charts render after welcome screen is hidden
-      setTimeout(() => {
-        try {
-          buytax();
-          selltax();
-        } catch (err) {
-          console.log("Chart rendering error:", err.message);
-        }
-      }, 300);
-    }, 300); // Longer delay for a smoother transition after effects
-  };
+  }, [isClient]); // Depend on isClient
 
   return (
     <React.Fragment>
-      {/* Show Welcome screen if showWelcome is true */}
-      {isClient && showWelcome && (
-        <Welcome onComplete={handleWelcomeComplete} />
-      )}
-
-      {/* Main Dashboard UI - always render but control visibility */}
-      <div
-        className={`main ${styles.mainContent}`}
-        style={{ display: showWelcome ? "none" : "block" }}
-      >
+      {/* Main Dashboard UI - no longer need to control visibility with showWelcome */}
+      <div className={`main ${styles.mainContent}`}>
         <div
           className={`jumps-prevent`}
           style={{

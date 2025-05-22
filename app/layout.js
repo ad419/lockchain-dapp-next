@@ -10,19 +10,70 @@ import Header from "./components/Header";
 import { useState, useEffect } from "react";
 import { SessionProvider } from "next-auth/react";
 import { ToastProvider } from "./context/ToastContext";
-import { WalletClaimProvider } from "./context/WalletClaimContext"; // Add this import
+import { WalletClaimProvider } from "./context/WalletClaimContext";
 import { DataCacheProvider } from "./context/DataCacheContext";
 import { GlobalMessagesProvider } from "./context/GlobalMessagesContext";
 import GlobalMessageBubble from "./components/GlobalMessageBubble";
 import { PriceProvider } from "./context/PriceContext";
 import Footer from "./components/Footer";
+import Welcome from "./components/Welcome"; // Import the Welcome component
 
 export default function RootLayout({ children }) {
   const [mounted, setMounted] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [forceShow, setForceShow] = useState(false); // Added to force show at 9PM UTC
 
+  // Update the useEffect in the RootLayout component
   useEffect(() => {
     setMounted(true);
+
+    // Function to check if we're before or after 9PM UTC
+    const checkTimeWindow = () => {
+      const now = new Date();
+
+      // Create date for 9:00 PM UTC today
+      const ninePMUTC = new Date(
+        Date.UTC(
+          now.getUTCFullYear(),
+          now.getUTCMonth(),
+          now.getUTCDate(),
+          21,
+          0,
+          0 // 21:00 = 9:00 PM UTC
+        )
+      );
+
+      // If it's before 9:00 PM UTC, show countdown
+      if (now < ninePMUTC) {
+        setShowWelcome(true);
+
+        // Calculate milliseconds until 9:00 PM UTC
+        const msUntil9PMUTC = ninePMUTC - now;
+
+        // Set a timer to show the contract reveal exactly at 9:00 PM UTC
+        setTimeout(() => {
+          // Force show the contract reveal
+          setForceShow(true);
+
+          // After 8 seconds, hide welcome screen and proceed to app
+          setTimeout(() => {
+            setShowWelcome(false);
+          }, 8000);
+        }, msUntil9PMUTC);
+      } else {
+        // If it's already after 9:00 PM UTC, don't show welcome screen
+        setShowWelcome(false);
+      }
+    };
+
+    // Run the time check
+    checkTimeWindow();
   }, []);
+
+  // Handle completion of welcome screen
+  const handleWelcomeComplete = () => {
+    setShowWelcome(false);
+  };
 
   return (
     <html lang="en" className="ltr main-body leftmenu">
@@ -120,6 +171,16 @@ export default function RootLayout({ children }) {
                     <DataCacheProvider>
                       <GlobalMessagesProvider>
                         <PriceProvider>
+                          {/* Show welcome screen before 9PM UTC */}
+                          {mounted && showWelcome && (
+                            <Welcome
+                              onComplete={handleWelcomeComplete}
+                              forceShowContract={forceShow}
+                            />
+                          )}
+
+                          {/* Only render regular content when welcome is not showing */}
+
                           {mounted && <Header />}
                           {children}
                           {mounted && <Footer />}
