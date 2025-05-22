@@ -38,7 +38,7 @@ const getTimeUntilElevenTwentyPMCEST = () => {
     now.toLocaleString("en-US", { timeZone: "Europe/Paris" })
   );
   const elevenTwentyPMCEST = new Date(cestTime);
-  elevenTwentyPMCEST.setHours(23, 20, 0, 0); // Set to 11:20 PM CEST (23:20)
+  elevenTwentyPMCEST.setHours(23, 0, 0, 0); // Set to 11:20 PM CEST (23:20)
 
   // Convert back to local time
   const localElevenTwentyPM = new Date(
@@ -68,7 +68,7 @@ const isWithinValidTimeWindow = () => {
     now.toLocaleString("en-US", { timeZone: "Europe/Paris" })
   );
   const elevenTwentyPMCEST = new Date(cestTime);
-  elevenTwentyPMCEST.setHours(23, 20, 0, 0); // Set to 11:20 PM CEST (23:20)
+  elevenTwentyPMCEST.setHours(23, 0, 0, 0); // Set to 11:20 PM CEST (23:20)
 
   // Convert back to local time
   const localElevenTwentyPM = new Date(
@@ -158,7 +158,7 @@ export default function Welcome({ onComplete }) {
           now.toLocaleString("en-US", { timeZone: "Europe/Paris" })
         );
         const elevenTwentyPMCEST = new Date(cestTime);
-        elevenTwentyPMCEST.setHours(23, 20, 0, 0); // Set to 11:20 PM CEST (23:20)
+        elevenTwentyPMCEST.setHours(23, 0, 0, 0); // Set to 11:20 PM CEST (23:20)
 
         // Convert back to local time
         const localElevenTwentyPM = new Date(
@@ -266,72 +266,74 @@ export default function Welcome({ onComplete }) {
   useEffect(() => {
     if (!isValidUser) return;
 
+    // Calculate remaining time for the countdown based on current time vs 11:30 PM CEST
+    // This ensures all users see the same countdown to 11:30 PM CEST regardless of when they join
+    const calculateRemainingTime = () => {
+      const now = new Date();
+
+      // Get the target time - 11:30 PM CEST (11:20 PM CEST + 10 minutes)
+      const cestTime = new Date(
+        now.toLocaleString("en-US", { timeZone: "Europe/Paris" })
+      );
+      const elevenThirtyPMCEST = new Date(cestTime);
+      elevenThirtyPMCEST.setHours(23, 30, 0, 0); // 11:30 PM CEST - when the countdown should end
+
+      // Convert back to local time
+      const localElevenThirtyPM = new Date(
+        elevenThirtyPMCEST.toLocaleString("en-US")
+      );
+
+      // Calculate seconds remaining
+      return Math.max(0, Math.floor((localElevenThirtyPM - now) / 1000));
+    };
+
+    // Set initial time remaining
+    setTimeLeft(calculateRemainingTime());
+
     const timer = setInterval(() => {
-      setTimeLeft((prevTime) => {
-        if (prevTime <= 1) {
-          clearInterval(timer);
+      const remaining = calculateRemainingTime();
+      setTimeLeft(remaining);
 
-          // Mark countdown as complete
-          setCountdownComplete(true);
+      if (remaining <= 0) {
+        clearInterval(timer);
 
-          // First stage: Screen shake and first confetti
-          setShakingElements(true);
-          setShowConfetti(true);
-          screenShakeControls.start({
-            x: [0, -15, 15, -12, 12, -8, 8, -5, 5, -2, 2, 0],
-            transition: { duration: 1.2, ease: "easeInOut" },
+        // Mark countdown as complete
+        setCountdownComplete(true);
+
+        // First stage: Screen shake and first confetti
+        setShakingElements(true);
+        setShowConfetti(true);
+        screenShakeControls.start({
+          x: [0, -15, 15, -12, 12, -8, 8, -5, 5, -2, 2, 0],
+          transition: { duration: 1.2, ease: "easeInOut" },
+        });
+
+        // Second stage: Reveal contract info with animation
+        setTimeout(() => {
+          setShowContractInfo(true);
+          contractRevealControls.start({
+            opacity: [0, 1],
+            y: [30, 0],
+            transition: { duration: 0.8, ease: "easeOut" },
           });
 
-          // Second stage: Reveal contract info with animation
+          // Third stage: Second confetti burst
           setTimeout(() => {
-            setShowContractInfo(true);
-            contractRevealControls.start({
-              opacity: [0, 1],
-              y: [30, 0],
-              transition: { duration: 0.8, ease: "easeOut" },
-            });
+            setShowSecondConfetti(true);
+          }, 800);
 
-            // Third stage: Second confetti burst
-            setTimeout(() => {
-              setShowSecondConfetti(true);
-            }, 800);
-
-            // Final stage: Auto-transition to dashboard after longer delay
-            setTimeout(() => {
-              onComplete();
-            }, 8000);
-          }, 1500);
-
-          return 0;
-        }
-        return prevTime - 1;
-      });
+          // Final stage: Auto-transition to dashboard after longer delay
+          setTimeout(() => {
+            onComplete();
+          }, 8000);
+        }, 1500);
+      }
     }, 1000);
 
     return () => clearInterval(timer);
   }, [isValidUser, onComplete, screenShakeControls, contractRevealControls]);
 
   // Final countdown animation effect
-  useEffect(() => {
-    // Add special animation when countdown is near the end
-    if (timeLeft <= 10 && timeLeft > 0) {
-      const countdownEl = document.querySelector(`.${styles.countdownTimer}`);
-      if (countdownEl) {
-        // Add pulsating effect with inline style
-        countdownEl.style.animation = "pulse 0.75s infinite alternate";
-        countdownEl.style.boxShadow =
-          "0 0 30px rgba(79, 188, 255, 0.9), inset 0 0 15px rgba(0, 0, 0, 0.3)";
-      }
-    } else {
-      const countdownEl = document.querySelector(`.${styles.countdownTimer}`);
-      if (countdownEl) {
-        countdownEl.style.animation = "";
-        countdownEl.style.boxShadow = "";
-      }
-    }
-  }, [timeLeft]);
-
-  // Add this effect after your other useEffects
   useEffect(() => {
     // Update user count at regular intervals to show growth
     const interval = setInterval(() => {
@@ -754,7 +756,6 @@ export default function Welcome({ onComplete }) {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.9 }}
             >
-              <p>Please wait for the official launch time at 9 PM.</p>
               <p>The screen will automatically update when the event begins.</p>
             </motion.div>
           </motion.div>

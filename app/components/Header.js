@@ -52,6 +52,14 @@ export default function Header() {
   } = useWalletClaim();
   const { clearCache } = useWalletClaim();
 
+  // Add this state at the top of your component
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Add this function to toggle the mobile menu
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+
   useEffect(() => {
     // Only initialize web3 provider
     if (window.ethereum) {
@@ -131,6 +139,78 @@ export default function Header() {
         }
       }
     }
+  };
+
+  // Update the CSS in your Header.js component
+
+  // Add these styles to your header.module.css file or inline styles
+  const mobileMenuStyles = {
+    mobileMenuContainer: {
+      position: "fixed",
+      top: "60px", // Adjust based on your header height
+      right: "0",
+      width: "100%",
+      maxWidth: "300px",
+      backgroundColor: "rgba(8, 15, 40, 0.95)", // Darker background matching app theme
+      backdropFilter: "blur(10px)",
+      borderRadius: "0 0 0 16px",
+      boxShadow: "0 8px 20px rgba(0, 0, 0, 0.5)",
+      zIndex: 1000,
+      padding: "15px",
+      transform: "translateX(100%)",
+      transition: "transform 0.3s ease-in-out",
+      borderLeft: "1px solid rgba(79, 188, 255, 0.3)", // Blue accent matching your app
+      borderBottom: "1px solid rgba(79, 188, 255, 0.3)",
+    },
+    mobileMenuVisible: {
+      transform: "translateX(0)",
+    },
+    mobileMenuItem: {
+      display: "flex",
+      alignItems: "center",
+      padding: "12px 15px",
+      borderRadius: "8px",
+      marginBottom: "8px",
+      background: "rgba(18, 30, 60, 0.5)", // Slightly lighter than background
+      transition: "all 0.2s ease",
+      cursor: "pointer",
+      color: "#ffffff", // Ensure text is white for visibility
+    },
+    mobileMenuItemActive: {
+      background: "rgba(79, 188, 255, 0.3)", // Use your blue accent color
+      boxShadow: "0 0 15px rgba(79, 188, 255, 0.15)",
+    },
+    mobileMenuIcon: {
+      marginRight: "12px",
+      opacity: 0.9, // Increased from 0.8 for better visibility
+    },
+    mobileMenuText: {
+      fontSize: "14px",
+      fontWeight: "500",
+      color: "#ffffff", // Explicitly white text for visibility
+    },
+    divider: {
+      height: "1px",
+      backgroundColor: "rgba(79, 188, 255, 0.2)", // Use blue accent for dividers
+      margin: "10px 0",
+    },
+    closeButton: {
+      position: "absolute",
+      top: "10px",
+      right: "10px",
+      background: "transparent",
+      border: "none",
+      color: "#4FBCFF", // Blue accent color
+      fontSize: "20px",
+      cursor: "pointer",
+    },
+    sectionTitle: {
+      fontSize: "12px",
+      color: "#4FBCFF", // Blue accent color
+      fontWeight: "600",
+      marginBottom: "8px",
+      letterSpacing: "0.5px",
+    },
   };
 
   const username = session?.user?.name
@@ -329,11 +409,12 @@ export default function Header() {
             <button
               className="navbar-toggler navresponsive-toggler"
               type="button"
-              data-bs-toggle="collapse"
-              data-bs-target="#navbarSupportedContent-4"
-              aria-controls="navbarSupportedContent-4"
-              aria-expanded="false"
+              onClick={toggleMobileMenu}
               aria-label="Toggle navigation"
+              style={{
+                border: "none",
+                background: "transparent",
+              }}
             >
               <i
                 style={{
@@ -342,6 +423,309 @@ export default function Header() {
                 className="fe fe-more-vertical header-icons navbar-toggler-icon"
               ></i>
             </button>
+            {/* Mobile Menu Overlay */}
+            {mobileMenuOpen && (
+              <div
+                style={{
+                  position: "fixed",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: "rgba(0,0,0,0.5)",
+                  zIndex: 999,
+                }}
+                onClick={toggleMobileMenu}
+              />
+            )}
+
+            {/* Mobile Menu */}
+            <div
+              style={{
+                ...mobileMenuStyles.mobileMenuContainer,
+                ...(mobileMenuOpen ? mobileMenuStyles.mobileMenuVisible : {}),
+              }}
+            >
+              <button
+                style={mobileMenuStyles.closeButton}
+                onClick={toggleMobileMenu}
+              >
+                ×
+              </button>
+
+              <h4
+                style={{
+                  color: "#4FBCFF",
+                  marginBottom: "15px",
+                  fontSize: "16px",
+                }}
+              >
+                LOCKCHAIN
+              </h4>
+
+              {/* Network Selector */}
+              <div style={{ marginBottom: "15px" }}>
+                <p style={mobileMenuStyles.sectionTitle}>SELECT NETWORK</p>
+
+                {chain && chain.id && SUPPORTED_CHAIN.includes(chain.id) ? (
+                  <div
+                    style={mobileMenuStyles.mobileMenuItem}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Image
+                      height={20}
+                      width={20}
+                      src={contract[chain.id].img}
+                      alt={contract[chain.id].symbol}
+                      style={mobileMenuStyles.mobileMenuIcon}
+                    />
+                    <span style={mobileMenuStyles.mobileMenuText}>
+                      {contract[chain.id].name}
+                    </span>
+                  </div>
+                ) : (
+                  <div
+                    style={mobileMenuStyles.mobileMenuItem}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Image
+                      height={20}
+                      width={20}
+                      src={contract[DEFAULT_CHAIN].img}
+                      alt={contract[DEFAULT_CHAIN].symbol}
+                      style={mobileMenuStyles.mobileMenuIcon}
+                    />
+                    <span style={mobileMenuStyles.mobileMenuText}>
+                      {contract[DEFAULT_CHAIN].name}
+                    </span>
+                  </div>
+                )}
+
+                {/* Network Options */}
+                <div style={{ marginTop: "8px", paddingLeft: "8px" }}>
+                  {SUPPORTED_CHAIN &&
+                    SUPPORTED_CHAIN.map((row, key) => {
+                      return (
+                        contract[row] && (
+                          <div
+                            key={key}
+                            style={{
+                              ...mobileMenuStyles.mobileMenuItem,
+                              background:
+                                chain && chain.id === row
+                                  ? "rgba(18, 83, 255, 0.2)"
+                                  : "transparent",
+                            }}
+                            onClick={() => {
+                              switchNetwork(row);
+                              setMobileMenuOpen(false);
+                            }}
+                          >
+                            <Image
+                              height={18}
+                              width={18}
+                              src={contract[row].img}
+                              alt={contract[row].symbol}
+                              style={mobileMenuStyles.mobileMenuIcon}
+                            />
+                            <span style={mobileMenuStyles.mobileMenuText}>
+                              {contract[row].name}
+                            </span>
+                          </div>
+                        )
+                      );
+                    })}
+                </div>
+              </div>
+
+              <div style={mobileMenuStyles.divider}></div>
+
+              {/* User Authentication Section */}
+              <div style={{ marginBottom: "15px" }}>
+                <p style={mobileMenuStyles.sectionTitle}>ACCOUNT</p>
+
+                {status === "loading" ? (
+                  <div style={mobileMenuStyles.mobileMenuItem}>
+                    <ClipLoader color="#ffffff" size={16} className="me-2" />
+                    <span style={mobileMenuStyles.mobileMenuText}>
+                      Loading...
+                    </span>
+                  </div>
+                ) : session ? (
+                  <>
+                    <Link
+                      href={`/profile/${username}`}
+                      style={{
+                        ...mobileMenuStyles.mobileMenuItem,
+                        textDecoration: "none",
+                        color: "white",
+                      }}
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <Image
+                        src={session.user.profileImage || session.user.image}
+                        alt={session.user.name}
+                        className="rounded-circle me-2"
+                        width={24}
+                        height={24}
+                        style={mobileMenuStyles.mobileMenuIcon}
+                      />
+                      <span style={mobileMenuStyles.mobileMenuText}>
+                        {session.user.name}
+                      </span>
+                    </Link>
+
+                    <div
+                      style={mobileMenuStyles.mobileMenuItem}
+                      onClick={() => {
+                        handleLogout();
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      <svg
+                        style={{
+                          ...mobileMenuStyles.mobileMenuIcon,
+                          height: "16px",
+                          width: "16px",
+                        }}
+                        fill="currentColor"
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 512 512"
+                      >
+                        <path d="M389.2 48h70.6L305.6 224.2 487 464H345L233.7 318.6 106.5 464H35.8L200.7 275.5 26.8 48H172.4L272.9 180.9 389.2 48z" />
+                      </svg>
+                      <span style={mobileMenuStyles.mobileMenuText}>
+                        Logout
+                      </span>
+                    </div>
+
+                    {!hasClaimedWallet && isConnected && session ? (
+                      <div
+                        style={{
+                          ...mobileMenuStyles.mobileMenuItem,
+                          background:
+                            "linear-gradient(135deg, #1253ff 0%, #4FBCFF 100%)",
+                          boxShadow: "0 0 10px rgba(18, 83, 255, 0.3)",
+                        }}
+                        onClick={handleClaimWallet}
+                      >
+                        {isClaiming ? (
+                          <ClipLoader
+                            color="#ffffff"
+                            size={16}
+                            className="me-2"
+                          />
+                        ) : (
+                          <svg
+                            style={{
+                              ...mobileMenuStyles.mobileMenuIcon,
+                              height: "16px",
+                              width: "16px",
+                              filter:
+                                "drop-shadow(0 0 2px rgba(255, 255, 255, 0.5))",
+                            }}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
+                            />
+                          </svg>
+                        )}
+                        <span
+                          style={{
+                            ...mobileMenuStyles.mobileMenuText,
+                            fontWeight: "600",
+                          }}
+                        >
+                          {isClaiming ? "Claiming..." : "Claim Wallet"}
+                        </span>
+                      </div>
+                    ) : hasClaimedWallet && isConnected && session ? (
+                      <div
+                        style={{
+                          ...mobileMenuStyles.mobileMenuItem,
+                          background: "#10B981",
+                          opacity: 0.9,
+                        }}
+                      >
+                        <svg
+                          style={{
+                            ...mobileMenuStyles.mobileMenuIcon,
+                            height: "16px",
+                            width: "16px",
+                          }}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                        <span style={mobileMenuStyles.mobileMenuText}>
+                          Wallet Claimed
+                        </span>
+                      </div>
+                    ) : null}
+                  </>
+                ) : (
+                  <div
+                    style={{
+                      ...mobileMenuStyles.mobileMenuItem,
+                      background:
+                        "linear-gradient(135deg, #1253ff 0%, #4FBCFF 100%)", // Gradient blue
+                      boxShadow: "0 0 10px rgba(18, 83, 255, 0.3)",
+                    }}
+                    onClick={() => {
+                      handleLogin();
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    <svg
+                      style={{
+                        ...mobileMenuStyles.mobileMenuIcon,
+                        height: "16px",
+                        width: "16px",
+                        filter: "drop-shadow(0 0 2px rgba(255, 255, 255, 0.5))",
+                      }}
+                      fill="currentColor"
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 512 512"
+                    >
+                      <path d="M389.2 48h70.6L305.6 224.2 487 464H345L233.7 318.6 106.5 464H35.8L200.7 275.5 26.8 48H172.4L272.9 180.9 389.2 48z" />
+                    </svg>
+                    <span
+                      style={{
+                        ...mobileMenuStyles.mobileMenuText,
+                        fontWeight: "600",
+                      }}
+                    >
+                      Login with X
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div style={mobileMenuStyles.divider}></div>
+
+              {/* Wallet Connection */}
+              <div style={{ marginBottom: "15px" }}>
+                <p style={mobileMenuStyles.sectionTitle}>WALLET</p>
+                <div onClick={() => setMobileMenuOpen(false)}>
+                  <Connect />
+                </div>
+              </div>
+            </div>
             <div
               className={`navbar navbar-expand-lg nav nav-item navbar-nav-right responsive-navbar navbar-dark ${styles.navbarContainer}`}
             >
