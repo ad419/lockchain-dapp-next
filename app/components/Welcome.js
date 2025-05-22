@@ -13,7 +13,7 @@ const MATCH_LINK =
   "https://matcha.xyz/tokens/base/0x12A1527a3D2ED4084B85602490d945ee9CEEdc53";
 const LOCKSWAP_LINK = "/swap";
 
-const MAX_USERS = 700; // Maximum number of users to display
+const MAX_USERS = 500; // Maximum number of users to display
 
 const WELCOME_SHOWN_KEY = "lockchain_welcome_shown";
 
@@ -428,6 +428,112 @@ export default function Welcome({ onComplete, forceShowContract = false }) {
 
     return () => clearInterval(interval);
   }, [countdownProgress, countdownComplete]);
+
+  // Fixed user count update effect - synchronized across all users globally
+  useEffect(() => {
+    if (countdownComplete) return;
+
+    // Calculate users based on actual UTC time, not individual countdown progress
+    const calculateGlobalUserCount = () => {
+      const now = new Date();
+
+      // Target time: 9:00 PM UTC today
+      const targetTime = new Date(
+        Date.UTC(
+          now.getUTCFullYear(),
+          now.getUTCMonth(),
+          now.getUTCDate(),
+          21, // 9:00 PM UTC
+          0,
+          0
+        )
+      );
+
+      // If target time has passed, show final user count
+      if (now >= targetTime) {
+        return 600;
+      }
+
+      // Calculate how much time has passed since a fixed starting point
+      // Let's use 40 minutes before target time as our starting point
+      const startTime = new Date(targetTime.getTime() - 40 * 60 * 1000); // 40 minutes before
+
+      // If we're before the start time, show initial count
+      if (now < startTime) {
+        return 42;
+      }
+
+      // Calculate progress from start time to target time (0 to 1)
+      const totalDuration = 40 * 60 * 1000; // 40 minutes in milliseconds
+      const elapsed = now.getTime() - startTime.getTime();
+      const timeProgress = Math.min(1, elapsed / totalDuration);
+
+      // Use a growth curve that's the same for everyone
+      const growthCurve = Math.pow(timeProgress, 0.8);
+
+      // Calculate base user count (42 to 600)
+      const baseUsers = Math.floor(42 + (600 - 42) * growthCurve);
+
+      // Add deterministic "randomness" based on current minute
+      // This ensures all users see the same fluctuations at the same time
+      const currentMinute = now.getUTCMinutes();
+      const currentSecond = now.getUTCSeconds();
+
+      // Create a seed based on the current time (changes every 30 seconds)
+      const timeSeed = Math.floor((currentMinute * 60 + currentSecond) / 30);
+
+      // Simple deterministic pseudo-random function
+      const deterministicRandom = (seed) => {
+        const x = Math.sin(seed) * 10000;
+        return x - Math.floor(x);
+      };
+
+      // Add small fluctuation (-5 to +5 users) that's the same for everyone
+      const fluctuation = Math.floor(
+        (deterministicRandom(timeSeed) - 0.5) * 10
+      );
+
+      // Ensure we stay within bounds
+      const finalCount = Math.max(42, Math.min(600, baseUsers + fluctuation));
+
+      return finalCount;
+    };
+
+    // Calculate trend based on previous and current values
+    const updateUserCountAndTrend = () => {
+      try {
+        const newCount = calculateGlobalUserCount();
+
+        setActiveUsers((prevCount) => {
+          // Calculate the change
+          const change = newCount - prevCount;
+
+          if (change > 0) {
+            setUsersTrend("up");
+            setLastUserChange(change);
+          } else if (change < 0) {
+            setUsersTrend("down");
+            setLastUserChange(change);
+          } else {
+            // No change, but keep the last trend direction
+            setLastUserChange(0);
+          }
+
+          return newCount;
+        });
+      } catch (error) {
+        console.warn("Error updating user count:", error);
+      }
+    };
+
+    // Initial update
+    updateUserCountAndTrend();
+
+    // Update every 30 seconds to sync with the deterministic changes
+    const interval = setInterval(updateUserCountAndTrend, 30000);
+
+    return () => clearInterval(interval);
+  }, [countdownComplete]);
 
   // Fix formatTime to handle edge cases
   const formatTime = (seconds) => {
@@ -977,8 +1083,8 @@ export default function Welcome({ onComplete, forceShowContract = false }) {
                       ease: "easeInOut",
                     }}
                     style={{
-                      width: "10px",
-                      height: "10px",
+                      width: "15px",
+                      height: "15px",
                       borderRadius: "50%",
                       background: "rgba(79, 188, 255, 0.8)",
                       boxShadow: "0 0 10px rgba(79, 188, 255, 0.8)",
