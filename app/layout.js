@@ -180,10 +180,13 @@ export default function RootLayout({ children }) {
                           )}
 
                           {/* Only render regular content when welcome is not showing */}
-
-                          {mounted && <Header />}
-                          {children}
-                          {mounted && <Footer />}
+                          <div
+                            style={{ display: showWelcome ? "none" : "block" }}
+                          >
+                            {mounted && <Header />}
+                            {children}
+                            {mounted && <Footer />}
+                          </div>
                         </PriceProvider>
                         <GlobalMessageBubble />
                       </GlobalMessagesProvider>
