@@ -169,27 +169,27 @@ export default function RootLayout({ children }) {
                 <ToastProvider>
                   <WalletClaimProvider>
                     <DataCacheProvider>
-                      <GlobalMessagesProvider>
-                        <PriceProvider>
-                          {/* Show welcome screen before 9PM UTC */}
-                          {mounted && showWelcome && (
+                      {/* <GlobalMessagesProvider> */}
+                      <PriceProvider>
+                        {/* Show welcome screen before 9PM UTC */}
+                        {/* {mounted && showWelcome && (
                             <Welcome
                               onComplete={handleWelcomeComplete}
                               forceShowContract={forceShow}
                             />
-                          )}
+                          )} */}
 
-                          {/* Only render regular content when welcome is not showing */}
-                          <div
+                        {/* Only render regular content when welcome is not showing */}
+                        {/* <div
                             style={{ display: showWelcome ? "none" : "block" }}
-                          >
-                            {mounted && <Header />}
-                            {children}
-                            {mounted && <Footer />}
-                          </div>
-                        </PriceProvider>
-                        <GlobalMessageBubble />
-                      </GlobalMessagesProvider>
+                          > */}
+                        {mounted && <Header />}
+                        {children}
+                        {mounted && <Footer />}
+                        {/* </div> */}
+                      </PriceProvider>
+                      {/* <GlobalMessageBubble /> */}
+                      {/* </GlobalMessagesProvider> */}
                     </DataCacheProvider>
                   </WalletClaimProvider>
                 </ToastProvider>
