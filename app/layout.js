@@ -16,7 +16,8 @@ import { GlobalMessagesProvider } from "./context/GlobalMessagesContext";
 import GlobalMessageBubble from "./components/GlobalMessageBubble";
 import { PriceProvider } from "./context/PriceContext";
 import Footer from "./components/Footer";
-import Welcome from "./components/Welcome"; // Import the Welcome component
+// import Welcome from "./components/Welcome"; // Import the Welcome component
+import { Analytics } from "@vercel/analytics/next";
 
 export default function RootLayout({ children }) {
   const [mounted, setMounted] = useState(false);
@@ -205,6 +206,10 @@ export default function RootLayout({ children }) {
             }}
           />
         </div>
+
+        {/* Add Vercel Analytics */}
+        <Analytics mode="production" />
+
         {/* Scripts */}
         <Script
           src="/assets/plugins/jquery/jquery.min.js"
