@@ -1169,12 +1169,14 @@ const CreateToken = () => {
             transition={{ delay: 0.5 }}
           >
             <p className="token-build-subheading">
-              Need more information? Contact us at{" "}
+              Need more information? Contact us on{" "}
               <a
-                href="mailto:support@lockchain.com"
+                href="https://t.me/lockchainportal"
+                target="_blank"
+                rel="noopener noreferrer"
                 style={{ color: "#1253ff" }}
               >
-                support@lockchain.com
+                Telegram
               </a>
             </p>
           </motion.div>
