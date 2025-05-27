@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { ethers } from "ethers"; // Import ethers.js
 import ethImg from "../images/eth.png";
 import tokenImg from "../images/logo.png";
@@ -61,6 +61,11 @@ function SwapInterface({ searchParams }) {
     width: typeof window !== "undefined" ? window.innerWidth : 0,
     height: typeof window !== "undefined" ? window.innerHeight : 0,
   });
+
+  // Add these state variables to track polling
+  const [isPolling, setIsPolling] = useState(false);
+  const pollingIntervalRef = useRef(null);
+  const pollingTimeoutRef = useRef(null);
 
   // Handle component mounting
   useEffect(() => {
@@ -136,6 +141,112 @@ function SwapInterface({ searchParams }) {
     }
   }, [showSuccessAnimation, showErrorAnimation]);
 
+  // Improved transaction polling function
+  const pollTransactionStatus = async (
+    txHash,
+    maxAttempts = 60,
+    interval = 3000
+  ) => {
+    let attempts = 0;
+    setIsPolling(true);
+
+    const poll = async () => {
+      try {
+        if (!mounted || attempts >= maxAttempts) {
+          setIsPolling(false);
+          if (attempts >= maxAttempts) {
+            toast.dismiss();
+            setErrorMessage(
+              "Transaction verification timeout. Please check manually."
+            );
+            setShowErrorAnimation(true);
+            setLoading(false);
+          }
+          return;
+        }
+
+        const web3 = getWeb3();
+        const response = await web3.eth.getTransactionReceipt(txHash);
+
+        if (response != null) {
+          setIsPolling(false);
+          clearTimeout(pollingTimeoutRef.current);
+
+          if (response.status === true) {
+            toast.dismiss();
+            setShowSuccessAnimation(true);
+            setLoading(false);
+            setTimeout(() => {
+              if (mounted) {
+                setUpdater(Math.random());
+              }
+            }, 8500);
+          } else if (response.status === false) {
+            toast.dismiss();
+            setErrorMessage(
+              "Transaction failed. Please check the blockchain explorer for details."
+            );
+            setShowErrorAnimation(true);
+            setLoading(false);
+          }
+        } else {
+          attempts++;
+          // Use recursive setTimeout instead of setInterval for better mobile support
+          pollingTimeoutRef.current = setTimeout(poll, interval);
+        }
+      } catch (error) {
+        console.error("Polling error:", error);
+        attempts++;
+        if (attempts < maxAttempts) {
+          pollingTimeoutRef.current = setTimeout(poll, interval);
+        } else {
+          setIsPolling(false);
+          toast.dismiss();
+          setErrorMessage(
+            "Network error while checking transaction. Please verify manually."
+          );
+          setShowErrorAnimation(true);
+          setLoading(false);
+        }
+      }
+    };
+
+    // Start polling
+    pollingTimeoutRef.current = setTimeout(poll, interval);
+  };
+
+  // Add cleanup effect
+  useEffect(() => {
+    return () => {
+      if (pollingTimeoutRef.current) {
+        clearTimeout(pollingTimeoutRef.current);
+      }
+      setIsPolling(false);
+    };
+  }, []);
+
+  // Add visibility change handler for mobile
+  useEffect(() => {
+    if (!mounted) return;
+
+    const handleVisibilityChange = () => {
+      if (document.hidden && isPolling) {
+        // Page is hidden, stop polling to save resources
+        if (pollingTimeoutRef.current) {
+          clearTimeout(pollingTimeoutRef.current);
+        }
+      } else if (!document.hidden && isPolling && txHash) {
+        // Page is visible again, resume polling
+        pollTransactionStatus(txHash);
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [mounted, isPolling, txHash]);
+
   const handleFromAmountChange = async (amount) => {
     if (!mounted || !initialized || !contract || !contract[DEFAULT_CHAIN])
       return;
@@ -192,6 +303,7 @@ function SwapInterface({ searchParams }) {
     setToAmount(fromAmount);
   };
 
+  // Updated handleSubmit function
   const handleSubmit = async () => {
     if (!mounted) return;
 
@@ -199,6 +311,7 @@ function SwapInterface({ searchParams }) {
       if (chain && chain.id && SUPPORTED_CHAIN.includes(chain.id)) {
         try {
           setLoading(true);
+          setErrorMessage(""); // Clear previous errors
 
           let swapContract = getContract(
             swapABI,
@@ -213,7 +326,7 @@ function SwapInterface({ searchParams }) {
           }
 
           let referral = refAddr ? refAddr : zeroAddress;
-          console.log(referral);
+
           if (fromCurrency === "ETH") {
             tx = await swapContract.createBuy(referral, {
               from: address,
@@ -226,51 +339,26 @@ function SwapInterface({ searchParams }) {
             );
           }
 
-          // Save transaction hash for displaying in success modal
+          // Save transaction hash
           setTxHash(tx.hash);
 
-          toast.loading("Waiting for confirmation...");
-          var interval = setInterval(async function () {
-            if (!mounted) {
-              clearInterval(interval);
-              return;
-            }
+          // Show loading toast with transaction hash for mobile users
+          toast.loading(
+            <div>
+              <div>Confirming transaction...</div>
+              <div style={{ fontSize: "12px", marginTop: "4px" }}>
+                TX: {tx.hash.substring(0, 10)}...
+                {tx.hash.substring(tx.hash.length - 4)}
+              </div>
+            </div>,
+            { autoClose: false }
+          );
 
-            let web3 = getWeb3();
-            var response = await web3.eth.getTransactionReceipt(tx.hash);
-            if (response != null) {
-              clearInterval(interval);
-              if (response.status === true) {
-                toast.dismiss();
-                // Show success animation instead of toast
-                setShowSuccessAnimation(true);
-                setLoading(false);
-                // Update data after a delay
-                setTimeout(() => {
-                  if (mounted) {
-                    setUpdater(Math.random());
-                  }
-                }, 8500); // Wait a bit longer than the animation duration
-              } else if (response.status === false) {
-                toast.dismiss();
-                // Show error animation
-                setErrorMessage(
-                  "Transaction failed. Please check the blockchain explorer for details."
-                );
-                setShowErrorAnimation(true);
-                setLoading(false);
-              } else {
-                toast.dismiss();
-                setErrorMessage("Something went wrong with your transaction.");
-                setShowErrorAnimation(true);
-                setLoading(false);
-              }
-            }
-          }, 5000);
+          // Start improved polling
+          await pollTransactionStatus(tx.hash);
         } catch (err) {
-          console.log(err.message);
-          // Show error animation with caught error
-          setErrorMessage(err.reason ? err.reason : err.message);
+          console.error("Transaction error:", err);
+          setErrorMessage(err.reason || err.message || "Transaction failed");
           setShowErrorAnimation(true);
           toast.dismiss();
           setLoading(false);
@@ -287,6 +375,7 @@ function SwapInterface({ searchParams }) {
     }
   };
 
+  // Updated handleApprove function with same improvements
   const handleApprove = async () => {
     if (!mounted) return;
 
@@ -294,6 +383,8 @@ function SwapInterface({ searchParams }) {
       if (chain && chain.id && SUPPORTED_CHAIN.includes(chain.id)) {
         try {
           setLoading(true);
+          setErrorMessage("");
+
           let tokenContract = getContract(
             tokenABI,
             contract[chain.id].TOKEN_ADDRESS,
@@ -306,47 +397,25 @@ function SwapInterface({ searchParams }) {
             { from: address }
           );
 
-          // Save transaction hash for displaying in success modal
           setTxHash(tx.hash);
 
-          toast.loading("Waiting for approval confirmation...");
-          var interval = setInterval(async function () {
-            if (!mounted) {
-              clearInterval(interval);
-              return;
-            }
+          toast.loading(
+            <div>
+              <div>Confirming approval...</div>
+              <div style={{ fontSize: "12px", marginTop: "4px" }}>
+                TX: {tx.hash.substring(0, 10)}...
+                {tx.hash.substring(tx.hash.length - 4)}
+              </div>
+            </div>,
+            { autoClose: false }
+          );
 
-            let web3 = getWeb3();
-            var response = await web3.eth.getTransactionReceipt(tx.hash);
-            if (response != null) {
-              clearInterval(interval);
-              if (response.status === true) {
-                toast.dismiss();
-                // Show success animation
-                setShowSuccessAnimation(true);
-                setLoading(false);
-                setTimeout(() => {
-                  if (mounted) {
-                    setUpdater(Math.random());
-                  }
-                }, 8500);
-              } else if (response.status === false) {
-                toast.dismiss();
-                setErrorMessage("Approval failed. Please try again.");
-                setShowErrorAnimation(true);
-                setLoading(false);
-              } else {
-                toast.dismiss();
-                setErrorMessage("Something went wrong with your approval.");
-                setShowErrorAnimation(true);
-                setLoading(false);
-              }
-            }
-          }, 5000);
+          await pollTransactionStatus(tx.hash);
         } catch (err) {
-          toast.dismiss();
-          setErrorMessage(err.reason ? err.reason : err.message);
+          console.error("Approval error:", err);
+          setErrorMessage(err.reason || err.message || "Approval failed");
           setShowErrorAnimation(true);
+          toast.dismiss();
           setLoading(false);
         }
       } else {
