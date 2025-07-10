@@ -61,10 +61,25 @@ export default function Header() {
   };
 
   useEffect(() => {
-    // Only initialize web3 provider
-    if (window.ethereum) {
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      setWeb3(provider);
+    // Fix the Web3Provider initialization
+    if (typeof window !== "undefined" && window.ethereum) {
+      try {
+        // For ethers v5
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        setWeb3(provider);
+      } catch (error) {
+        try {
+          // For ethers v6 (fallback)
+          const provider = new ethers.BrowserProvider(window.ethereum);
+          setWeb3(provider);
+        } catch (v6Error) {
+          console.error(
+            "Failed to initialize ethers provider:",
+            error,
+            v6Error
+          );
+        }
+      }
     }
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -1296,6 +1311,17 @@ export default function Header() {
                 <li className="nav-header active">
                   <span className="nav-label">Socials</span>
                   <span className="nav-label">Give away</span>
+                </li>
+                <li
+                  className={`nav-item ${
+                    pathname === "/air-drop" ? "active" : ""
+                  }`}
+                >
+                  <Link href="/air-drop" className="nav-link">
+                    <i className="ti-gift sidemenu-icon menu-icon"></i>
+                    <span className="sidemenu-label">Air Drop</span>
+                    <i className="angle fe fe-chevron-right"></i>
+                  </Link>
                 </li>
                 <li className="nav-item">
                   <Link href="/tickets" className="nav-link">

@@ -254,7 +254,8 @@ function SwapInterface({ searchParams }) {
 
     if (!isNaN(amount) && amount > 0 && routerContract) {
       try {
-        const amountIn = ethers.utils.parseUnits(amount, 18);
+        // ethers v6 syntax - use parseUnits directly from ethers
+        const amountIn = ethers.parseUnits(amount, 18);
 
         const path = [
           fromCurrency === "ETH"
@@ -268,7 +269,10 @@ function SwapInterface({ searchParams }) {
         const amounts = await routerContract.methods
           .getAmountsOut(amountIn, path)
           .call();
-        let outputAmount = ethers.utils.formatUnits(amounts[1], 18);
+
+        // ethers v6 syntax - use formatUnits directly from ethers
+        let outputAmount = ethers.formatUnits(amounts[1], 18);
+
         if (fromCurrency === "ETH") {
           outputAmount =
             parseFloat(outputAmount) -
@@ -330,11 +334,13 @@ function SwapInterface({ searchParams }) {
           if (fromCurrency === "ETH") {
             tx = await swapContract.createBuy(referral, {
               from: address,
-              value: ethers.utils.parseEther(fromAmount.toString()),
+              // ethers v6 syntax - use parseEther directly from ethers
+              value: ethers.parseEther(fromAmount.toString()),
             });
           } else {
             tx = await swapContract.createSell(
-              ethers.utils.parseEther(fromAmount.toString()),
+              // ethers v6 syntax - use parseEther directly from ethers
+              ethers.parseEther(fromAmount.toString()),
               { from: address }
             );
           }
@@ -390,7 +396,10 @@ function SwapInterface({ searchParams }) {
             contract[chain.id].TOKEN_ADDRESS,
             signer
           );
-          let amount = ethers.utils.parseEther("10000000000000000000");
+
+          // ethers v6 syntax - use parseEther directly from ethers
+          let amount = ethers.parseEther("10000000000000000000");
+
           let tx = await tokenContract.approve(
             contract[chain.id].SWAP_ADDRESS,
             amount,
