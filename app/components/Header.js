@@ -721,8 +721,20 @@ export default function Header() {
               {/* Wallet Connection */}
               <div style={{ marginBottom: "15px" }}>
                 <p style={mobileMenuStyles.sectionTitle}>WALLET</p>
-                <div onClick={() => setMobileMenuOpen(false)}>
-                  <Connect />
+                <div
+                  style={{
+                    padding: "0 15px",
+                    width: "100%",
+                  }}
+                >
+                  <Connect
+                    onComplete={() => setMobileMenuOpen(false)}
+                    style={{
+                      width: "100%",
+                      margin: "0",
+                      padding: "12px 15px",
+                    }}
+                  />
                 </div>
               </div>
             </div>
@@ -965,7 +977,7 @@ export default function Header() {
                     )}
                   </div>
                   {/* Existing Connect Wallet Button */}
-                  <div className="dropdown">
+                  <div className="dropdown d-none d-lg-block">
                     <Connect />
                   </div>
                 </div>
