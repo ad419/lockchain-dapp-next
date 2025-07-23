@@ -1335,13 +1335,6 @@ export default function Header() {
                     <i className="angle fe fe-chevron-right"></i>
                   </Link>
                 </li>
-                <li className="nav-item">
-                  <Link href="/tickets" className="nav-link">
-                    <ConfettiLinear />
-                    <span className="sidemenu-label">Claim Airdrop</span>
-                    <i className="angle fe fe-chevron-right"></i>
-                  </Link>
-                </li>
               </ul>
               <div className="slide-right" id="slide-right">
                 <i className="fe fe-chevron-right"></i>
