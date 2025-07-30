@@ -175,7 +175,8 @@ export async function POST(request) {
     });
 
     // Calculate amount in wei
-    const amountInUnits = ethers.parseEther(amount.toString());
+    const decimals = 18; // or your token's decimals
+    const amountInUnits = ethers.parseUnits(amount.toString(), decimals);
 
     // Check if wallet has enough tokens
     if (tokenBalance < amountInUnits) {
